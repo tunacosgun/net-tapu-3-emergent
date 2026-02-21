@@ -12,6 +12,7 @@ import { BidService } from './services/bid.service';
 import { AuctionService } from './services/auction.service';
 import { RedisLockService } from './services/redis-lock.service';
 import { SettlementService } from './services/settlement.service';
+import { DepositLifecycleService } from './services/deposit-lifecycle.service';
 import { PAYMENT_SERVICE, MockPaymentService } from './services/payment.service';
 import { BidController } from './controllers/bid.controller';
 import { AuctionController } from './controllers/auction.controller';
@@ -44,6 +45,7 @@ import { SettlementWorker } from './workers/settlement.worker';
     RedisLockService,
     AuctionGateway,
     AuctionEndingWorker,
+    DepositLifecycleService,
     SettlementService,
     SettlementWorker,
     { provide: PAYMENT_SERVICE, useClass: MockPaymentService },

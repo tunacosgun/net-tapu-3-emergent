@@ -32,6 +32,11 @@ import { MetricsModule } from './metrics/metrics.module';
             'JWT_SECRET must be at least 32 characters long',
           );
         }
+        if (config['NODE_ENV'] === 'production' && !config['POS_PROVIDER']) {
+          throw new Error(
+            'POS_PROVIDER must be explicitly set in production (e.g. "paytr", "iyzico"). Will not default to "mock".',
+          );
+        }
         return config;
       },
     }),
@@ -49,6 +54,12 @@ import { MetricsModule } from './metrics/metrics.module';
         synchronize: false,
         logging:
           config.get('NODE_ENV') !== 'production' ? true : ['error', 'warn'],
+        extra: {
+          max: 30,
+          connectionTimeoutMillis: 5000,
+          statement_timeout: 30000,
+          lock_timeout: 5000,
+        },
       }),
     }),
     HealthModule,

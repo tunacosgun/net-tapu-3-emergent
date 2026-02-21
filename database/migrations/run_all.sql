@@ -65,4 +65,16 @@
 \echo '=== Migration 021: Settlement worker index ==='
 \i /migrations/021_settlement_worker_index.sql
 
+\echo '=== Migration 022: Listing ID sequence ==='
+\i /migrations/022_listing_id_sequence.sql
+
+\echo '=== Migration 023: Payment status enhancements ==='
+\i /migrations/023_payment_status_enhancements.sql
+
+\echo '=== Migration 024: Add mock POS provider ==='
+\i /migrations/024_add_mock_pos_provider.sql
+
+\echo '=== Migration 025: Payment hardening indexes ==='
+\i /migrations/025_payment_hardening_indexes.sql
+
 \echo '=== All migrations completed successfully ==='

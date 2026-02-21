@@ -8,6 +8,16 @@ import { ParcelMapData } from './entities/parcel-map-data.entity';
 import { Favorite } from './entities/favorite.entity';
 import { SavedSearch } from './entities/saved-search.entity';
 
+import { ParcelService } from './services/parcel.service';
+import { ParcelMediaService } from './services/parcel-media.service';
+import { FavoriteService } from './services/favorite.service';
+import { SavedSearchService } from './services/saved-search.service';
+
+import { ParcelController } from './controllers/parcel.controller';
+import { ParcelMediaController } from './controllers/parcel-media.controller';
+import { FavoriteController } from './controllers/favorite.controller';
+import { SavedSearchController } from './controllers/saved-search.controller';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -20,6 +30,18 @@ import { SavedSearch } from './entities/saved-search.entity';
       SavedSearch,
     ]),
   ],
-  exports: [TypeOrmModule],
+  controllers: [
+    ParcelController,
+    ParcelMediaController,
+    FavoriteController,
+    SavedSearchController,
+  ],
+  providers: [
+    ParcelService,
+    ParcelMediaService,
+    FavoriteService,
+    SavedSearchService,
+  ],
+  exports: [TypeOrmModule, ParcelService],
 })
 export class ListingsModule {}

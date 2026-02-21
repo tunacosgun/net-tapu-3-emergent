@@ -13,23 +13,9 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtPayload } from './auth.service';
-
-class RegisterDto {
-  email!: string;
-  password!: string;
-  firstName!: string;
-  lastName!: string;
-  phone?: string;
-}
-
-class LoginDto {
-  email!: string;
-  password!: string;
-}
-
-class RefreshDto {
-  refreshToken!: string;
-}
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { RefreshDto } from './dto/refresh.dto';
 
 @Controller('auth')
 export class AuthController {

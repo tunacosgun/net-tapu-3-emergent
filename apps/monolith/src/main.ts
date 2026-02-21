@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { JsonLoggerService } from '@nettapu/shared';
 import { AppModule } from './app.module';
@@ -49,6 +49,14 @@ async function bootstrap() {
         },
       },
       hsts: { maxAge: 31536000, includeSubDomains: true },
+    }),
+  );
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
     }),
   );
 

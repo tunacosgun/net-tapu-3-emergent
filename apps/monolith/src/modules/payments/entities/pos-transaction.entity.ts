@@ -5,7 +5,7 @@ export class PosTransaction {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'enum', enum: ['paytr', 'iyzico', 'moka'] })
+  @Column({ type: 'enum', enum: ['paytr', 'iyzico', 'moka', 'mock'] })
   provider!: string;
 
   @Column({ type: 'varchar', name: 'external_id', length: 255, nullable: true })

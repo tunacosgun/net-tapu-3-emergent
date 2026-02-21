@@ -9,8 +9,10 @@ export enum DepositStatus {
 
 export enum PaymentStatus {
   PENDING = 'pending',
+  PROVISIONED = 'provisioned',
   COMPLETED = 'completed',
   FAILED = 'failed',
+  CANCELLED = 'cancelled',
   REFUNDED = 'refunded',
   PARTIALLY_REFUNDED = 'partially_refunded',
 }
@@ -25,6 +27,7 @@ export enum PosProvider {
   PAYTR = 'paytr',
   IYZICO = 'iyzico',
   MOKA = 'moka',
+  MOCK = 'mock',
 }
 
 export enum LedgerEvent {
@@ -35,8 +38,11 @@ export enum LedgerEvent {
   DEPOSIT_REFUNDED = 'deposit_refunded',
   DEPOSIT_EXPIRED = 'deposit_expired',
   PAYMENT_INITIATED = 'payment_initiated',
+  PAYMENT_PROVISIONED = 'payment_provisioned',
+  PAYMENT_CAPTURED = 'payment_captured',
   PAYMENT_COMPLETED = 'payment_completed',
   PAYMENT_FAILED = 'payment_failed',
+  PAYMENT_PROVISION_CANCELLED = 'payment_provision_cancelled',
   REFUND_INITIATED = 'refund_initiated',
   REFUND_COMPLETED = 'refund_completed',
 }

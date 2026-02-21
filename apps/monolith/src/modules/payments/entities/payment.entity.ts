@@ -20,7 +20,7 @@ export class Payment {
   @Column({ type: 'varchar', length: 3, default: 'TRY' })
   currency!: string;
 
-  @Column({ type: 'enum', enum: ['pending', 'completed', 'failed', 'refunded', 'partially_refunded'], default: 'pending' })
+  @Column({ type: 'enum', enum: ['pending', 'provisioned', 'completed', 'failed', 'cancelled', 'refunded', 'partially_refunded'], default: 'pending' })
   status!: string;
 
   @Column({ name: 'payment_method', type: 'enum', enum: ['credit_card', 'bank_transfer', 'mail_order'] })
