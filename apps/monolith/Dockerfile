@@ -15,17 +15,24 @@ COPY tsconfig.base.json ./
 COPY packages/shared ./packages/shared
 COPY apps/monolith ./apps/monolith
 
-# 4) Build shared first (apps depend on it), then the app
+# 4) Remove stale incremental-build caches that can cause missing files
+RUN rm -f apps/monolith/tsconfig.tsbuildinfo apps/monolith/tsconfig.build.tsbuildinfo \
+         packages/shared/tsconfig.tsbuildinfo packages/shared/tsconfig.build.tsbuildinfo
+
+# 5) Build shared first (apps depend on it), then the app
 RUN npm run build --workspace=packages/shared
 RUN npm run build --workspace=apps/monolith
 
-# 5) Prune devDependencies for a leaner runtime image
+# 6) Prune devDependencies for a leaner runtime image
 RUN npm prune --production
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+
+# dumb-init: PID 1 signal forwarding for graceful cluster shutdown
+RUN apk add --no-cache dumb-init
 
 # Preserve monorepo layout so workspace symlinks keep working:
 #   node_modules/@nettapu/shared  →  ../../packages/shared
@@ -41,5 +48,11 @@ COPY --from=builder /app/apps/monolith/package.json ./apps/monolith/
 COPY --from=builder /app/apps/monolith/dist ./apps/monolith/dist
 
 WORKDIR /app/apps/monolith
+
+# Cluster mode: 0 = auto-detect CPUs, 1 = disabled, N = explicit count
+ENV CLUSTER_WORKERS=0
+
 EXPOSE 3000
+
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/main.js"]

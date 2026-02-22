@@ -111,6 +111,53 @@ export class PaymentService {
       if (qr.isTransactionActive) {
         await qr.rollbackTransaction();
       }
+
+      // Race-safe idempotency: PostgreSQL unique_violation (23505) means a
+      // concurrent request already committed the payment. Look it up and
+      // return it instead of surfacing a 500.
+      // IMPORTANT: The early return here exits initiate() before POS
+      // provisioning (step 3) and recordPosResult (step 4), guaranteeing
+      // no duplicate POS calls or ledger writes.
+      if ((err as any).code === '23505') {
+        const raceWinner = await this.idempotencyRepo.findOne({
+          where: { key: dto.idempotencyKey },
+        });
+        if (raceWinner) {
+          const requestHash = this.hashRequest(dto);
+          if (raceWinner.requestHash !== requestHash) {
+            throw new ConflictException(
+              'Idempotency key already used with different parameters',
+            );
+          }
+          const existingPayment = await this.paymentRepo.findOne({
+            where: { id: raceWinner.responseBody.paymentId as string },
+          });
+          if (existingPayment) {
+            this.logger.log(
+              JSON.stringify({
+                event: 'idempotency_race_resolved',
+                idempotency_key: dto.idempotencyKey,
+                payment_id: existingPayment.id,
+                status: existingPayment.status,
+                resolution: 'returned_existing_payment',
+              }),
+            );
+            return existingPayment;
+          }
+        }
+        // Fallthrough: 23505 but winner not found yet (should not happen
+        // since both rows are in the same TX). Throw a clear error.
+        this.logger.error(
+          JSON.stringify({
+            event: 'idempotency_race_lookup_failed',
+            idempotency_key: dto.idempotencyKey,
+          }),
+        );
+        throw new ConflictException(
+          'Payment creation conflict — please retry',
+        );
+      }
+
       throw err;
     } finally {
       await qr.release();

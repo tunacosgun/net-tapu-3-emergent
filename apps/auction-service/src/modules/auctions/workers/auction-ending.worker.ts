@@ -35,6 +35,11 @@ export class AuctionEndingWorker implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
+    if (process.env.DISABLE_WORKERS === 'true') {
+      this.logger.log('AuctionEndingWorker skipped (cluster non-primary worker)');
+      return;
+    }
+
     this.intervalHandle = setInterval(() => {
       this.tick().catch((err) => {
         this.logger.error(`Worker tick error: ${err.message}`, err.stack);

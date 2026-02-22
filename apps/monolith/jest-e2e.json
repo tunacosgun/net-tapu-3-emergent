@@ -1,0 +1,15 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.ts$": ["ts-jest", {
+      "tsconfig": "../../tsconfig.base.json"
+    }]
+  },
+  "testTimeout": 30000,
+  "moduleNameMapper": {
+    "^@nettapu/shared(.*)$": "<rootDir>/../../packages/shared/src$1"
+  },
+  "testEnvironment": "node"
+}

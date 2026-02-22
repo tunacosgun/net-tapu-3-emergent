@@ -15,6 +15,8 @@ import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
 
+const isLoadTest = process.env.NODE_ENV === 'loadtest';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -40,10 +42,17 @@ import { MetricsModule } from './metrics/metrics.module';
         return config;
       },
     }),
-    ThrottlerModule.forRoot([
-      { name: 'short', ttl: 1000, limit: 20 },
-      { name: 'long', ttl: 60000, limit: 100 },
-    ]),
+    ThrottlerModule.forRoot(
+      isLoadTest
+        ? [
+            { name: 'short', ttl: 1000, limit: 10000 },
+            { name: 'long', ttl: 60000, limit: 600000 },
+          ]
+        : [
+            { name: 'short', ttl: 1000, limit: 20 },
+            { name: 'long', ttl: 60000, limit: 100 },
+          ],
+    ),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

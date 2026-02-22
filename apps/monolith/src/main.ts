@@ -1,11 +1,16 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
-import { JsonLoggerService } from '@nettapu/shared';
+import { JsonLoggerService, clusterize } from '@nettapu/shared';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  const cluster = await import('node:cluster');
+  const workerId = cluster.default.worker?.id ?? 0;
+  process.env.CLUSTER_WORKER_ID = String(workerId);
+
   const jsonLogger = new JsonLoggerService('monolith');
   const logger = new Logger('Bootstrap');
 
@@ -61,6 +66,20 @@ async function bootstrap() {
   );
 
   app.setGlobalPrefix('api/v1');
+
+  // ── Swagger / OpenAPI ───────────────────────────────────────
+  if (nodeEnv !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('NetTapu Platform API')
+      .setDescription('Real Estate & Land Sales Platform with Live Online Auction System')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('docs', app, document);
+    logger.log('Swagger UI available at /docs');
+  }
+
   app.enableCors({ origin: corsOrigin || '*' });
   app.enableShutdownHooks();
 
@@ -69,4 +88,4 @@ async function bootstrap() {
   logger.log(`Monolith running on port ${port}`);
 }
 
-bootstrap();
+clusterize(bootstrap, { name: 'monolith' });

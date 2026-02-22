@@ -41,7 +41,8 @@ export class MetricsService {
 
   constructor() {
     this.registry = new Registry();
-    this.registry.setDefaultLabels({ app: 'auction-service' });
+    const workerId = process.env.CLUSTER_WORKER_ID || '0';
+    this.registry.setDefaultLabels({ app: 'auction-service', worker: workerId });
     collectDefaultMetrics({ register: this.registry });
 
     this.wsConnectionsTotal = new Counter({

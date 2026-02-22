@@ -1,0 +1,24 @@
+# Load test override — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.loadtest.yml up -d
+#
+# What changes:
+#   - NODE_ENV=loadtest on monolith + auction-service
+#     → monolith ThrottlerGuard limits raised to 10000/s
+#     → production-only startup guards skipped
+#   - nginx uses nginx.loadtest.conf
+#     → rate limits raised to 10000r/s
+#   - worker_connections raised to 4096
+
+services:
+  monolith:
+    environment:
+      NODE_ENV: loadtest
+
+  auction-service:
+    environment:
+      NODE_ENV: loadtest
+
+  nginx:
+    volumes:
+      - ./nginx/nginx.loadtest.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro

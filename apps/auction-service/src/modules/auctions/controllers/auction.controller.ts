@@ -50,6 +50,7 @@ export class AuctionController {
   }
 
   @Patch(':id/status')
+  @UseGuards(AdminGuard)
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateAuctionStatusDto,

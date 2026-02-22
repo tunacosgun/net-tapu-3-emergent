@@ -33,6 +33,11 @@ import { MetricsModule } from './metrics/metrics.module';
         autoLoadEntities: true,
         synchronize: false,
         logging: config.get('NODE_ENV') !== 'production' ? true : ['error', 'warn'],
+        extra: {
+          max: 25,
+          statement_timeout: 10000,
+          lock_timeout: 5000,
+        },
       }),
     }),
     HealthModule,

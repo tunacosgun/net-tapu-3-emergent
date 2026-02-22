@@ -44,6 +44,11 @@ export class SettlementWorker implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
+    if (process.env.DISABLE_WORKERS === 'true') {
+      this.logger.log(JSON.stringify({ event: 'settlement_worker_skipped', reason: 'cluster_non_primary_worker' }));
+      return;
+    }
+
     this.intervalHandle = setInterval(() => {
       this.tick().catch((err) => {
         this.logger.error(

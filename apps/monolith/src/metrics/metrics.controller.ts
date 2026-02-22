@@ -4,7 +4,8 @@ import { Response } from 'express';
 import { Registry, collectDefaultMetrics } from 'prom-client';
 
 const registry = new Registry();
-registry.setDefaultLabels({ app: 'monolith' });
+const workerId = process.env.CLUSTER_WORKER_ID || '0';
+registry.setDefaultLabels({ app: 'monolith', worker: workerId });
 collectDefaultMetrics({ register: registry });
 
 @SkipThrottle()
