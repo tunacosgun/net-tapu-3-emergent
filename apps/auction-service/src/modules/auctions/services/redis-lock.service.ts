@@ -63,7 +63,9 @@ export class RedisLockService implements OnModuleInit, OnModuleDestroy {
    */
   async acquire(key: string, ttlMs: number): Promise<string | null> {
     const lockValue = `${process.pid}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    const start = Date.now();
     const result = await this.redis.set(key, lockValue, 'PX', ttlMs, 'NX');
+    this.metrics?.redisCmdLatencyMs.observe({ command: 'acquire' }, Date.now() - start);
     if (result === 'OK') {
       return lockValue;
     }
@@ -83,7 +85,9 @@ export class RedisLockService implements OnModuleInit, OnModuleDestroy {
         return 0
       end
     `;
+    const start = Date.now();
     const result = await this.redis.eval(lua, 1, key, lockValue);
+    this.metrics?.redisCmdLatencyMs.observe({ command: 'release' }, Date.now() - start);
     return result === 1;
   }
 

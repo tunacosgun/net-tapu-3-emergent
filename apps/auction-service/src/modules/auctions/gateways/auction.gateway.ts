@@ -385,6 +385,7 @@ export class AuctionGateway
         ?.split(',')[0]
         ?.trim() ?? client.handshake.address;
 
+    const bidStartMs = Date.now();
     try {
       const auction = await this.auctionRepo.findOne({
         where: { id: data.auctionId },
@@ -420,6 +421,8 @@ export class AuctionGateway
           triggered_by_bid_id: result.bid_id,
         });
       }
+
+      this.metrics.bidE2eDurationMs.observe(Date.now() - bidStartMs);
     } catch (err: unknown) {
       let reasonCode = 'unknown';
       let currentPrice = '';
@@ -438,6 +441,7 @@ export class AuctionGateway
       }
 
       this.metrics.wsBidRejectionsTotal.inc({ reason_code: reasonCode });
+      this.metrics.bidE2eDurationMs.observe(Date.now() - bidStartMs);
       client.emit('bid_rejected', {
         type: 'BID_REJECTED',
         reason_code: reasonCode,

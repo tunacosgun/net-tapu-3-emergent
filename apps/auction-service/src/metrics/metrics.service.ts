@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import {
   Registry,
   Counter,
@@ -40,7 +41,12 @@ export class MetricsService {
   readonly settlementBacklogGauge: Gauge;
   readonly settlementWorkerDurationMs: Histogram;
 
-  constructor() {
+  // Launch guardrails: observability
+  readonly bidE2eDurationMs: Histogram;
+  readonly dbPoolWaiting: Gauge;
+  readonly redisCmdLatencyMs: Histogram;
+
+  constructor(@Optional() private readonly dataSource?: DataSource) {
     this.registry = new Registry();
     const workerId = process.env.CLUSTER_WORKER_ID || '0';
     this.registry.setDefaultLabels({ app: 'auction-service', worker: workerId });
@@ -206,6 +212,39 @@ export class MetricsService {
       name: 'settlement_worker_duration_ms',
       help: 'Settlement worker tick duration in milliseconds',
       buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000],
+      registers: [this.registry],
+    });
+
+    // Launch guardrails: observability
+
+    this.bidE2eDurationMs = new Histogram({
+      name: 'bid_e2e_duration_ms',
+      help: 'Bid end-to-end duration from gateway entry to broadcast (ms)',
+      buckets: [25, 50, 100, 150, 250, 500, 1000, 2000, 5000],
+      registers: [this.registry],
+    });
+
+    this.dbPoolWaiting = new Gauge({
+      name: 'db_pool_waiting',
+      help: 'Number of clients waiting for a DB connection from the pool',
+      registers: [this.registry],
+      collect: () => {
+        try {
+          const pool = (this.dataSource?.driver as any)?.master;
+          if (pool && typeof pool.waitingCount === 'number') {
+            this.dbPoolWaiting.set(pool.waitingCount);
+          }
+        } catch {
+          // Pool not yet available or driver mismatch — skip
+        }
+      },
+    });
+
+    this.redisCmdLatencyMs = new Histogram({
+      name: 'redis_cmd_latency_ms',
+      help: 'Redis command latency in milliseconds',
+      labelNames: ['command'] as const,
+      buckets: [0.5, 1, 2, 5, 10, 25, 50, 100],
       registers: [this.registry],
     });
   }
