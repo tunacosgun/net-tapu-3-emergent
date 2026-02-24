@@ -24,7 +24,7 @@ import {
 import { MetricsService } from '../../../metrics/metrics.service';
 
 const BID_LOCK_PREFIX = 'bid:lock:auction:';
-const BID_LOCK_TTL_MS = 5000;
+const BID_LOCK_TTL_MS = 8000;
 
 export interface BidAcceptedResponse {
   bid_id: string;

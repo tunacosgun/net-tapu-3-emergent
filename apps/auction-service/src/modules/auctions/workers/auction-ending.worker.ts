@@ -61,6 +61,12 @@ export class AuctionEndingWorker implements OnModuleInit, OnModuleDestroy {
     this.processing = true;
 
     try {
+      // Guard: skip tick if Redis is unhealthy (we need locks for safety)
+      if (!this.redisLock.isHealthy()) {
+        this.logger.warn('AuctionEndingWorker skip: Redis unhealthy');
+        return;
+      }
+
       // Find auctions past their effective end time
       const expiredAuctions = await this.auctionRepo
         .createQueryBuilder('a')
