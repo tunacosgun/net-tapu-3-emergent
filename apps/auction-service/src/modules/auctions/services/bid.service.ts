@@ -241,7 +241,9 @@ export class BidService {
       ) ?? 60;
       const effectiveEnd = auction!.extendedUntil ?? auction!.scheduledEnd;
 
-      if (effectiveEnd && auction!.status === AuctionStatus.LIVE) {
+      const maxExtensions = this.config.get<number>('MAX_SNIPER_EXTENSIONS') ?? 5;
+
+      if (effectiveEnd && auction!.status === AuctionStatus.LIVE && auction!.extensionCount < maxExtensions) {
         const endTime = new Date(effectiveEnd).getTime();
         const now = Date.now();
         const remainingMs = endTime - now;
@@ -249,10 +251,11 @@ export class BidService {
         if (remainingMs > 0 && remainingMs <= sniperWindowSeconds * 1000) {
           newExtendedUntil = new Date(now + sniperWindowSeconds * 1000);
           auction!.extendedUntil = newExtendedUntil;
+          auction!.extensionCount = auction!.extensionCount + 1;
           sniperExtended = true;
           this.metrics?.auctionExtensionsTotal.inc();
           this.logger.log(
-            `SNIPER EXTENSION auction=${dto.auctionId} newEnd=${newExtendedUntil.toISOString()} remainingWas=${remainingMs}ms`,
+            `SNIPER EXTENSION auction=${dto.auctionId} newEnd=${newExtendedUntil.toISOString()} remainingWas=${remainingMs}ms extension=${auction!.extensionCount}/${maxExtensions}`,
           );
         }
       }

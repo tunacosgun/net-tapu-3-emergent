@@ -61,6 +61,9 @@ export class Auction {
   @Column({ name: 'extended_until', type: 'timestamptz', nullable: true })
   extendedUntil!: Date | null;
 
+  @Column({ name: 'extension_count', type: 'integer', default: 0 })
+  extensionCount!: number;
+
   @Column({ type: 'integer', name: 'bid_count', default: 0 })
   bidCount!: number;
 

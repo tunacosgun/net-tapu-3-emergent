@@ -277,6 +277,39 @@ export class AuctionGateway
       return;
     }
 
+    // ── Global bid rate limit: 200 bids per 3 seconds ─────────────
+    let globalRate: { allowed: boolean; current: number };
+    try {
+      globalRate = await this.redisLock.checkRateLimit('ws:bid:rate:global', 200, 3);
+    } catch (err) {
+      this.logger.error(
+        `CRITICAL: Redis global rate limit failed: ${(err as Error).message}`,
+      );
+      this.metrics.wsBidRejectionsTotal.inc({ reason_code: 'service_unavailable' });
+      client.emit('bid_rejected', {
+        type: 'BID_REJECTED',
+        reason_code: 'service_unavailable',
+        current_price: '',
+        message: 'Service temporarily unavailable. Please retry.',
+      } as BidRejectedMessage);
+      return;
+    }
+
+    if (!globalRate.allowed) {
+      this.logger.warn(
+        `Global rate limit hit: ${globalRate.current} bids in 3s window`,
+      );
+      this.metrics.globalRateLimitHitsTotal.inc();
+      this.metrics.wsBidRejectionsTotal.inc({ reason_code: 'global_rate_limited' });
+      client.emit('bid_rejected', {
+        type: 'BID_REJECTED',
+        reason_code: 'global_rate_limited',
+        current_price: '',
+        message: 'System is under heavy load. Please retry.',
+      } as BidRejectedMessage);
+      return;
+    }
+
     // ── Per-user rate limit: 5 bids per 3 seconds ────────────────
     let userRate: { allowed: boolean; current: number };
     try {

@@ -18,6 +18,7 @@ export class MetricsService {
   readonly redisHealthStatus: Gauge;
   readonly auctionRateLimitHitsTotal: Counter;
   readonly userRateLimitHitsTotal: Counter;
+  readonly globalRateLimitHitsTotal: Counter;
   readonly auctionExtensionsTotal: Counter;
   readonly auctionEndingsTotal: Counter;
   readonly auctionStateTransitionsTotal: Counter;
@@ -86,6 +87,12 @@ export class MetricsService {
     this.userRateLimitHitsTotal = new Counter({
       name: 'user_rate_limit_hits_total',
       help: 'Total user-level rate limit hits',
+      registers: [this.registry],
+    });
+
+    this.globalRateLimitHitsTotal = new Counter({
+      name: 'global_rate_limit_hits_total',
+      help: 'Total global bid rate limit hits',
       registers: [this.registry],
     });
 
