@@ -32,6 +32,15 @@ export class PosTransaction {
   @Column({ name: 'response_payload', type: 'jsonb', nullable: true })
   responsePayload!: Record<string, unknown> | null;
 
+  @Column({ name: 'callback_payload', type: 'jsonb', nullable: true })
+  callbackPayload!: Record<string, unknown> | null;
+
+  @Column({ name: 'callback_received_at', type: 'timestamptz', nullable: true })
+  callbackReceivedAt!: Date | null;
+
+  @Column({ name: 'callback_ip', type: 'varchar', length: 45, nullable: true })
+  callbackIp!: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

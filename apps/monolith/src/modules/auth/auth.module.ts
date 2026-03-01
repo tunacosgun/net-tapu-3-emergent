@@ -9,10 +9,20 @@ import { UserRole } from './entities/user-role.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { Consent } from './entities/consent.entity';
 import { DealerQuota } from './entities/dealer-quota.entity';
+import { PasswordResetToken } from './entities/password-reset-token.entity';
+import { EmailVerificationToken } from './entities/email-verification-token.entity';
+import { IpBan } from './entities/ip-ban.entity';
+import { LoginAttempt } from './entities/login-attempt.entity';
+import { NotificationQueue } from '../crm/entities/notification-queue.entity';
 import { AuthService } from './auth.service';
+import { PasswordResetService } from './services/password-reset.service';
+import { EmailVerificationService } from './services/email-verification.service';
+import { BanService } from './services/ban.service';
 import { AuthController } from './auth.controller';
+import { BanController } from './controllers/ban.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
+import { BanGuard } from './guards/ban.guard';
 
 @Module({
   imports: [
@@ -23,6 +33,11 @@ import { RolesGuard } from './guards/roles.guard';
       RefreshToken,
       Consent,
       DealerQuota,
+      PasswordResetToken,
+      EmailVerificationToken,
+      IpBan,
+      LoginAttempt,
+      NotificationQueue,
     ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
@@ -42,8 +57,16 @@ import { RolesGuard } from './guards/roles.guard';
       },
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RolesGuard],
-  exports: [AuthService, JwtStrategy, RolesGuard, TypeOrmModule],
+  controllers: [AuthController, BanController],
+  providers: [
+    AuthService,
+    PasswordResetService,
+    EmailVerificationService,
+    BanService,
+    JwtStrategy,
+    RolesGuard,
+    BanGuard,
+  ],
+  exports: [AuthService, BanService, JwtStrategy, RolesGuard, BanGuard, TypeOrmModule],
 })
 export class AuthModule {}

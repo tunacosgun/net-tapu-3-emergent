@@ -113,14 +113,14 @@ describe('Payments (e2e)', () => {
       .set('Authorization', `Bearer ${userToken}`)
       .send({
         parcelId,
-        amount: '1000.00',
+        amount: '75.00',
         paymentMethod: 'credit_card',
         idempotencyKey,
       })
       .expect(201);
 
     expect(res.body).toHaveProperty('id');
-    // Mock POS auto-provisions, so status transitions from pending → provisioned
+    // Mock POS auto-provisions for amounts <= 100 (non-3DS path)
     expect(['pending', 'provisioned']).toContain(res.body.status);
     paymentId = res.body.id;
   });
@@ -131,7 +131,7 @@ describe('Payments (e2e)', () => {
       .set('Authorization', `Bearer ${userToken}`)
       .send({
         parcelId,
-        amount: '1000.00',
+        amount: '75.00',
         paymentMethod: 'credit_card',
         idempotencyKey,
       });
@@ -172,7 +172,7 @@ describe('Payments (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         paymentId,
-        amount: '500.00',
+        amount: '25.00',
         reason: 'E2E test refund',
         idempotencyKey: `idem-${PREFIX}-refund-1`,
       })

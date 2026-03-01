@@ -1,19 +1,16 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Response } from 'express';
-import { Registry, collectDefaultMetrics } from 'prom-client';
-
-const registry = new Registry();
-const workerId = process.env.CLUSTER_WORKER_ID || '0';
-registry.setDefaultLabels({ app: 'monolith', worker: workerId });
-collectDefaultMetrics({ register: registry });
+import { MetricsService } from './metrics.service';
 
 @SkipThrottle()
 @Controller('metrics')
 export class MetricsController {
+  constructor(private readonly metrics: MetricsService) {}
+
   @Get()
   async getMetrics(@Res() res: Response): Promise<void> {
-    res.set('Content-Type', registry.contentType);
-    res.end(await registry.metrics());
+    res.set('Content-Type', this.metrics.registry.contentType);
+    res.end(await this.metrics.registry.metrics());
   }
 }

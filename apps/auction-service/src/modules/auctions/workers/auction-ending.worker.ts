@@ -9,8 +9,10 @@ import { Repository, DataSource } from 'typeorm';
 import { Auction } from '../entities/auction.entity';
 import { Bid } from '../entities/bid.entity';
 import { RedisLockService } from '../services/redis-lock.service';
-import { AuctionGateway } from '../gateways/auction.gateway';
 import { MetricsService } from '../../../metrics/metrics.service';
+import { OutboxWriterService } from '../services/outbox-writer.service';
+import { OutboxEventType } from '../entities/outbox-event.entity';
+import { AuctionEndingEvent, AuctionEndedEvent } from '../events/domain-event.types';
 import { AuctionStatus } from '@nettapu/shared';
 
 const WORKER_LOCK_PREFIX = 'auction:ending:lock:';
@@ -30,8 +32,8 @@ export class AuctionEndingWorker implements OnModuleInit, OnModuleDestroy {
     private readonly bidRepo: Repository<Bid>,
     private readonly dataSource: DataSource,
     private readonly redisLock: RedisLockService,
-    private readonly gateway: AuctionGateway,
     private readonly metrics: MetricsService,
+    private readonly outboxWriter: OutboxWriterService,
   ) {}
 
   onModuleInit(): void {
@@ -148,18 +150,23 @@ export class AuctionEndingWorker implements OnModuleInit, OnModuleDestroy {
 
       locked.status = AuctionStatus.ENDING as string;
       await qr.manager.save(Auction, locked);
+
+      // Write outbox event in same transaction
+      const endingEvent: AuctionEndingEvent = {
+        auction_id: auction.id,
+        time_remaining_ms: 0,
+      };
+      await this.outboxWriter.write(
+        qr, auction.id, OutboxEventType.AUCTION_ENDING,
+        endingEvent, `auction_ending:${auction.id}`,
+      );
+
       await qr.commitTransaction();
 
       this.logger.log(`Auction ${auction.id}: LIVE → ENDING`);
       this.metrics.auctionStateTransitionsTotal.inc({
         from: AuctionStatus.LIVE,
         to: AuctionStatus.ENDING,
-      });
-
-      // Broadcast to WebSocket clients
-      this.gateway.broadcastAuctionEnding(auction.id, {
-        type: 'AUCTION_ENDING',
-        time_remaining_ms: 0,
       });
     } catch (err) {
       if (qr.isTransactionActive) {
@@ -211,6 +218,24 @@ export class AuctionEndingWorker implements OnModuleInit, OnModuleDestroy {
       }
 
       await qr.manager.save(Auction, locked);
+
+      // Write outbox event in same transaction
+      const endedEvent: AuctionEndedEvent = {
+        auction_id: auction.id,
+        winner_id: locked.winnerId ?? null,
+        winner_id_masked: locked.winnerId
+          ? locked.winnerId.slice(0, 8) + '***'
+          : 'none',
+        winner_bid_id: locked.winnerBidId ?? null,
+        final_price: locked.finalPrice ?? '0',
+        bid_count: locked.bidCount,
+        ended_at: locked.endedAt!.toISOString(),
+      };
+      await this.outboxWriter.write(
+        qr, auction.id, OutboxEventType.AUCTION_ENDED,
+        endedEvent, `auction_ended:${auction.id}`,
+      );
+
       await qr.commitTransaction();
 
       this.logger.log(
@@ -220,15 +245,6 @@ export class AuctionEndingWorker implements OnModuleInit, OnModuleDestroy {
       this.metrics.auctionStateTransitionsTotal.inc({
         from: AuctionStatus.ENDING,
         to: AuctionStatus.ENDED,
-      });
-
-      // Broadcast AUCTION_ENDED to all connected clients
-      this.gateway.broadcastAuctionEnded(auction.id, {
-        type: 'AUCTION_ENDED',
-        winner_id_masked: locked.winnerId
-          ? locked.winnerId.slice(0, 8) + '***'
-          : 'none',
-        final_price: locked.finalPrice ?? '0',
       });
     } catch (err) {
       if (qr.isTransactionActive) {

@@ -1,4 +1,4 @@
-import { IsString, IsUUID, IsEnum, IsOptional, MaxLength, IsNotEmpty, Matches, Validate, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
+import { IsString, IsUUID, IsEnum, IsOptional, MaxLength, IsNotEmpty, Matches, Validate, ValidatorConstraint, ValidatorConstraintInterface, IsObject } from 'class-validator';
 import { PaymentMethod } from '@nettapu/shared';
 
 @ValidatorConstraint({ name: 'isPositiveAmount', async: false })
@@ -14,6 +14,10 @@ class IsPositiveAmount implements ValidatorConstraintInterface {
 export class InitiatePaymentDto {
   @IsUUID()
   parcelId!: string;
+
+  @IsUUID()
+  @IsOptional()
+  auctionId?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -44,4 +48,17 @@ export class InitiatePaymentDto {
   @IsString()
   @IsOptional()
   cardToken?: string;
+
+  @IsObject()
+  @IsOptional()
+  buyer?: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    ip: string;
+    phone?: string;
+    city?: string;
+    country?: string;
+    address?: string;
+  };
 }

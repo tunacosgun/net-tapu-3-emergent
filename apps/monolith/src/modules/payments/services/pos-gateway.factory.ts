@@ -4,12 +4,19 @@ import {
   IPosGateway,
   ProvisionRequest,
   ProvisionResponse,
+  ProvisionInitiationResponse,
+  CompleteProvisionRequest,
+  TransactionStatusResponse,
   CaptureProvisionRequest,
   CaptureProvisionResponse,
   CancelProvisionRequest,
   CancelProvisionResponse,
   PosRefundRequest,
   PosRefundResponse,
+  PaytrGateway,
+  PaytrConfig,
+  IyzicoGateway,
+  IyzicoConfig,
 } from '@nettapu/shared';
 import { MockPosGateway } from './mock-pos-gateway.service';
 
@@ -48,8 +55,16 @@ class TimeoutPosGateway implements IPosGateway {
     private readonly timeoutMs: number,
   ) {}
 
-  provision(req: ProvisionRequest): Promise<ProvisionResponse> {
-    return withTimeout(this.inner.provision(req), this.timeoutMs, 'provision');
+  initiateProvision(req: ProvisionRequest): Promise<ProvisionInitiationResponse> {
+    return withTimeout(this.inner.initiateProvision(req), this.timeoutMs, 'initiateProvision');
+  }
+
+  completeProvision(req: CompleteProvisionRequest): Promise<ProvisionResponse> {
+    return withTimeout(this.inner.completeProvision(req), this.timeoutMs, 'completeProvision');
+  }
+
+  verifyCallback(headers: Record<string, string>, body: Record<string, unknown>): boolean {
+    return this.inner.verifyCallback(headers, body);
   }
 
   capture(req: CaptureProvisionRequest): Promise<CaptureProvisionResponse> {
@@ -62,6 +77,17 @@ class TimeoutPosGateway implements IPosGateway {
 
   refund(req: PosRefundRequest): Promise<PosRefundResponse> {
     return withTimeout(this.inner.refund(req), this.timeoutMs, 'refund');
+  }
+
+  provision(req: ProvisionRequest): Promise<ProvisionResponse> {
+    return withTimeout(this.inner.provision(req), this.timeoutMs, 'provision');
+  }
+
+  queryTransactionStatus(posReference: string): Promise<TransactionStatusResponse> {
+    if (!this.inner.queryTransactionStatus) {
+      throw new Error('queryTransactionStatus not supported by this provider');
+    }
+    return withTimeout(this.inner.queryTransactionStatus(posReference), this.timeoutMs, 'queryTransactionStatus');
   }
 }
 
@@ -90,16 +116,66 @@ export function posGatewayFactory(config: ConfigService): IPosGateway {
       gateway = new MockPosGateway();
       break;
 
-    // case 'paytr':
-    //   gateway = new PaytrGateway(config);
-    //   break;
-    // case 'iyzico':
-    //   gateway = new IyzicoGateway(config);
-    //   break;
+    case 'paytr': {
+      const paytrConfig: PaytrConfig = {
+        merchantId: config.getOrThrow<string>('PAYTR_MERCHANT_ID'),
+        merchantKey: config.getOrThrow<string>('PAYTR_MERCHANT_KEY'),
+        merchantSalt: config.getOrThrow<string>('PAYTR_MERCHANT_SALT'),
+        callbackUrl: config.getOrThrow<string>('PAYTR_CALLBACK_URL'),
+        okUrl: config.getOrThrow<string>('PAYTR_OK_URL'),
+        failUrl: config.getOrThrow<string>('PAYTR_FAIL_URL'),
+        testMode: config.get<string>('PAYTR_TEST_MODE', '1') === '1',
+      };
+      const httpPost = async (url: string, data: URLSearchParams) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: data.toString(),
+            signal: controller.signal,
+          });
+          return { data: await res.json() };
+        } finally {
+          clearTimeout(timer);
+        }
+      };
+      gateway = new PaytrGateway(paytrConfig, httpPost, logger);
+      logger.log('POS provider initialized: paytr');
+      break;
+    }
+
+    case 'iyzico': {
+      const iyzicoConfig: IyzicoConfig = {
+        apiKey: config.getOrThrow<string>('IYZICO_API_KEY'),
+        secretKey: config.getOrThrow<string>('IYZICO_SECRET_KEY'),
+        baseUrl: config.get<string>('IYZICO_BASE_URL', 'https://sandbox-api.iyzipay.com'),
+        callbackUrl: config.getOrThrow<string>('IYZICO_CALLBACK_URL'),
+      };
+      const httpPostJson = async (url: string, body: unknown, headers: Record<string, string>) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+          return { data: await res.json() };
+        } finally {
+          clearTimeout(timer);
+        }
+      };
+      gateway = new IyzicoGateway(iyzicoConfig, httpPostJson, logger);
+      logger.log('POS provider initialized: iyzico');
+      break;
+    }
 
     default:
       throw new Error(
-        `Unknown POS_PROVIDER: "${provider}". Supported: mock`,
+        `Unknown POS_PROVIDER: "${provider}". Supported: mock, paytr, iyzico`,
       );
   }
 

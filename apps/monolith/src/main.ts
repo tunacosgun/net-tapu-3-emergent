@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { JsonLoggerService, clusterize } from '@nettapu/shared';
@@ -41,6 +41,18 @@ async function bootstrap() {
     process.exit(1);
   }
 
+  const posProvider = process.env.POS_PROVIDER;
+  if (
+    nodeEnv === 'production' &&
+    (!posProvider || posProvider === 'mock')
+  ) {
+    jsonLogger.fatal(
+      'FATAL: POS_PROVIDER must be set to a real provider in production (not mock). Refusing to start.',
+      'Bootstrap',
+    );
+    process.exit(1);
+  }
+
   const app = await NestFactory.create(AppModule, { logger: jsonLogger });
 
   app.use(
@@ -65,7 +77,9 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: [{ path: 'metrics', method: RequestMethod.GET }],
+  });
 
   // ── Swagger / OpenAPI ───────────────────────────────────────
   if (nodeEnv !== 'production') {

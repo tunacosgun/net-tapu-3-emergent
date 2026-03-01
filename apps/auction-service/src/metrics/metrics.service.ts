@@ -41,8 +41,18 @@ export class MetricsService {
   readonly settlementBacklogGauge: Gauge;
   readonly settlementWorkerDurationMs: Histogram;
 
+  // Outbox relay metrics
+  readonly outboxEventsProcessedTotal: Counter;
+  readonly outboxDeadLetterTotal: Counter;
+  readonly outboxRetriesTotal: Counter;
+  readonly outboxStaleReclaimedTotal: Counter;
+  readonly outboxRelayDurationMs: Histogram;
+  readonly outboxPendingGauge: Gauge;
+
   // Launch guardrails: observability
   readonly bidE2eDurationMs: Histogram;
+  readonly dbPoolTotal: Gauge;
+  readonly dbPoolIdle: Gauge;
   readonly dbPoolWaiting: Gauge;
   readonly redisCmdLatencyMs: Histogram;
 
@@ -215,6 +225,48 @@ export class MetricsService {
       registers: [this.registry],
     });
 
+    // Outbox relay metrics
+
+    this.outboxEventsProcessedTotal = new Counter({
+      name: 'outbox_events_processed_total',
+      help: 'Total outbox events successfully processed',
+      labelNames: ['event_type'] as const,
+      registers: [this.registry],
+    });
+
+    this.outboxDeadLetterTotal = new Counter({
+      name: 'outbox_dead_letter_total',
+      help: 'Total outbox events moved to dead letter after max retries',
+      labelNames: ['event_type'] as const,
+      registers: [this.registry],
+    });
+
+    this.outboxRetriesTotal = new Counter({
+      name: 'outbox_retries_total',
+      help: 'Total outbox event processing retries',
+      labelNames: ['event_type'] as const,
+      registers: [this.registry],
+    });
+
+    this.outboxStaleReclaimedTotal = new Counter({
+      name: 'outbox_stale_reclaimed_total',
+      help: 'Total stale processing events reclaimed back to pending',
+      registers: [this.registry],
+    });
+
+    this.outboxRelayDurationMs = new Histogram({
+      name: 'outbox_relay_duration_ms',
+      help: 'Outbox relay worker tick duration in milliseconds',
+      buckets: [5, 10, 25, 50, 100, 250, 500, 1000],
+      registers: [this.registry],
+    });
+
+    this.outboxPendingGauge = new Gauge({
+      name: 'outbox_pending_gauge',
+      help: 'Number of pending outbox events in current batch',
+      registers: [this.registry],
+    });
+
     // Launch guardrails: observability
 
     this.bidE2eDurationMs = new Histogram({
@@ -222,6 +274,38 @@ export class MetricsService {
       help: 'Bid end-to-end duration from gateway entry to broadcast (ms)',
       buckets: [25, 50, 100, 150, 250, 500, 1000, 2000, 5000],
       registers: [this.registry],
+    });
+
+    this.dbPoolTotal = new Gauge({
+      name: 'db_pool_total',
+      help: 'Total connections in the DB pool',
+      registers: [this.registry],
+      collect: () => {
+        try {
+          const pool = (this.dataSource?.driver as any)?.master;
+          if (pool && typeof pool.totalCount === 'number') {
+            this.dbPoolTotal.set(pool.totalCount);
+          }
+        } catch {
+          // Pool not yet available — skip
+        }
+      },
+    });
+
+    this.dbPoolIdle = new Gauge({
+      name: 'db_pool_idle',
+      help: 'Idle connections in the DB pool',
+      registers: [this.registry],
+      collect: () => {
+        try {
+          const pool = (this.dataSource?.driver as any)?.master;
+          if (pool && typeof pool.idleCount === 'number') {
+            this.dbPoolIdle.set(pool.idleCount);
+          }
+        } catch {
+          // Pool not yet available — skip
+        }
+      },
     });
 
     this.dbPoolWaiting = new Gauge({

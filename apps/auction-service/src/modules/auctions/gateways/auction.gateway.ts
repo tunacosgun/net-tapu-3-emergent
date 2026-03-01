@@ -400,27 +400,9 @@ export class AuctionGateway
         idempotencyKey: data.idempotencyKey,
       };
 
-      const result = await this.bidService.placeBid(dto, userId, ipAddress);
-
-      // Broadcast accepted bid to entire auction room
-      this.broadcastBidAccepted(data.auctionId, {
-        type: 'BID_ACCEPTED',
-        bid_id: result.bid_id,
-        user_id_masked: userId.slice(0, 8) + '***',
-        amount: result.amount,
-        server_timestamp: result.server_timestamp,
-        new_bid_count: result.new_bid_count,
-      });
-
-      // Broadcast sniper extension if triggered
-      if (result.sniper_extended && result.extended_until) {
-        this.broadcastAuctionExtended(data.auctionId, {
-          type: 'AUCTION_EXTENDED',
-          auction_id: data.auctionId,
-          new_end_time: result.extended_until,
-          triggered_by_bid_id: result.bid_id,
-        });
-      }
+      // Outbox events (BID_ACCEPTED, SNIPER_EXTENSION) are written
+      // in the same transaction as the bid — relay worker handles broadcast.
+      await this.bidService.placeBid(dto, userId, ipAddress);
 
       this.metrics.bidE2eDurationMs.observe(Date.now() - bidStartMs);
     } catch (err: unknown) {
