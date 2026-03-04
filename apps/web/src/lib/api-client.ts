@@ -1,7 +1,6 @@
 import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/auth-store';
-import type { LoginResponse } from '@/types';
 
 // ── Rate-limit error ────────────────────────────────────────────────────
 
@@ -23,14 +22,20 @@ function parseRetryAfter(headers: Record<string, string>): number {
   return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : 60;
 }
 
+function getCookie(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 const apiClient = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach access token to every request
+// Attach access token: Zustand first, then nettapu_at cookie (survives refresh)
 apiClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
+  const token = useAuthStore.getState().accessToken || getCookie('nettapu_at');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -91,20 +96,12 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const { refreshToken, setTokens, clearTokens } =
-        useAuthStore.getState();
-
-      if (!refreshToken) {
-        clearTokens();
-        isRefreshing = false;
-        processQueue(error, null);
-        return Promise.reject(error);
-      }
+      const { setTokens, clearTokens } = useAuthStore.getState();
 
       try {
-        const { data } = await axios.post<LoginResponse>(
-          '/api/v1/auth/refresh',
-          { refreshToken },
+        // Server-side refresh via Route Handler (reads httpOnly RT cookie)
+        const { data } = await axios.post<{ accessToken: string; refreshToken: string }>(
+          '/api/auth/session/refresh',
         );
         setTokens(data.accessToken, data.refreshToken);
         processQueue(null, data.accessToken);

@@ -3,10 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useState, useCallback } from 'react';
 import apiClient from '@/lib/api-client';
 import { showApiError } from '@/components/api-error-toast';
 import { parcelSchema, type ParcelFormData } from '@/lib/validators';
-import { FormField, FormTextarea, FormCheckbox } from '@/components/form-field';
+import { FormField, FormTextarea, FormCheckbox, FormSelect } from '@/components/form-field';
+import { AddressGeocoder } from '@/components/address-geocoder';
 import { useRateLimit } from '@/hooks/use-rate-limit';
 import { Button } from '@/components/ui';
 
@@ -17,17 +19,114 @@ export default function AdminNewParcelPage() {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ParcelFormData>({
     resolver: zodResolver(parcelSchema),
-    defaultValues: { isAuctionEligible: false, isFeatured: false },
+    defaultValues: { isAuctionEligible: false, isFeatured: false, latitude: '', longitude: '' },
   });
+
+  const selectedCity = watch('city');
+  const selectedDistrict = watch('district');
+  const watchedNeighborhood = watch('neighborhood');
+  const watchedAddress = watch('address');
+  const watchedLat = watch('latitude');
+  const watchedLng = watch('longitude');
+
+  // ── Location data state ──────────────────────────────────────────────
+  const [cities, setCities] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<string[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
+
+  // ── Fetch cities on mount ────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .get<string[]>('/locations/cities')
+      .then(({ data }) => {
+        if (!cancelled) setCities(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ── Fetch districts when city changes ────────────────────────────────
+  const fetchDistricts = useCallback(
+    async (city: string) => {
+      if (!city) {
+        setDistricts([]);
+        setNeighborhoods([]);
+        return;
+      }
+      try {
+        const { data } = await apiClient.get<string[]>('/locations/districts', {
+          params: { city },
+        });
+        setDistricts(data);
+      } catch {
+        setDistricts([]);
+      }
+      setNeighborhoods([]);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    fetchDistricts(selectedCity);
+  }, [selectedCity, fetchDistricts]);
+
+  // ── Fetch neighborhoods when district changes ────────────────────────
+  const fetchNeighborhoods = useCallback(
+    async (city: string, district: string) => {
+      if (!city || !district) {
+        setNeighborhoods([]);
+        return;
+      }
+      try {
+        const { data } = await apiClient.get<string[]>(
+          '/locations/neighborhoods',
+          { params: { city, district } },
+        );
+        setNeighborhoods(data);
+      } catch {
+        setNeighborhoods([]);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    fetchNeighborhoods(selectedCity, selectedDistrict);
+  }, [selectedCity, selectedDistrict, fetchNeighborhoods]);
+
+  // ── Reset dependent fields on parent change ──────────────────────────
+  function handleCityChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const city = e.target.value;
+    setValue('city', city, { shouldValidate: true });
+    setValue('district', '', { shouldValidate: false });
+    setValue('neighborhood', '', { shouldValidate: false });
+  }
+
+  function handleDistrictChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const district = e.target.value;
+    setValue('district', district, { shouldValidate: true });
+    setValue('neighborhood', '', { shouldValidate: false });
+  }
+
+  function handleNeighborhoodChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setValue('neighborhood', e.target.value, { shouldValidate: true });
+  }
 
   async function onSubmit(data: ParcelFormData) {
     const body: Record<string, unknown> = {
       ...data,
       neighborhood: data.neighborhood || undefined,
       address: data.address || undefined,
+      latitude: data.latitude || undefined,
+      longitude: data.longitude || undefined,
       zoningStatus: data.zoningStatus || undefined,
       landType: data.landType || undefined,
       ada: data.ada || undefined,
@@ -53,29 +152,55 @@ export default function AdminNewParcelPage() {
           {...register('title')}
         />
         <div className="grid grid-cols-2 gap-4">
-          <FormField
+          <FormSelect
             label="Şehir *"
             error={errors.city?.message}
-            {...register('city')}
+            options={cities}
+            placeholder="Şehir seçiniz..."
+            value={selectedCity || ''}
+            onChange={handleCityChange}
           />
-          <FormField
+          <FormSelect
             label="İlçe *"
             error={errors.district?.message}
-            {...register('district')}
+            options={districts}
+            placeholder="İlçe seçiniz..."
+            value={selectedDistrict || ''}
+            onChange={handleDistrictChange}
+            disabled={!selectedCity}
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <FormField
+          <FormSelect
             label="Mahalle"
             error={errors.neighborhood?.message}
-            {...register('neighborhood')}
+            options={neighborhoods}
+            placeholder="Mahalle seçiniz..."
+            value={watch('neighborhood') || ''}
+            onChange={handleNeighborhoodChange}
+            disabled={!selectedDistrict}
           />
           <FormField
-            label="Adres"
+            label="Cadde / Sokak / Adres"
             error={errors.address?.message}
             {...register('address')}
           />
         </div>
+
+        {/* ── Address Geocoder / Map ── */}
+        <AddressGeocoder
+          latitude={watchedLat}
+          longitude={watchedLng}
+          city={selectedCity}
+          district={selectedDistrict}
+          neighborhood={watchedNeighborhood}
+          address={watchedAddress}
+          onCoordsChange={(lat, lng) => {
+            setValue('latitude', lat, { shouldValidate: true });
+            setValue('longitude', lng, { shouldValidate: true });
+          }}
+        />
+
         <div className="grid grid-cols-3 gap-4">
           <FormField
             label="Alan (m²)"

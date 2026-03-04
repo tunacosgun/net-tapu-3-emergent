@@ -5,36 +5,56 @@ import { useAuthStore } from '@/stores/auth-store';
 import apiClient from '@/lib/api-client';
 import type { LoginResponse } from '@/types';
 
+function getCookie(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
+function isJwtExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 < Date.now() - 30_000; // 30 s buffer
+  } catch {
+    return true;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setTokens, clearTokens, setLoading } = useAuthStore();
 
-  // Attempt silent refresh on mount
   useEffect(() => {
     let cancelled = false;
 
-    async function silentRefresh() {
+    async function hydrate() {
+      // 1. Try the non-httpOnly AT cookie (survives refresh)
+      const at = getCookie('nettapu_at');
+      if (at && !isJwtExpired(at)) {
+        if (!cancelled) setTokens(at, '');
+        return;
+      }
+
+      // 2. AT missing / expired → server-side refresh via httpOnly RT cookie
       try {
-        const rt = sessionStorage.getItem('rt');
-        if (!rt) {
-          setLoading(false);
+        const res = await fetch('/api/auth/session/refresh', { method: 'POST' });
+        if (!res.ok) {
+          if (!cancelled) {
+            setLoading(false);
+            clearTokens();
+          }
           return;
         }
-
-        const { data } = await apiClient.post<LoginResponse>('/auth/refresh', {
-          refreshToken: rt,
-        });
-
-        if (!cancelled) {
-          setTokens(data.accessToken, data.refreshToken);
-        }
+        const { accessToken, refreshToken } = await res.json();
+        if (!cancelled) setTokens(accessToken, refreshToken);
       } catch {
         if (!cancelled) {
+          setLoading(false);
           clearTokens();
         }
       }
     }
 
-    silentRefresh();
+    hydrate();
     return () => {
       cancelled = true;
     };
@@ -84,7 +104,12 @@ export function useRegister() {
 export function useLogout() {
   const { clearTokens } = useAuthStore();
 
-  return useCallback(() => {
+  return useCallback(async () => {
+    try {
+      await fetch('/api/auth/session', { method: 'DELETE' });
+    } catch {
+      /* best-effort */
+    }
     clearTokens();
     window.location.href = '/';
   }, [clearTokens]);

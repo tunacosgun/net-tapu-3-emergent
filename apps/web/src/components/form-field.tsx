@@ -1,4 +1,4 @@
-import { type InputHTMLAttributes, forwardRef } from 'react';
+import { type InputHTMLAttributes, type SelectHTMLAttributes, forwardRef } from 'react';
 
 const inputClass =
   'mt-1 block w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500';
@@ -66,6 +66,39 @@ export const FormCheckbox = forwardRef<HTMLInputElement, FormCheckboxProps>(
         {label}
         {error && <span className="text-xs text-red-600">{error}</span>}
       </label>
+    );
+  },
+);
+
+interface FormSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  label: string;
+  error?: string;
+  options: string[];
+  placeholder?: string;
+}
+
+export const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
+  function FormSelect(
+    { label, error, options, placeholder = 'Seçiniz...', className, ...rest },
+    ref,
+  ) {
+    return (
+      <div className={className}>
+        <label className="block text-sm font-medium">{label}</label>
+        <select
+          ref={ref}
+          {...rest}
+          className={error ? errorInputClass : inputClass}
+        >
+          <option value="">{placeholder}</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+        {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      </div>
     );
   },
 );

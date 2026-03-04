@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import apiClient from '@/lib/api-client';
-import type { Auction, PaginatedResponse } from '@/types';
+import type { Parcel, PaginatedResponse } from '@/types';
 
 // Turkey's 81 provinces with approximate center coordinates
 const PROVINCES: { name: string; x: number; y: number }[] = [
@@ -93,17 +93,7 @@ interface ProvinceData {
   name: string;
   x: number;
   y: number;
-  liveCount: number;
-  scheduledCount: number;
-  endedCount: number;
-  totalCount: number;
-}
-
-function getColor(data: ProvinceData): string {
-  if (data.liveCount > 0) return '#22c55e'; // live green
-  if (data.scheduledCount > 0) return '#3b82f6'; // scheduled blue
-  if (data.endedCount > 0) return '#6b7280'; // ended gray
-  return 'transparent';
+  parcelCount: number;
 }
 
 interface TurkeyMapProps {
@@ -111,59 +101,51 @@ interface TurkeyMapProps {
 }
 
 export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
-  const [auctions, setAuctions] = useState<Auction[]>([]);
+  const [parcels, setParcels] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    async function fetchAuctions() {
+    async function fetchAllParcels() {
       try {
-        const { data } = await apiClient.get<PaginatedResponse<Auction>>('/auctions', {
-          params: { limit: 100 },
-        });
-        if (!cancelled) setAuctions(data.data);
+        const all: Parcel[] = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const { data } = await apiClient.get<PaginatedResponse<Parcel>>('/parcels', {
+            params: { status: 'active', limit: 100, page },
+          });
+          all.push(...data.data);
+          totalPages = data.meta.totalPages;
+          page++;
+        } while (page <= totalPages && !cancelled);
+        if (!cancelled) setParcels(all);
       } catch {
         // Silently fail — map still renders empty
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
-    fetchAuctions();
+    fetchAllParcels();
     return () => { cancelled = true; };
   }, []);
 
-  // We need a mapping from auction.parcelId to city, which requires parcels.
-  // For now, we use auction.title which typically contains the city name.
-  // This is a best-effort aggregation.
+  // Aggregate parcels by city — exact match against parcel.city field
   const provinceData = useMemo(() => {
-    const map = new Map<string, { live: number; scheduled: number; ended: number }>();
-
-    for (const auction of auctions) {
-      // Try to match province from auction title
-      for (const prov of PROVINCES) {
-        if (auction.title.includes(prov.name)) {
-          const existing = map.get(prov.name) || { live: 0, scheduled: 0, ended: 0 };
-          if (auction.status === 'live' || auction.status === 'ending') existing.live++;
-          else if (auction.status === 'scheduled' || auction.status === 'deposit_open') existing.scheduled++;
-          else if (auction.status === 'ended' || auction.status === 'settled') existing.ended++;
-          map.set(prov.name, existing);
-          break;
-        }
+    const countByCity = new Map<string, number>();
+    for (const parcel of parcels) {
+      const city = parcel.city;
+      if (city) {
+        countByCity.set(city, (countByCity.get(city) || 0) + 1);
       }
     }
 
-    return PROVINCES.map((prov): ProvinceData => {
-      const counts = map.get(prov.name) || { live: 0, scheduled: 0, ended: 0 };
-      return {
-        ...prov,
-        liveCount: counts.live,
-        scheduledCount: counts.scheduled,
-        endedCount: counts.ended,
-        totalCount: counts.live + counts.scheduled + counts.ended,
-      };
-    });
-  }, [auctions]);
+    return PROVINCES.map((prov): ProvinceData => ({
+      ...prov,
+      parcelCount: countByCity.get(prov.name) || 0,
+    }));
+  }, [parcels]);
 
   const hovered = provinceData.find((p) => p.name === hoveredProvince);
 
@@ -178,13 +160,7 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
       {/* Legend */}
       <div className="flex gap-4 mb-4 text-xs">
         <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-[#22c55e]" /> Canlı
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-[#3b82f6]" /> Planlanan
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-[#6b7280]" /> Sona Eren
+          <span className="inline-block h-3 w-3 rounded-full bg-brand-500" /> Arsa Mevcut
         </span>
       </div>
 
@@ -198,10 +174,9 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
         <rect x="180" y="180" width="620" height="230" fill="transparent" />
 
         {provinceData.map((prov) => {
-          const color = getColor(prov);
-          const hasData = prov.totalCount > 0;
+          const hasData = prov.parcelCount > 0;
           const isHovered = hoveredProvince === prov.name;
-          const radius = hasData ? Math.min(6 + prov.totalCount * 2, 14) : 4;
+          const radius = hasData ? Math.min(6 + prov.parcelCount * 2, 14) : 4;
 
           return (
             <g
@@ -215,8 +190,8 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
                 cx={prov.x}
                 cy={prov.y}
                 r={isHovered ? radius + 2 : radius}
-                fill={hasData ? color : 'var(--muted)'}
-                stroke={isHovered ? 'var(--foreground)' : hasData ? color : 'var(--border)'}
+                fill={hasData ? '#22c55e' : 'var(--muted)'}
+                stroke={isHovered ? 'var(--foreground)' : hasData ? '#22c55e' : 'var(--border)'}
                 strokeWidth={isHovered ? 2 : 1}
                 opacity={hasData ? 0.85 : 0.4}
                 className="transition-all duration-150"
@@ -229,7 +204,7 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
                   dominantBaseline="middle"
                   className="fill-white text-[7px] font-bold pointer-events-none"
                 >
-                  {prov.totalCount}
+                  {prov.parcelCount}
                 </text>
               )}
             </g>
@@ -241,14 +216,12 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
       {hovered && (
         <div className="absolute top-2 right-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 shadow-lg text-sm">
           <p className="font-semibold">{hovered.name}</p>
-          {hovered.totalCount > 0 ? (
-            <div className="mt-1 space-y-0.5 text-xs text-[var(--muted-foreground)]">
-              {hovered.liveCount > 0 && <p>Canlı: {hovered.liveCount}</p>}
-              {hovered.scheduledCount > 0 && <p>Planlanan: {hovered.scheduledCount}</p>}
-              {hovered.endedCount > 0 && <p>Sona Eren: {hovered.endedCount}</p>}
-            </div>
+          {hovered.parcelCount > 0 ? (
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+              {hovered.parcelCount} arsa
+            </p>
           ) : (
-            <p className="mt-1 text-xs text-[var(--muted-foreground)]">Açık artırma yok</p>
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">Arsa yok</p>
           )}
         </div>
       )}

@@ -37,24 +37,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setTokens: (accessToken, refreshToken) => {
     const user = decodeJwtPayload(accessToken);
-    try {
-      sessionStorage.setItem('rt', refreshToken);
-    } catch {
-      // SSR or storage unavailable
-    }
-    // Set cookies for Edge middleware route gating
-    try {
-      document.cookie = 'has_session=1; path=/; SameSite=Lax';
-      // Expose highest role for middleware admin gate (frontend UX only)
-      const primaryRole = user?.roles?.includes('superadmin')
-        ? 'superadmin'
-        : user?.roles?.includes('admin')
-          ? 'admin'
-          : 'user';
-      document.cookie = `role=${primaryRole}; path=/; SameSite=Lax`;
-    } catch {
-      // SSR
-    }
+    // Cookies are set server-side via /api/auth/session Route Handler.
+    // Zustand holds in-memory copy for the current page lifecycle.
     set({
       accessToken,
       refreshToken,
@@ -65,12 +49,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   clearTokens: () => {
+    // Clear the non-httpOnly AT cookie (httpOnly ones via DELETE /api/auth/session)
     try {
-      sessionStorage.removeItem('rt');
-    } catch {
-      // SSR or storage unavailable
-    }
-    try {
+      document.cookie = 'nettapu_at=; path=/; Max-Age=0';
       document.cookie = 'has_session=; path=/; Max-Age=0';
       document.cookie = 'role=; path=/; Max-Age=0';
     } catch {

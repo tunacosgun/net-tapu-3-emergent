@@ -25,6 +25,10 @@ export interface OptimisticBid {
   previousBidCount: number;
 }
 
+// Deposit is valid if payment status (payments.payments) or deposit status
+// (payments.deposits) indicates funds are secured for the auction.
+const ACTIVE_DEPOSIT_STATUSES = ['provisioned', 'completed', 'held', 'collected'];
+
 interface AuctionState {
   // REST-fetched auction detail
   auctionDetail: Auction | null;
@@ -35,6 +39,7 @@ interface AuctionState {
   userDeposit: Payment | null;
   depositLoading: boolean;
   hasActiveDeposit: boolean;
+  depositVersion: number;
 
   // WS-driven live state
   auctionId: string | null;
@@ -59,6 +64,7 @@ interface AuctionState {
   setAuctionError: (error: string | null) => void;
   setUserDeposit: (payment: Payment | null) => void;
   setDepositLoading: (loading: boolean) => void;
+  invalidateDeposit: () => void;
 
   // WS actions
   applyAuctionState: (msg: AuctionStateMessage) => void;
@@ -83,6 +89,7 @@ const initialState = {
   userDeposit: null,
   depositLoading: true,
   hasActiveDeposit: false,
+  depositVersion: 0,
   auctionId: null,
   status: null,
   currentPrice: null,
@@ -122,11 +129,19 @@ export const useAuctionStore = create<AuctionState>((set) => ({
       userDeposit: payment,
       depositLoading: false,
       hasActiveDeposit: payment
-        ? ['provisioned', 'completed'].includes(payment.status)
+        ? ACTIVE_DEPOSIT_STATUSES.includes(payment.status)
         : false,
     }),
 
   setDepositLoading: (loading) => set({ depositLoading: loading }),
+
+  invalidateDeposit: () =>
+    set((state) => ({
+      userDeposit: null,
+      depositLoading: true,
+      hasActiveDeposit: false,
+      depositVersion: state.depositVersion + 1,
+    })),
 
   applyAuctionState: (msg) =>
     set({

@@ -1,8 +1,10 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+import path from 'path';
 import { JsonLoggerService, clusterize } from '@nettapu/shared';
 import { AppModule } from './app.module';
 
@@ -53,7 +55,11 @@ async function bootstrap() {
     process.exit(1);
   }
 
-  const app = await NestFactory.create(AppModule, { logger: jsonLogger });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: jsonLogger });
+
+  // Serve uploaded files (watermarked images, thumbnails)
+  const uploadsDir = process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads');
+  app.useStaticAssets(uploadsDir, { prefix: '/uploads/' });
 
   app.use(
     helmet({

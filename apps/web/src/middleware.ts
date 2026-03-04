@@ -26,7 +26,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hasSession = request.cookies.get('has_session')?.value === '1';
+  const hasSession = request.cookies.get('nettapu_session')?.value === '1';
 
   // No session → redirect to login
   if (!hasSession) {
@@ -35,10 +35,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Admin routes: check role cookie (set at login from decoded JWT)
+  // Admin routes: check role cookie (httpOnly, set by /api/auth/session)
   // This is a frontend UX gate — backend RolesGuard is authoritative.
   if (isAdminPath(pathname)) {
-    const role = request.cookies.get('role')?.value ?? '';
+    const role = request.cookies.get('nettapu_role')?.value ?? '';
     if (!ADMIN_ROLES.has(role)) {
       return NextResponse.redirect(new URL('/', request.url));
     }

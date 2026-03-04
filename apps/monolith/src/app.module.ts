@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { CorrelationMiddleware } from '@nettapu/shared';
@@ -13,6 +14,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { LocationsModule } from './modules/locations/locations.module';
 import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { SeedModule } from './seed/seed.module';
@@ -73,6 +75,7 @@ const isLoadTest = process.env.NODE_ENV === 'loadtest';
         },
       }),
     }),
+    ScheduleModule.forRoot(),
     HealthModule,
     MetricsModule,
     AuthModule,
@@ -83,6 +86,7 @@ const isLoadTest = process.env.NODE_ENV === 'loadtest';
     IntegrationsModule,
     CampaignsModule,
     NotificationsModule,
+    LocationsModule,
     SeedModule,
   ],
   providers: [

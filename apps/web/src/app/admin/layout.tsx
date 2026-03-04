@@ -11,35 +11,45 @@ const navSections = [
   {
     title: null,
     items: [
-      { href: '/admin', label: 'Genel Bakış' },
+      { href: '/admin', label: 'Genel Bakış', icon: '🏠' },
+      { href: '/admin/analytics', label: 'Analitik', icon: '📊' },
     ],
   },
   {
     title: 'Gayrimenkul',
     items: [
-      { href: '/admin/parcels', label: 'Arsalar' },
-      { href: '/admin/auctions', label: 'Açık Artırmalar' },
+      { href: '/admin/parcels', label: 'Arsalar', icon: '📦' },
+      { href: '/admin/auctions', label: 'Açık Artırmalar', icon: '🔨' },
     ],
   },
   {
     title: 'Finans',
     items: [
-      { href: '/admin/deposits', label: 'Depozitolar' },
-      { href: '/admin/reconciliation', label: 'Mutabakat' },
+      { href: '/admin/deposits', label: 'Depozitolar', icon: '💳' },
+      { href: '/admin/reconciliation', label: 'Mutabakat', icon: '📋' },
     ],
   },
   {
     title: 'CRM',
     items: [
-      { href: '/admin/contacts', label: 'İletişim Talepleri' },
-      { href: '/admin/appointments', label: 'Randevular' },
-      { href: '/admin/offers', label: 'Teklifler' },
+      { href: '/admin/contacts', label: 'İletişim Talepleri', icon: '📞' },
+      { href: '/admin/appointments', label: 'Randevular', icon: '📅' },
+      { href: '/admin/offers', label: 'Teklifler', icon: '💰' },
+    ],
+  },
+  {
+    title: 'Pazarlama',
+    items: [
+      { href: '/admin/campaigns', label: 'Kampanyalar', icon: '🎯' },
+      { href: '/admin/dealers', label: 'Bayiler / Danışmanlar', icon: '🤝' },
     ],
   },
   {
     title: 'Sistem',
     items: [
-      { href: '/admin/settings', label: 'Ayarlar' },
+      { href: '/admin/settings', label: 'Ayarlar', icon: '⚙️' },
+      { href: '/admin/bans', label: 'Yasaklamalar', icon: '🚫' },
+      { href: '/admin/notifications', label: 'Bildirimler', icon: '🔔' },
     ],
   },
 ];
@@ -95,8 +105,9 @@ export default function AdminLayout({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="block rounded-md px-3 py-2 text-sm hover:bg-[var(--background)] transition-colors"
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-[var(--background)] transition-colors"
                   >
+                    <span className="text-base">{item.icon}</span>
                     {item.label}
                   </Link>
                 ))}

@@ -62,7 +62,7 @@ export default function DepositPage() {
         setThreeDsUrl(data.threeDsRedirectUrl);
       } else {
         setSuccess(true);
-        setTimeout(() => router.push(`/auctions/${auctionId}`), 2000);
+        setTimeout(() => router.push(`/auctions/${auctionId}?depositSuccess=1`), 2000);
       }
     } catch (err) {
       if (err instanceof AxiosError) {

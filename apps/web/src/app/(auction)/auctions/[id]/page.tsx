@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, FormEvent } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useRef, useState, useCallback, FormEvent } from 'react';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuctionStore } from '@/stores/auction-store';
 import { useAuthStore } from '@/stores/auth-store';
@@ -14,7 +14,7 @@ import {
 import apiClient from '@/lib/api-client';
 import { formatPrice } from '@/lib/format';
 import { Badge, Card, Alert, Button, LoadingState } from '@/components/ui';
-import type { Auction, Payment } from '@/types';
+import type { Auction } from '@/types';
 
 function formatTime(ms: number | null): string {
   if (ms === null || ms <= 0) return '00:00';
@@ -47,6 +47,8 @@ const statusColors: Record<string, string> = {
 
 export default function AuctionDetailPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const auctionId = params.id;
   const userId = useAuthStore((s) => s.user?.sub);
 
@@ -56,6 +58,7 @@ export default function AuctionDetailPage() {
     auctionError,
     hasActiveDeposit,
     depositLoading,
+    depositVersion,
     status,
     currentPrice,
     bidCount,
@@ -70,10 +73,20 @@ export default function AuctionDetailPage() {
     setAuctionError,
     setUserDeposit,
     setDepositLoading,
+    invalidateDeposit,
   } = useAuctionStore();
 
   const [bidAmount, setBidAmount] = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // 0) If redirected from deposit page, invalidate stale deposit cache
+  useEffect(() => {
+    if (searchParams.get('depositSuccess') === '1') {
+      invalidateDeposit();
+      // Strip query param without full reload
+      router.replace(`/auctions/${auctionId}`, { scroll: false });
+    }
+  }, [searchParams, auctionId, router, invalidateDeposit]);
 
   // 1) Fetch auction detail from REST
   useEffect(() => {
@@ -92,32 +105,41 @@ export default function AuctionDetailPage() {
     return () => { cancelled = true; };
   }, [auctionId, setAuctionDetail, setAuctionError]);
 
-  // 2) Fetch user deposit status via payments API
-  useEffect(() => {
+  // 2) Fetch participant eligibility from auction-service (single source of truth).
+  //    Re-runs when depositVersion bumps (after redirect from deposit page).
+  const fetchDeposit = useCallback(async () => {
     if (!userId) {
       setDepositLoading(false);
       return;
     }
+
+    setDepositLoading(true);
+
+    try {
+      const { data } = await apiClient.get<{ eligible: boolean; depositStatus: string | null }>(
+        `/auctions/${auctionId}/my-participation`,
+      );
+      // Bridge into existing store shape: eligible + held/collected = active deposit
+      setUserDeposit(
+        data.eligible
+          ? { status: data.depositStatus ?? 'held' } as any
+          : null,
+      );
+    } catch {
+      setUserDeposit(null);
+    }
+  }, [auctionId, userId, setUserDeposit, setDepositLoading]);
+
+  useEffect(() => {
     let cancelled = false;
 
-    async function fetchDepositPayment() {
-      try {
-        const { data } = await apiClient.get<{ data: Payment[]; meta: unknown }>(
-          `/payments`,
-          { params: { auctionId, limit: 1 } },
-        );
-        if (!cancelled) {
-          const payment = data.data?.[0] ?? null;
-          setUserDeposit(payment);
-        }
-      } catch {
-        if (!cancelled) setUserDeposit(null);
-      }
-    }
+    (async () => {
+      await fetchDeposit();
+    })();
 
-    fetchDepositPayment();
     return () => { cancelled = true; };
-  }, [auctionId, userId, setUserDeposit, setDepositLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchDeposit, depositVersion]);
 
   // 3) Connect WS after REST loads
   useEffect(() => {

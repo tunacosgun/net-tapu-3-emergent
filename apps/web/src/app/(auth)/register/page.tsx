@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,20 +23,28 @@ export default function RegisterPage() {
   } = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) });
 
   const registerUser = useRegister();
-  const router = useRouter();
 
   async function onSubmit(data: RegisterFormData) {
     setServerError(null);
     try {
-      await registerUser({
+      const tokens = await registerUser({
         email: data.email,
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
         phone: data.phone || undefined,
       });
-      document.cookie = 'has_session=1; path=/; SameSite=Lax';
-      router.push('/');
+      // Persist session in httpOnly cookies via Route Handler
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          role: 'user',
+        }),
+      });
+      window.location.href = '/';
     } catch (err) {
       if (checkRateLimit(err)) return;
       if (err instanceof AxiosError) {

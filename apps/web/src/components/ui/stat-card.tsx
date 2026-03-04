@@ -2,6 +2,8 @@ import { Card } from './card';
 
 const variantColors = {
   default: 'text-[var(--foreground)]',
+  success: 'text-green-600',
+  info: 'text-blue-600',
   warning: 'text-yellow-600',
   danger: 'text-red-600',
 } as const;

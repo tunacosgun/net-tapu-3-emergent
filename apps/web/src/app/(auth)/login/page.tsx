@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,25 +33,30 @@ function LoginContent() {
   } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
 
   const login = useLogin();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo') || '/';
 
   async function onSubmit(data: LoginFormData) {
     setServerError(null);
     try {
-      await login(data.email, data.password);
-      // setTokens (auth-store) sets cookies too, but set them explicitly here
-      // right before navigation to guarantee middleware sees them
+      const tokens = await login(data.email, data.password);
       const user = useAuthStore.getState().user;
-      document.cookie = 'has_session=1; path=/; SameSite=Lax';
       const role = user?.roles?.includes('superadmin')
         ? 'superadmin'
         : user?.roles?.includes('admin')
           ? 'admin'
           : 'user';
-      document.cookie = `role=${role}; path=/; SameSite=Lax`;
-      router.push(returnTo);
+      // Persist session in httpOnly cookies via Route Handler
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          role,
+        }),
+      });
+      window.location.href = returnTo;
     } catch (err) {
       if (checkRateLimit(err)) return;
       if (err instanceof AxiosError) {
