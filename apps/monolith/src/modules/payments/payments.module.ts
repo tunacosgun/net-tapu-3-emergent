@@ -7,14 +7,18 @@ import { PosTransaction } from './entities/pos-transaction.entity';
 import { InstallmentPlan } from './entities/installment-plan.entity';
 import { IdempotencyKey } from './entities/idempotency-key.entity';
 import { LedgerAnnotation } from './entities/ledger-annotation.entity';
+import { ReconciliationRun } from './entities/reconciliation-run.entity';
 import { PaymentService } from './services/payment.service';
 import { RefundService } from './services/refund.service';
 import { ReconciliationService } from './services/reconciliation.service';
+import { ReconciliationWorker } from './services/reconciliation.worker';
+import { PosCallbackService } from './services/pos-callback.service';
 import { FinancialLogger } from './services/financial-logger.service';
 import { posGatewayFactory } from './services/pos-gateway.factory';
 import { PaymentController } from './controllers/payment.controller';
 import { RefundController } from './controllers/refund.controller';
 import { ReconciliationController } from './controllers/reconciliation.controller';
+import { PosCallbackController } from './controllers/pos-callback.controller';
 
 @Module({
   imports: [
@@ -28,13 +32,16 @@ import { ReconciliationController } from './controllers/reconciliation.controlle
       InstallmentPlan,
       IdempotencyKey,
       LedgerAnnotation,
+      ReconciliationRun,
     ]),
   ],
-  controllers: [PaymentController, RefundController, ReconciliationController],
+  controllers: [PaymentController, RefundController, ReconciliationController, PosCallbackController],
   providers: [
     PaymentService,
     RefundService,
     ReconciliationService,
+    PosCallbackService,
+    ReconciliationWorker,
     FinancialLogger,
     {
       provide: POS_GATEWAY,

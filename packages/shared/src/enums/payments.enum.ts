@@ -9,6 +9,7 @@ export enum DepositStatus {
 
 export enum PaymentStatus {
   PENDING = 'pending',
+  AWAITING_3DS = 'awaiting_3ds',
   PROVISIONED = 'provisioned',
   COMPLETED = 'completed',
   FAILED = 'failed',
@@ -45,4 +46,10 @@ export enum LedgerEvent {
   PAYMENT_PROVISION_CANCELLED = 'payment_provision_cancelled',
   REFUND_INITIATED = 'refund_initiated',
   REFUND_COMPLETED = 'refund_completed',
+  THREE_DS_INITIATED = 'three_ds_initiated',
+  THREE_DS_CALLBACK_RECEIVED = 'three_ds_callback_received',
+  THREE_DS_COMPLETED = 'three_ds_completed',
+  THREE_DS_FAILED = 'three_ds_failed',
+  RECONCILIATION_MISMATCH = 'reconciliation_mismatch',
+  RECONCILIATION_RESOLVED = 'reconciliation_resolved',
 }

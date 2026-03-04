@@ -15,16 +15,21 @@ import { Bid } from '../entities/bid.entity';
 import { BidRejection } from '../entities/bid-rejection.entity';
 import { AuctionParticipant } from '../entities/auction-participant.entity';
 import { AuctionConsent } from '../entities/auction-consent.entity';
+import { Deposit } from '@nettapu/shared';
 import { RedisLockService } from './redis-lock.service';
 import { PlaceBidDto } from '../dto/place-bid.dto';
 import {
   AuctionStatus,
   BidRejectionReason,
+  DepositStatus,
 } from '@nettapu/shared';
 import { MetricsService } from '../../../metrics/metrics.service';
+import { OutboxWriterService } from './outbox-writer.service';
+import { OutboxEventType } from '../entities/outbox-event.entity';
+import { BidAcceptedEvent, SniperExtensionEvent } from '../events/domain-event.types';
 
 const BID_LOCK_PREFIX = 'bid:lock:auction:';
-const BID_LOCK_TTL_MS = 5000;
+const BID_LOCK_TTL_MS = 3000;
 
 export interface BidAcceptedResponse {
   bid_id: string;
@@ -56,6 +61,7 @@ export class BidService {
     private readonly dataSource: DataSource,
     private readonly redisLock: RedisLockService,
     private readonly config: ConfigService,
+    private readonly outboxWriter: OutboxWriterService,
     @Optional() @Inject(MetricsService) private readonly metrics?: MetricsService,
   ) {}
 
@@ -94,6 +100,15 @@ export class BidService {
       await qr.connect();
       await qr.startTransaction();
 
+      // Safety timeouts: prevent runaway transactions from holding
+      // row locks or connections indefinitely under load.
+      // - lock_timeout: max wait for FOR UPDATE row lock (3s)
+      //   If another tx holds the lock, fail fast instead of blocking.
+      // - statement_timeout: max execution for any single statement (5s)
+      //   Kills stuck queries and auto-rolls back the transaction.
+      await qr.query('SET LOCAL lock_timeout = 3000');
+      await qr.query('SET LOCAL statement_timeout = 5000');
+
       // ── PHASE 3: Idempotency re-check inside transaction ────
       const existingInTx = await qr.manager.findOne(Bid, {
         where: { idempotencyKey: dto.idempotencyKey },
@@ -103,10 +118,14 @@ export class BidService {
         return this.toResponse(existingInTx);
       }
 
-      // ── PHASE 4: Load auction ────────────────────────────────
-      const auction = await qr.manager.findOne(Auction, {
-        where: { id: dto.auctionId },
-      });
+      // ── PHASE 4: Load auction with SELECT ... FOR UPDATE ─────
+      // Pessimistic write lock prevents concurrent bid processing
+      // on the same auction row. This is the CRITICAL concurrency gate.
+      const auction = await qr.manager
+        .createQueryBuilder(Auction, 'a')
+        .setLock('pessimistic_write')
+        .where('a.id = :id', { id: dto.auctionId })
+        .getOne();
 
       if (!auction) {
         await qr.rollbackTransaction();
@@ -127,6 +146,30 @@ export class BidService {
         );
       }
 
+      // ── PHASE 5b: Time integrity — use DB clock (NOT app time) ─
+      // Authoritative time check: NOW() must be before effective end.
+      // This prevents clock-skew attacks and ensures legal compliance.
+      const effectiveEnd = auction!.extendedUntil ?? auction!.scheduledEnd;
+      if (effectiveEnd) {
+        const [{ db_now, is_past_end }] = await qr.query(
+          `SELECT NOW() as db_now,
+                  (NOW() > $1::timestamptz) as is_past_end`,
+          [effectiveEnd],
+        );
+        if (is_past_end) {
+          await this.recordRejection(
+            qr, dto, userId,
+            BidRejectionReason.AUCTION_NOT_LIVE,
+            `Auction time expired (db_now: ${db_now}, effective_end: ${effectiveEnd})`,
+          );
+          await qr.commitTransaction();
+          this.reject(
+            BidRejectionReason.AUCTION_NOT_LIVE,
+            'Auction has ended',
+          );
+        }
+      }
+
       // ── PHASE 6: Validate participant eligibility ────────────
       const participant = await qr.manager.findOne(AuctionParticipant, {
         where: { auctionId: dto.auctionId, userId },
@@ -142,6 +185,55 @@ export class BidService {
         this.reject(
           BidRejectionReason.USER_NOT_ELIGIBLE,
           'You are not an eligible participant in this auction',
+        );
+      }
+
+      // ── PHASE 6b: Validate deposit status (financial safety) ──
+      // Cross-schema read: verify deposit is in a valid state.
+      // Deposit must exist, belong to this user+auction, and be held.
+      const deposit = await qr.manager.findOne(Deposit, {
+        where: { id: participant!.depositId },
+      });
+
+      if (!deposit) {
+        await this.recordRejection(
+          qr, dto, userId,
+          BidRejectionReason.INSUFFICIENT_DEPOSIT,
+          `Deposit ${participant!.depositId} not found`,
+        );
+        await qr.commitTransaction();
+        this.reject(
+          BidRejectionReason.INSUFFICIENT_DEPOSIT,
+          'No valid deposit found for this auction',
+        );
+      }
+
+      if (deposit!.status !== DepositStatus.HELD && deposit!.status !== DepositStatus.COLLECTED) {
+        await this.recordRejection(
+          qr, dto, userId,
+          BidRejectionReason.INSUFFICIENT_DEPOSIT,
+          `Deposit status: ${deposit!.status} (expected: held or collected)`,
+        );
+        await qr.commitTransaction();
+        this.reject(
+          BidRejectionReason.INSUFFICIENT_DEPOSIT,
+          'Deposit is not in a valid state for bidding',
+        );
+      }
+
+      // Verify deposit amount meets auction requirement
+      const depositAmount = new Decimal(deposit!.amount);
+      const requiredDeposit = new Decimal(auction!.requiredDeposit);
+      if (depositAmount.lessThan(requiredDeposit)) {
+        await this.recordRejection(
+          qr, dto, userId,
+          BidRejectionReason.INSUFFICIENT_DEPOSIT,
+          `Deposit: ${deposit!.amount}, required: ${auction!.requiredDeposit}`,
+        );
+        await qr.commitTransaction();
+        this.reject(
+          BidRejectionReason.INSUFFICIENT_DEPOSIT,
+          `Deposit amount insufficient (required: ${auction!.requiredDeposit})`,
         );
       }
 
@@ -217,6 +309,11 @@ export class BidService {
       }
 
       // ── PHASE 11: INSERT bid (append-only) ───────────────────
+      // server_ts uses DB default NOW() via the column default.
+      // DB trigger trg_enforce_bid_time_integrity provides additional
+      // safety net: rejects INSERT if NOW() > effective_end.
+      // DB trigger trg_enforce_minimum_increment provides additional
+      // safety net: rejects INSERT if amount < minimum bid.
       const newBid = qr.manager.create(Bid, {
         auctionId: dto.auctionId,
         userId,
@@ -229,52 +326,76 @@ export class BidService {
       });
       const savedBid = await qr.manager.save(Bid, newBid);
 
-      // ── PHASE 12: UPDATE auction (optimistic lock) + sniper ──
+      // ── PHASE 12: UPDATE auction + atomic sniper extension ───
+      // Auction row is already locked (Phase 4 FOR UPDATE).
+      // No optimistic lock conflict possible — we hold the row lock.
       auction!.currentPrice = dto.amount;
       auction!.bidCount = auction!.bidCount + 1;
 
-      // Sniper protection: extend if bid is within the sniper window
+      // Sniper protection: extend if bid is within the sniper window.
+      // Uses DB time for consistency with Phase 5b time check.
       let sniperExtended = false;
       let newExtendedUntil: Date | null = null;
       const sniperWindowSeconds = this.config.get<number>(
         'SNIPER_EXTENSION_SECONDS',
       ) ?? 60;
-      const effectiveEnd = auction!.extendedUntil ?? auction!.scheduledEnd;
+      const maxExtensions = this.config.get<number>('MAX_SNIPER_EXTENSIONS') ?? 5;
 
-      if (effectiveEnd && auction!.status === AuctionStatus.LIVE) {
-        const endTime = new Date(effectiveEnd).getTime();
-        const now = Date.now();
-        const remainingMs = endTime - now;
+      if (effectiveEnd && auction!.extensionCount < maxExtensions) {
+        // Use DB time for sniper calculation (atomic with the FOR UPDATE lock)
+        const [{ remaining_ms }] = await qr.query(
+          `SELECT EXTRACT(EPOCH FROM ($1::timestamptz - NOW())) * 1000 as remaining_ms`,
+          [effectiveEnd],
+        );
+        const remainingMs = parseFloat(remaining_ms);
 
         if (remainingMs > 0 && remainingMs <= sniperWindowSeconds * 1000) {
-          newExtendedUntil = new Date(now + sniperWindowSeconds * 1000);
+          // Compute extension using DB time
+          const [{ new_end }] = await qr.query(
+            `SELECT (NOW() + ($1 || ' seconds')::interval) as new_end`,
+            [sniperWindowSeconds],
+          );
+          newExtendedUntil = new Date(new_end);
           auction!.extendedUntil = newExtendedUntil;
+          auction!.extensionCount = auction!.extensionCount + 1;
           sniperExtended = true;
           this.metrics?.auctionExtensionsTotal.inc();
           this.logger.log(
-            `SNIPER EXTENSION auction=${dto.auctionId} newEnd=${newExtendedUntil.toISOString()} remainingWas=${remainingMs}ms`,
+            `SNIPER EXTENSION auction=${dto.auctionId} newEnd=${newExtendedUntil.toISOString()} remainingWas=${remainingMs.toFixed(0)}ms extension=${auction!.extensionCount}/${maxExtensions}`,
           );
         }
       }
 
-      // @VersionColumn auto-increments + checks WHERE version = :current
-      try {
-        await qr.manager.save(Auction, auction!);
-      } catch (err: unknown) {
-        if (
-          err instanceof Error &&
-          err.name === 'OptimisticLockVersionMismatchError'
-        ) {
-          await qr.rollbackTransaction();
-          this.logger.warn(
-            `Optimistic lock conflict: auction=${dto.auctionId}`,
-          );
-          this.reject(
-            BidRejectionReason.PRICE_CHANGED,
-            'Concurrent bid detected. Please retry.',
-          );
-        }
-        throw err;
+      await qr.manager.save(Auction, auction!);
+
+      // ── PHASE 12b: Write outbox events (SAME transaction) ────
+      const bidEvent: BidAcceptedEvent = {
+        auction_id: dto.auctionId,
+        bid_id: savedBid.id,
+        user_id: userId,
+        user_id_masked: userId.slice(0, 8) + '***',
+        amount: dto.amount,
+        new_price: dto.amount,
+        new_bid_count: auction!.bidCount,
+        server_timestamp: savedBid.serverTs.toISOString(),
+        idempotency_key: dto.idempotencyKey,
+      };
+      await this.outboxWriter.write(
+        qr, dto.auctionId, OutboxEventType.BID_ACCEPTED,
+        bidEvent, `bid:${savedBid.id}`,
+      );
+
+      if (sniperExtended) {
+        const sniperEvent: SniperExtensionEvent = {
+          auction_id: dto.auctionId,
+          triggered_by_bid_id: savedBid.id,
+          new_end_time: newExtendedUntil!.toISOString(),
+          extension_count: auction!.extensionCount,
+        };
+        await this.outboxWriter.write(
+          qr, dto.auctionId, OutboxEventType.SNIPER_EXTENSION,
+          sniperEvent, `sniper:${savedBid.id}`,
+        );
       }
 
       // ── PHASE 13: COMMIT ─────────────────────────────────────
@@ -299,6 +420,31 @@ export class BidService {
       if (qr?.isTransactionActive) {
         await qr.rollbackTransaction();
       }
+
+      // Convert PostgreSQL lock_timeout / statement_timeout errors to 503
+      // so clients get a retryable response instead of a 500.
+      const pgCode = (err as Record<string, unknown>)?.code as string | undefined;
+      if (pgCode === '55P03') {
+        // 55P03 = lock_not_available (lock_timeout exceeded)
+        this.logger.warn(
+          `DB lock timeout: auction=${dto.auctionId} user=${userId}`,
+        );
+        throw new HttpException(
+          { reason_code: 'db_lock_contention', message: 'Auction is busy. Please retry.' },
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+      if (pgCode === '57014') {
+        // 57014 = query_canceled (statement_timeout exceeded)
+        this.logger.error(
+          `Statement timeout: auction=${dto.auctionId} user=${userId}`,
+        );
+        throw new HttpException(
+          { reason_code: 'timeout', message: 'Bid processing timed out. Please retry.' },
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+
       throw err;
     } finally {
       // ── PHASE 14: Release lock + cleanup ─────────────────────

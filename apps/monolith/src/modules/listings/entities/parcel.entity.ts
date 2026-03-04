@@ -35,6 +35,21 @@ export class Parcel {
   @Column({ type: 'numeric', precision: 10, scale: 7, nullable: true })
   longitude!: string | null;
 
+  /**
+   * PostGIS geography point (SRID 4326) — auto-populated from lat/lng.
+   * Used by GeoSearchService for radius, bbox, nearest queries.
+   * GIST-indexed for performant spatial queries.
+   */
+  @Column({ type: 'geography', spatialFeatureType: 'Point', srid: 4326, nullable: true })
+  location!: string | null;
+
+  /**
+   * PostGIS geography polygon (SRID 4326) — optional parcel boundary.
+   * Populated from GeoJSON via admin/import.
+   */
+  @Column({ type: 'geography', spatialFeatureType: 'Polygon', srid: 4326, nullable: true })
+  boundary!: string | null;
+
   @Column({ type: 'varchar', length: 20, nullable: true })
   ada!: string | null;
 

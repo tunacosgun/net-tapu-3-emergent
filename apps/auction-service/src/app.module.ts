@@ -35,6 +35,7 @@ import { MetricsModule } from './metrics/metrics.module';
         logging: config.get('NODE_ENV') !== 'production' ? true : ['error', 'warn'],
         extra: {
           max: 25,
+          connectionTimeoutMillis: 3000,
           statement_timeout: 10000,
           lock_timeout: 5000,
         },

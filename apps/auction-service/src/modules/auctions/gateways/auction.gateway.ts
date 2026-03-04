@@ -277,6 +277,39 @@ export class AuctionGateway
       return;
     }
 
+    // ── Global bid rate limit: 200 bids per 3 seconds ─────────────
+    let globalRate: { allowed: boolean; current: number };
+    try {
+      globalRate = await this.redisLock.checkRateLimit('ws:bid:rate:global', 200, 3);
+    } catch (err) {
+      this.logger.error(
+        `CRITICAL: Redis global rate limit failed: ${(err as Error).message}`,
+      );
+      this.metrics.wsBidRejectionsTotal.inc({ reason_code: 'service_unavailable' });
+      client.emit('bid_rejected', {
+        type: 'BID_REJECTED',
+        reason_code: 'service_unavailable',
+        current_price: '',
+        message: 'Service temporarily unavailable. Please retry.',
+      } as BidRejectedMessage);
+      return;
+    }
+
+    if (!globalRate.allowed) {
+      this.logger.warn(
+        `Global rate limit hit: ${globalRate.current} bids in 3s window`,
+      );
+      this.metrics.globalRateLimitHitsTotal.inc();
+      this.metrics.wsBidRejectionsTotal.inc({ reason_code: 'global_rate_limited' });
+      client.emit('bid_rejected', {
+        type: 'BID_REJECTED',
+        reason_code: 'global_rate_limited',
+        current_price: '',
+        message: 'System is under heavy load. Please retry.',
+      } as BidRejectedMessage);
+      return;
+    }
+
     // ── Per-user rate limit: 5 bids per 3 seconds ────────────────
     let userRate: { allowed: boolean; current: number };
     try {
@@ -352,6 +385,7 @@ export class AuctionGateway
         ?.split(',')[0]
         ?.trim() ?? client.handshake.address;
 
+    const bidStartMs = Date.now();
     try {
       const auction = await this.auctionRepo.findOne({
         where: { id: data.auctionId },
@@ -366,27 +400,11 @@ export class AuctionGateway
         idempotencyKey: data.idempotencyKey,
       };
 
-      const result = await this.bidService.placeBid(dto, userId, ipAddress);
+      // Outbox events (BID_ACCEPTED, SNIPER_EXTENSION) are written
+      // in the same transaction as the bid — relay worker handles broadcast.
+      await this.bidService.placeBid(dto, userId, ipAddress);
 
-      // Broadcast accepted bid to entire auction room
-      this.broadcastBidAccepted(data.auctionId, {
-        type: 'BID_ACCEPTED',
-        bid_id: result.bid_id,
-        user_id_masked: userId.slice(0, 8) + '***',
-        amount: result.amount,
-        server_timestamp: result.server_timestamp,
-        new_bid_count: result.new_bid_count,
-      });
-
-      // Broadcast sniper extension if triggered
-      if (result.sniper_extended && result.extended_until) {
-        this.broadcastAuctionExtended(data.auctionId, {
-          type: 'AUCTION_EXTENDED',
-          auction_id: data.auctionId,
-          new_end_time: result.extended_until,
-          triggered_by_bid_id: result.bid_id,
-        });
-      }
+      this.metrics.bidE2eDurationMs.observe(Date.now() - bidStartMs);
     } catch (err: unknown) {
       let reasonCode = 'unknown';
       let currentPrice = '';
@@ -405,6 +423,7 @@ export class AuctionGateway
       }
 
       this.metrics.wsBidRejectionsTotal.inc({ reason_code: reasonCode });
+      this.metrics.bidE2eDurationMs.observe(Date.now() - bidStartMs);
       client.emit('bid_rejected', {
         type: 'BID_REJECTED',
         reason_code: reasonCode,

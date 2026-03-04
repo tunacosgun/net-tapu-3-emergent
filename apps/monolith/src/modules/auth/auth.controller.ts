@@ -1,6 +1,8 @@
 import {
   Controller,
   Post,
+  Get,
+  Patch,
   Body,
   Req,
   HttpCode,
@@ -10,16 +12,27 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
+import { PasswordResetService } from './services/password-reset.service';
+import { EmailVerificationService } from './services/email-verification.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtPayload } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly passwordResetService: PasswordResetService,
+    private readonly emailVerificationService: EmailVerificationService,
+  ) {}
 
   @Post('register')
   @Throttle({ short: { ttl: 60000, limit: 5 } })
@@ -66,5 +79,75 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async logoutAll(@CurrentUser() user: JwtPayload) {
     await this.authService.logoutAll(user.sub);
+  }
+
+  // ── Password Reset ──────────────────────────────────────────
+
+  @Post('forgot-password')
+  @Throttle({ short: { ttl: 60000, limit: 3 } })
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.passwordResetService.requestReset(dto.email);
+    return { message: 'Sıfırlama bağlantısı e-posta adresinize gönderildi' };
+  }
+
+  @Post('reset-password')
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.passwordResetService.resetPassword(dto.token, dto.newPassword);
+    return { message: 'Şifreniz başarıyla güncellendi' };
+  }
+
+  // ── Email Verification ──────────────────────────────────────
+
+  @Post('send-verification')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ short: { ttl: 60000, limit: 3 } })
+  @HttpCode(HttpStatus.OK)
+  async sendVerification(@CurrentUser() user: JwtPayload) {
+    await this.emailVerificationService.sendVerification(user.sub);
+    return { message: 'Doğrulama e-postası gönderildi' };
+  }
+
+  @Post('verify-email')
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.emailVerificationService.verifyEmail(dto.token);
+  }
+
+  // ── Profile ─────────────────────────────────────────────────
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getProfile(@CurrentUser() user: JwtPayload) {
+    return this.authService.getProfile(user.sub);
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateProfile(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(user.sub, dto);
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ short: { ttl: 60000, limit: 3 } })
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.authService.changePassword(
+      user.sub,
+      dto.currentPassword,
+      dto.newPassword,
+    );
+    return { message: 'Şifreniz başarıyla değiştirildi' };
   }
 }

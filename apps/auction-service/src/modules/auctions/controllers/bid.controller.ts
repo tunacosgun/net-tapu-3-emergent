@@ -10,16 +10,12 @@ import {
 } from '@nestjs/common';
 import { BidService, BidAcceptedResponse } from '../services/bid.service';
 import { PlaceBidDto } from '../dto/place-bid.dto';
-import { AuctionGateway } from '../gateways/auction.gateway';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @Controller('bids')
 @UseGuards(JwtAuthGuard)
 export class BidController {
-  constructor(
-    private readonly bidService: BidService,
-    private readonly auctionGateway: AuctionGateway,
-  ) {}
+  constructor(private readonly bidService: BidService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -37,18 +33,8 @@ export class BidController {
       (req.headers?.['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
       req.ip;
 
-    const result = await this.bidService.placeBid(dto, userId, ipAddress);
-
-    // Broadcast to all WebSocket clients in the auction room
-    this.auctionGateway.broadcastBidAccepted(dto.auctionId, {
-      type: 'BID_ACCEPTED',
-      bid_id: result.bid_id,
-      user_id_masked: userId.slice(0, 8) + '***',
-      amount: result.amount,
-      server_timestamp: result.server_timestamp,
-      new_bid_count: result.new_bid_count,
-    });
-
-    return result;
+    // Outbox events (BID_ACCEPTED, SNIPER_EXTENSION) are written
+    // in the same transaction as the bid — relay worker handles broadcast.
+    return this.bidService.placeBid(dto, userId, ipAddress);
   }
 }

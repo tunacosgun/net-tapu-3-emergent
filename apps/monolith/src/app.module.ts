@@ -12,8 +12,10 @@ import { CrmModule } from './modules/crm/crm.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { SeedModule } from './seed/seed.module';
 
 const isLoadTest = process.env.NODE_ENV === 'loadtest';
 
@@ -80,6 +82,8 @@ const isLoadTest = process.env.NODE_ENV === 'loadtest';
     AdminModule,
     IntegrationsModule,
     CampaignsModule,
+    NotificationsModule,
+    SeedModule,
   ],
   providers: [
     {

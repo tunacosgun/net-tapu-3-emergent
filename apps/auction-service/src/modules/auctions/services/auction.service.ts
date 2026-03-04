@@ -112,6 +112,14 @@ export class AuctionService {
     auction.status = dto.status;
 
     if (dto.status === AuctionStatus.LIVE) {
+      const liveCount = await this.auctionRepo.count({
+        where: { status: AuctionStatus.LIVE as string },
+      });
+      if (liveCount >= 10) {
+        throw new ConflictException(
+          `Cannot go LIVE: ${liveCount} auctions already live (max 10)`,
+        );
+      }
       auction.actualStart = new Date();
     }
 

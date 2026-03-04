@@ -2,6 +2,7 @@ import {
   Injectable,
   Logger,
   Inject,
+  Optional,
   NotFoundException,
   ConflictException,
   BadRequestException,
@@ -14,12 +15,15 @@ import {
   PaymentStatus,
   IPosGateway,
   POS_GATEWAY,
+  ProvisionInitiationResponse,
 } from '@nettapu/shared';
+import { ConfigService } from '@nestjs/config';
 import { Payment } from '../entities/payment.entity';
 import { PosTransaction } from '../entities/pos-transaction.entity';
 import { IdempotencyKey } from '../entities/idempotency-key.entity';
 import { InitiatePaymentDto } from '../dto/initiate-payment.dto';
 import { ListPaymentsQueryDto } from '../dto/list-payments-query.dto';
+import { MetricsService } from '../../../metrics/metrics.service';
 import { createHash } from 'crypto';
 
 const IDEMPOTENCY_TTL_HOURS = 72;
@@ -38,7 +42,13 @@ export class PaymentService {
     @Inject(POS_GATEWAY)
     private readonly posGateway: IPosGateway,
     private readonly dataSource: DataSource,
+    private readonly config: ConfigService,
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
+
+  private get provider(): string {
+    return this.config.get<string>('POS_PROVIDER', 'mock');
+  }
 
   // ── Initiate (Provision) ───────────────────────────────────
   // C5 fix: idempotency key saved in Phase 1 (same TX as Payment)
@@ -74,6 +84,7 @@ export class PaymentService {
       payment = qr.manager.create(Payment, {
         userId,
         parcelId: dto.parcelId,
+        auctionId: dto.auctionId ?? null,
         amount: dto.amount,
         currency: dto.currency ?? 'TRY',
         status: PaymentStatus.PENDING,
@@ -107,6 +118,7 @@ export class PaymentService {
       );
 
       await qr.commitTransaction();
+      this.metrics?.paymentInitiatedTotal.inc({ provider: this.provider, currency: payment.currency });
     } catch (err) {
       if (qr.isTransactionActive) {
         await qr.rollbackTransaction();
@@ -164,16 +176,23 @@ export class PaymentService {
     }
 
     // 3. POS provision call (outside TX — external side effect)
-    let posResult;
+    // Uses initiateProvision() which supports 3DS flows.
+    let initResult: ProvisionInitiationResponse;
+    const posStart = Date.now();
     try {
-      posResult = await this.posGateway.provision({
+      initResult = await this.posGateway.initiateProvision({
         paymentId: payment.id,
         amount: payment.amount,
         currency: payment.currency,
         idempotencyKey: dto.idempotencyKey,
         cardToken: dto.cardToken,
+        buyer: dto.buyer,
       });
+      this.metrics?.posCallDurationMs.observe({ provider: this.provider, method: 'initiateProvision' }, Date.now() - posStart);
+      this.metrics?.posCallTotal.inc({ provider: this.provider, method: 'initiateProvision', status: 'success' });
     } catch (posErr) {
+      this.metrics?.posCallDurationMs.observe({ provider: this.provider, method: 'initiateProvision' }, Date.now() - posStart);
+      this.metrics?.posCallTotal.inc({ provider: this.provider, method: 'initiateProvision', status: 'error' });
       // POS call threw — record failure in DB, return payment as-is
       this.logger.error(
         JSON.stringify({
@@ -187,17 +206,56 @@ export class PaymentService {
         posReference: null,
         message: (posErr as Error).message,
       });
-      // Re-read to return current state
       return (await this.paymentRepo.findOne({ where: { id: payment.id } })) ?? payment;
     }
 
-    // 4. Record POS result in DB
+    // 4. Handle provision result based on status
+    if (initResult.status === 'requires_3ds') {
+      // 3DS flow: set status to awaiting_3ds, store token, return 3DS data
+      try {
+        await this.record3dsInitiated(payment, initResult);
+      } catch (dbErr) {
+        this.logger.error(
+          JSON.stringify({
+            event: 'CRITICAL_3ds_initiated_db_failure',
+            payment_id: payment.id,
+            db_error: (dbErr as Error).message,
+          }),
+        );
+        throw dbErr;
+      }
+
+      const updatedPayment = await this.paymentRepo.findOne({ where: { id: payment.id } });
+      const result = updatedPayment ?? payment;
+
+      this.metrics?.threeDsInitiatedTotal.inc({ provider: this.provider });
+
+      this.logger.log(
+        JSON.stringify({
+          event: 'payment_3ds_initiated',
+          payment_id: result.id,
+          status: result.status,
+        }),
+      );
+
+      // Return payment with 3DS data attached for the controller to relay
+      return Object.assign(result, {
+        threeDsHtmlContent: initResult.threeDsHtmlContent,
+        threeDsRedirectUrl: initResult.threeDsRedirectUrl,
+        posTransactionToken: initResult.posTransactionToken,
+      });
+    }
+
+    // Non-3DS: completed or failed — record as before
+    const posResult = {
+      success: initResult.status === 'completed',
+      posReference: initResult.posReference,
+      message: initResult.message,
+    };
+
     try {
       await this.recordPosResult(payment, posResult);
     } catch (dbErr) {
-      // CRITICAL: POS may have succeeded but DB write failed.
-      // Payment stays 'pending'. Idempotency key exists, so retry
-      // returns the pending payment for admin reconciliation.
       this.logger.error(
         JSON.stringify({
           event: 'CRITICAL_pos_success_db_failure',
@@ -207,11 +265,11 @@ export class PaymentService {
           db_error: (dbErr as Error).message,
         }),
       );
+      throw dbErr;
     }
 
-    // Re-read to return current state (may be pending, provisioned, or failed)
-    const result = await this.paymentRepo.findOne({ where: { id: payment.id } });
-    payment = result ?? payment;
+    const finalPayment = await this.paymentRepo.findOne({ where: { id: payment.id } });
+    payment = finalPayment ?? payment;
 
     this.logger.log(
       JSON.stringify({
@@ -223,6 +281,55 @@ export class PaymentService {
     );
 
     return payment;
+  }
+
+  private async record3dsInitiated(
+    payment: Payment,
+    initResult: ProvisionInitiationResponse,
+  ): Promise<void> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+
+    try {
+      const locked = await qr.manager
+        .createQueryBuilder(Payment, 'p')
+        .setLock('pessimistic_write')
+        .where('p.id = :id', { id: payment.id })
+        .getOne();
+
+      if (!locked || locked.status !== PaymentStatus.PENDING) {
+        await qr.rollbackTransaction();
+        return;
+      }
+
+      locked.status = PaymentStatus.AWAITING_3DS;
+      locked.posTransactionToken = initResult.posTransactionToken ?? null;
+      locked.threeDsInitiatedAt = new Date();
+      await qr.manager.save(Payment, locked);
+
+      await qr.manager.save(
+        PaymentLedger,
+        qr.manager.create(PaymentLedger, {
+          paymentId: payment.id,
+          event: LedgerEvent.THREE_DS_INITIATED,
+          amount: payment.amount,
+          currency: payment.currency,
+          metadata: {
+            posTransactionToken: initResult.posTransactionToken,
+          },
+        }),
+      );
+
+      await qr.commitTransaction();
+    } catch (err) {
+      if (qr.isTransactionActive) {
+        await qr.rollbackTransaction();
+      }
+      throw err;
+    } finally {
+      await qr.release();
+    }
   }
 
   private async recordPosResult(
@@ -250,7 +357,7 @@ export class PaymentService {
         PosTransaction,
         qr2.manager.create(PosTransaction, {
           paymentId: payment.id,
-          provider: 'mock',
+          provider: this.config.get<string>('POS_PROVIDER', 'mock'),
           externalId: posResult.posReference,
           amount: payment.amount,
           currency: payment.currency,
@@ -273,6 +380,8 @@ export class PaymentService {
             metadata: { posReference: posResult.posReference },
           }),
         );
+
+        this.metrics?.paymentProvisionedTotal.inc({ provider: this.provider, currency: payment.currency });
       } else {
         locked.status = PaymentStatus.FAILED;
         await qr2.manager.save(Payment, locked);
@@ -287,6 +396,8 @@ export class PaymentService {
             metadata: { reason: posResult.message },
           }),
         );
+
+        this.metrics?.paymentFailedTotal.inc({ provider: this.provider, reason: 'pos_error' });
       }
 
       await qr2.commitTransaction();
@@ -335,6 +446,7 @@ export class PaymentService {
       }
 
       // 3. POS capture call (holding lock — financial correctness > perf)
+      const captureStart = Date.now();
       const captureResult = await this.posGateway.capture({
         paymentId,
         posReference: posTx.externalId,
@@ -342,6 +454,8 @@ export class PaymentService {
         currency: locked.currency,
         idempotencyKey: `capture:${paymentId}`,
       });
+      this.metrics?.posCallDurationMs.observe({ provider: this.provider, method: 'capture' }, Date.now() - captureStart);
+      this.metrics?.posCallTotal.inc({ provider: this.provider, method: 'capture', status: captureResult.success ? 'success' : 'error' });
 
       if (!captureResult.success) {
         throw new BadRequestException(
@@ -378,6 +492,7 @@ export class PaymentService {
       );
 
       await qr.commitTransaction();
+      this.metrics?.paymentCapturedTotal.inc({ provider: this.provider });
       return locked;
     } catch (err) {
       if (qr.isTransactionActive) {
@@ -423,11 +538,14 @@ export class PaymentService {
       }
 
       // 3. POS cancel call (holding lock)
+      const cancelStart = Date.now();
       const cancelResult = await this.posGateway.cancelProvision({
         paymentId,
         posReference: posTx.externalId,
         idempotencyKey: `cancel:${paymentId}`,
       });
+      this.metrics?.posCallDurationMs.observe({ provider: this.provider, method: 'cancelProvision' }, Date.now() - cancelStart);
+      this.metrics?.posCallTotal.inc({ provider: this.provider, method: 'cancelProvision', status: cancelResult.success ? 'success' : 'error' });
 
       if (!cancelResult.success) {
         throw new BadRequestException(
@@ -450,6 +568,7 @@ export class PaymentService {
       );
 
       await qr.commitTransaction();
+      this.metrics?.paymentCancelledTotal.inc({ provider: this.provider });
       return locked;
     } catch (err) {
       if (qr.isTransactionActive) {
@@ -482,6 +601,10 @@ export class PaymentService {
 
     if (query.status) {
       qb.andWhere('p.status = :status', { status: query.status });
+    }
+
+    if (query.auctionId) {
+      qb.andWhere('p.auction_id = :auctionId', { auctionId: query.auctionId });
     }
 
     qb.orderBy('p.created_at', 'DESC')

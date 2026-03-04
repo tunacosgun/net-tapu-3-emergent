@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import {
   Registry,
   Counter,
@@ -18,6 +19,7 @@ export class MetricsService {
   readonly redisHealthStatus: Gauge;
   readonly auctionRateLimitHitsTotal: Counter;
   readonly userRateLimitHitsTotal: Counter;
+  readonly globalRateLimitHitsTotal: Counter;
   readonly auctionExtensionsTotal: Counter;
   readonly auctionEndingsTotal: Counter;
   readonly auctionStateTransitionsTotal: Counter;
@@ -39,7 +41,22 @@ export class MetricsService {
   readonly settlementBacklogGauge: Gauge;
   readonly settlementWorkerDurationMs: Histogram;
 
-  constructor() {
+  // Outbox relay metrics
+  readonly outboxEventsProcessedTotal: Counter;
+  readonly outboxDeadLetterTotal: Counter;
+  readonly outboxRetriesTotal: Counter;
+  readonly outboxStaleReclaimedTotal: Counter;
+  readonly outboxRelayDurationMs: Histogram;
+  readonly outboxPendingGauge: Gauge;
+
+  // Launch guardrails: observability
+  readonly bidE2eDurationMs: Histogram;
+  readonly dbPoolTotal: Gauge;
+  readonly dbPoolIdle: Gauge;
+  readonly dbPoolWaiting: Gauge;
+  readonly redisCmdLatencyMs: Histogram;
+
+  constructor(@Optional() private readonly dataSource?: DataSource) {
     this.registry = new Registry();
     const workerId = process.env.CLUSTER_WORKER_ID || '0';
     this.registry.setDefaultLabels({ app: 'auction-service', worker: workerId });
@@ -86,6 +103,12 @@ export class MetricsService {
     this.userRateLimitHitsTotal = new Counter({
       name: 'user_rate_limit_hits_total',
       help: 'Total user-level rate limit hits',
+      registers: [this.registry],
+    });
+
+    this.globalRateLimitHitsTotal = new Counter({
+      name: 'global_rate_limit_hits_total',
+      help: 'Total global bid rate limit hits',
       registers: [this.registry],
     });
 
@@ -199,6 +222,113 @@ export class MetricsService {
       name: 'settlement_worker_duration_ms',
       help: 'Settlement worker tick duration in milliseconds',
       buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000],
+      registers: [this.registry],
+    });
+
+    // Outbox relay metrics
+
+    this.outboxEventsProcessedTotal = new Counter({
+      name: 'outbox_events_processed_total',
+      help: 'Total outbox events successfully processed',
+      labelNames: ['event_type'] as const,
+      registers: [this.registry],
+    });
+
+    this.outboxDeadLetterTotal = new Counter({
+      name: 'outbox_dead_letter_total',
+      help: 'Total outbox events moved to dead letter after max retries',
+      labelNames: ['event_type'] as const,
+      registers: [this.registry],
+    });
+
+    this.outboxRetriesTotal = new Counter({
+      name: 'outbox_retries_total',
+      help: 'Total outbox event processing retries',
+      labelNames: ['event_type'] as const,
+      registers: [this.registry],
+    });
+
+    this.outboxStaleReclaimedTotal = new Counter({
+      name: 'outbox_stale_reclaimed_total',
+      help: 'Total stale processing events reclaimed back to pending',
+      registers: [this.registry],
+    });
+
+    this.outboxRelayDurationMs = new Histogram({
+      name: 'outbox_relay_duration_ms',
+      help: 'Outbox relay worker tick duration in milliseconds',
+      buckets: [5, 10, 25, 50, 100, 250, 500, 1000],
+      registers: [this.registry],
+    });
+
+    this.outboxPendingGauge = new Gauge({
+      name: 'outbox_pending_gauge',
+      help: 'Number of pending outbox events in current batch',
+      registers: [this.registry],
+    });
+
+    // Launch guardrails: observability
+
+    this.bidE2eDurationMs = new Histogram({
+      name: 'bid_e2e_duration_ms',
+      help: 'Bid end-to-end duration from gateway entry to broadcast (ms)',
+      buckets: [25, 50, 100, 150, 250, 500, 1000, 2000, 5000],
+      registers: [this.registry],
+    });
+
+    this.dbPoolTotal = new Gauge({
+      name: 'db_pool_total',
+      help: 'Total connections in the DB pool',
+      registers: [this.registry],
+      collect: () => {
+        try {
+          const pool = (this.dataSource?.driver as any)?.master;
+          if (pool && typeof pool.totalCount === 'number') {
+            this.dbPoolTotal.set(pool.totalCount);
+          }
+        } catch {
+          // Pool not yet available — skip
+        }
+      },
+    });
+
+    this.dbPoolIdle = new Gauge({
+      name: 'db_pool_idle',
+      help: 'Idle connections in the DB pool',
+      registers: [this.registry],
+      collect: () => {
+        try {
+          const pool = (this.dataSource?.driver as any)?.master;
+          if (pool && typeof pool.idleCount === 'number') {
+            this.dbPoolIdle.set(pool.idleCount);
+          }
+        } catch {
+          // Pool not yet available — skip
+        }
+      },
+    });
+
+    this.dbPoolWaiting = new Gauge({
+      name: 'db_pool_waiting',
+      help: 'Number of clients waiting for a DB connection from the pool',
+      registers: [this.registry],
+      collect: () => {
+        try {
+          const pool = (this.dataSource?.driver as any)?.master;
+          if (pool && typeof pool.waitingCount === 'number') {
+            this.dbPoolWaiting.set(pool.waitingCount);
+          }
+        } catch {
+          // Pool not yet available or driver mismatch — skip
+        }
+      },
+    });
+
+    this.redisCmdLatencyMs = new Histogram({
+      name: 'redis_cmd_latency_ms',
+      help: 'Redis command latency in milliseconds',
+      labelNames: ['command'] as const,
+      buckets: [0.5, 1, 2, 5, 10, 25, 50, 100],
       registers: [this.registry],
     });
   }

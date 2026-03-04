@@ -77,4 +77,31 @@
 \echo '=== Migration 025: Payment hardening indexes ==='
 \i /migrations/025_payment_hardening_indexes.sql
 
+\echo '=== Migration 026: Auction extension count ==='
+\i /migrations/026_auction_extension_count.sql
+
+\echo '=== Migration 027: 3DS and reconciliation ==='
+\i /migrations/027_3ds_and_reconciliation.sql
+
+\echo '=== Migration 028: pos_transaction_token ==='
+\i /migrations/028_pos_transaction_token.sql
+
+\echo '=== Migration 029: Password reset + email verification ==='
+\i /migrations/029_password_reset_email_verify.sql
+
+\echo '=== Migration 030: IP bans + login attempts ==='
+\i /migrations/030_ip_bans_login_attempts.sql
+
+\echo '=== Migration 031: PostGIS + geo columns + pricing history ==='
+\i /migrations/031_postgis_geo_pricing.sql
+
+\echo '=== Migration 032: Geo hardening ==='
+\i /migrations/032_geo_hardening.sql
+
+\echo '=== Migration 033: Auction hardening ==='
+\i /migrations/033_auction_hardening.sql
+
+\echo '=== Migration 034: Event outbox ==='
+\i /migrations/034_event_outbox.sql
+
 \echo '=== All migrations completed successfully ==='

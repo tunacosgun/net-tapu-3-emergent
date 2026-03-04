@@ -1,0 +1,7 @@
+{
+  "passed": false,
+  "reason": "Failed to create test payment",
+  "critical": true,
+  "checks": [],
+  "duration_ms": 39
+}

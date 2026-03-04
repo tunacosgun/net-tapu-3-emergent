@@ -111,7 +111,7 @@ describe('Concurrency — idempotency key (e2e)', () => {
         .set('Authorization', `Bearer ${userToken}`)
         .send({
           parcelId,
-          amount: '1000.00',
+          amount: '75.00',
           paymentMethod: 'credit_card',
           idempotencyKey: idempotencyKey5,
         }),
@@ -152,7 +152,7 @@ describe('Concurrency — idempotency key (e2e)', () => {
         .set('Authorization', `Bearer ${userToken}`)
         .send({
           parcelId,
-          amount: '2000.00',
+          amount: '75.00',
           paymentMethod: 'credit_card',
           idempotencyKey: idempotencyKey10,
         }),

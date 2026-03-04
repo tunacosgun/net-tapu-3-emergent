@@ -2,6 +2,8 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  NotFoundException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -14,6 +16,7 @@ import { User } from './entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { UserRole } from './entities/user-role.entity';
 import { Role } from './entities/role.entity';
+import { LoginAttempt } from './entities/login-attempt.entity';
 
 export interface JwtPayload {
   sub: string;
@@ -37,6 +40,8 @@ export class AuthService {
     private readonly userRoleRepo: Repository<UserRole>,
     @InjectRepository(Role)
     private readonly roleRepo: Repository<Role>,
+    @InjectRepository(LoginAttempt)
+    private readonly loginAttemptRepo: Repository<LoginAttempt>,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
   ) {
@@ -90,17 +95,23 @@ export class AuthService {
   ) {
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) {
+      await this.recordLoginAttempt(email, false, ipAddress, deviceInfo);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (!user.isActive) {
+      await this.recordLoginAttempt(email, false, ipAddress, deviceInfo);
       throw new UnauthorizedException('Account is deactivated');
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
+      await this.recordLoginAttempt(email, false, ipAddress, deviceInfo);
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    // Record successful attempt
+    await this.recordLoginAttempt(email, true, ipAddress, deviceInfo);
 
     // Update last login
     await this.userRepo.update(user.id, { lastLoginAt: new Date() });
@@ -177,6 +188,81 @@ export class AuthService {
     await this.revokeAllUserTokens(userId);
   }
 
+  async getProfile(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    const roles = await this.getUserRoles(userId);
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      tcKimlikNo: user.tcKimlikNo,
+      isVerified: user.isVerified,
+      roles,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+    };
+  }
+
+  async updateProfile(
+    userId: string,
+    dto: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      tcKimlikNo?: string;
+    },
+  ) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    const updateData: Partial<User> = {};
+    if (dto.firstName !== undefined) updateData.firstName = dto.firstName;
+    if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
+    if (dto.phone !== undefined) updateData.phone = dto.phone;
+    if (dto.tcKimlikNo !== undefined) updateData.tcKimlikNo = dto.tcKimlikNo;
+
+    if (Object.keys(updateData).length === 0) {
+      throw new BadRequestException('En az bir alan güncellenmelidir');
+    }
+
+    await this.userRepo.update(userId, updateData);
+
+    return this.getProfile(userId);
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      throw new UnauthorizedException('Mevcut şifre yanlış');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    await this.userRepo.update(userId, { passwordHash });
+
+    // Revoke all refresh tokens for security
+    await this.revokeAllUserTokens(userId);
+
+    this.logger.log(`Password changed for user ${userId}`);
+  }
+
   // ── private helpers ──────────────────────────────────────────────
 
   private async issueTokens(
@@ -227,6 +313,27 @@ export class AuthService {
 
   private hashToken(raw: string): string {
     return crypto.createHash('sha256').update(raw).digest('hex');
+  }
+
+  private async recordLoginAttempt(
+    email: string,
+    success: boolean,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<void> {
+    try {
+      await this.loginAttemptRepo.save(
+        this.loginAttemptRepo.create({
+          email,
+          ipAddress: ipAddress ?? null,
+          userAgent: userAgent ?? null,
+          success,
+        }),
+      );
+    } catch (err) {
+      // Never block login flow due to audit failure
+      this.logger.warn(`Failed to record login attempt: ${err}`);
+    }
   }
 
   private async revokeAllUserTokens(userId: string) {
