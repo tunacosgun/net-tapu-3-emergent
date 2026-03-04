@@ -18,6 +18,7 @@ import { CreateAuctionDto } from '../dto/create-auction.dto';
 import { UpdateAuctionStatusDto } from '../dto/update-auction-status.dto';
 import { ListAuctionsQueryDto } from '../dto/list-auctions-query.dto';
 import { AdminGuard } from '../guards/admin.guard';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @Controller()
 export class AuctionController {
@@ -47,6 +48,19 @@ export class AuctionController {
   @Get(':id')
   async findById(@Param('id', ParseUUIDPipe) id: string) {
     return this.auctionService.findById(id);
+  }
+
+  @Get(':id/my-participation')
+  @UseGuards(JwtAuthGuard)
+  async getMyParticipation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Record<string, any>,
+  ) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Authenticated user ID is required');
+    }
+    return this.auctionService.getMyParticipation(id, userId);
   }
 
   @Patch(':id/status')

@@ -17,7 +17,7 @@ export class WsContextInterceptor implements NestInterceptor {
     const requestId =
       (client.data?.requestId as string) || randomUUID();
     const userId = client.data?.userId as string | undefined;
-    const auctionId = (data?.auctionId as string) || undefined;
+    const auctionId = (data?.auction_id as string) || undefined;
 
     return new Observable((subscriber) => {
       RequestContext.run({ requestId, userId, auctionId }, () => {

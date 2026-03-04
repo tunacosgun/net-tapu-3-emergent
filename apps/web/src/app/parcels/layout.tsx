@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 export default function ParcelsLayout({
   children,
@@ -12,14 +13,17 @@ export default function ParcelsLayout({
           <Link href="/" className="text-lg font-bold text-brand-500">
             NetTapu
           </Link>
-          <nav className="flex gap-4 text-sm">
-            <Link href="/parcels" className="font-medium text-brand-500">
-              Arsalar
-            </Link>
-            <Link href="/auctions" className="hover:text-brand-500 transition-colors">
-              Açık Artırmalar
-            </Link>
-          </nav>
+          <div className="flex items-center gap-4">
+            <nav className="flex gap-4 text-sm">
+              <Link href="/parcels" className="font-medium text-brand-500">
+                Arsalar
+              </Link>
+              <Link href="/auctions" className="hover:text-brand-500 transition-colors">
+                Açık Artırmalar
+              </Link>
+            </nav>
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
       {children}

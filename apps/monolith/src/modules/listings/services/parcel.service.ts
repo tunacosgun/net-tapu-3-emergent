@@ -115,6 +115,12 @@ export class ParcelService {
       });
     }
 
+    // Add favoriteCount subquery
+    qb.addSelect(
+      `(SELECT COUNT(*) FROM listings.favorites f WHERE f.parcel_id = p.id)`,
+      'p_favoriteCount',
+    );
+
     const sortColumn = {
       price: 'p.price',
       areaM2: 'p.area_m2',
@@ -125,7 +131,15 @@ export class ParcelService {
     const sortOrder = query.sortOrder === 'ASC' ? 'ASC' : 'DESC';
     qb.orderBy(sortColumn, sortOrder).skip(skip).take(limit);
 
-    const [data, total] = await qb.getManyAndCount();
+    const { entities, raw } = await qb.getRawAndEntities();
+    const total = await qb.getCount();
+
+    // Merge favoriteCount from raw results into entities
+    const data = entities.map((entity, idx) => {
+      (entity as Parcel & { favoriteCount: number }).favoriteCount =
+        parseInt(raw[idx]?.p_favoriteCount ?? '0', 10);
+      return entity;
+    });
 
     return {
       data,
@@ -133,12 +147,25 @@ export class ParcelService {
     };
   }
 
-  async findById(id: string): Promise<Parcel> {
-    const parcel = await this.parcelRepo.findOne({ where: { id } });
+  async findById(id: string): Promise<Parcel & { favoriteCount: number; viewerCount: number }> {
+    const qb = this.parcelRepo
+      .createQueryBuilder('p')
+      .addSelect(
+        `(SELECT COUNT(*) FROM listings.favorites f WHERE f.parcel_id = p.id)`,
+        'p_favoriteCount',
+      )
+      .where('p.id = :id', { id });
+
+    const { entities, raw } = await qb.getRawAndEntities();
+    const parcel = entities[0];
     if (!parcel) {
       throw new NotFoundException(`Parcel ${id} not found`);
     }
-    return parcel;
+
+    const result = parcel as Parcel & { favoriteCount: number; viewerCount: number };
+    result.favoriteCount = parseInt(raw[0]?.p_favoriteCount ?? '0', 10);
+    result.viewerCount = 0; // Will be populated by ViewerCountService in Phase 1.5
+    return result;
   }
 
   async update(id: string, dto: UpdateParcelDto, userId: string): Promise<Parcel> {

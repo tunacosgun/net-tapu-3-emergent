@@ -36,8 +36,11 @@ export interface Parcel {
   isFeatured: boolean;
   createdBy: string | null;
   assignedConsultant: string | null;
+  listedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  favoriteCount?: number;
+  viewerCount?: number;
 }
 
 export interface ParcelImage {

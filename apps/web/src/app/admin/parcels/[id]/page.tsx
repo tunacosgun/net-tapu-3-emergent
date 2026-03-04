@@ -9,6 +9,7 @@ import { showApiError } from '@/components/api-error-toast';
 import { TableSkeleton } from '@/components/skeleton';
 import { parcelSchema, type ParcelFormData } from '@/lib/validators';
 import { FormField, FormTextarea, FormCheckbox } from '@/components/form-field';
+import { AddressGeocoder } from '@/components/address-geocoder';
 import { useRateLimit } from '@/hooks/use-rate-limit';
 import { Button, PageHeader } from '@/components/ui';
 import type { Parcel } from '@/types';
@@ -32,8 +33,17 @@ export default function AdminEditParcelPage() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ParcelFormData>({ resolver: zodResolver(parcelSchema) });
+
+  const watchedCity = watch('city');
+  const watchedDistrict = watch('district');
+  const watchedNeighborhood = watch('neighborhood');
+  const watchedAddress = watch('address');
+  const watchedLat = watch('latitude');
+  const watchedLng = watch('longitude');
 
   useEffect(() => {
     let cancelled = false;
@@ -48,6 +58,8 @@ export default function AdminEditParcelPage() {
             district: data.district,
             neighborhood: data.neighborhood || '',
             address: data.address || '',
+            latitude: data.latitude || '',
+            longitude: data.longitude || '',
             areaM2: data.areaM2 || '',
             price: data.price || '',
             zoningStatus: data.zoningStatus || '',
@@ -76,6 +88,8 @@ export default function AdminEditParcelPage() {
       ...data,
       neighborhood: data.neighborhood || undefined,
       address: data.address || undefined,
+      latitude: data.latitude || undefined,
+      longitude: data.longitude || undefined,
       zoningStatus: data.zoningStatus || undefined,
       landType: data.landType || undefined,
       ada: data.ada || undefined,
@@ -153,11 +167,26 @@ export default function AdminEditParcelPage() {
             {...register('neighborhood')}
           />
           <FormField
-            label="Adres"
+            label="Cadde / Sokak / Adres"
             error={errors.address?.message}
             {...register('address')}
           />
         </div>
+
+        {/* ── Address Geocoder / Map ── */}
+        <AddressGeocoder
+          latitude={watchedLat}
+          longitude={watchedLng}
+          city={watchedCity}
+          district={watchedDistrict}
+          neighborhood={watchedNeighborhood}
+          address={watchedAddress}
+          onCoordsChange={(lat, lng) => {
+            setValue('latitude', lat, { shouldValidate: true });
+            setValue('longitude', lng, { shouldValidate: true });
+          }}
+        />
+
         <div className="grid grid-cols-3 gap-4">
           <FormField
             label="Alan (m²)"

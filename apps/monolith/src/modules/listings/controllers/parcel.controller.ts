@@ -17,6 +17,7 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../../auth/auth.service';
 import { ParcelService } from '../services/parcel.service';
+import { ViewerCountService } from '../services/viewer-count.service';
 import { CreateParcelDto } from '../dto/create-parcel.dto';
 import { UpdateParcelDto } from '../dto/update-parcel.dto';
 import { UpdateParcelStatusDto } from '../dto/update-parcel-status.dto';
@@ -24,7 +25,10 @@ import { ListParcelsQueryDto } from '../dto/list-parcels-query.dto';
 
 @Controller('parcels')
 export class ParcelController {
-  constructor(private readonly parcelService: ParcelService) {}
+  constructor(
+    private readonly parcelService: ParcelService,
+    private readonly viewerCountService: ViewerCountService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -44,7 +48,10 @@ export class ParcelController {
 
   @Get(':id')
   async findById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.parcelService.findById(id);
+    const parcel = await this.parcelService.findById(id);
+    // Populate live viewer count from Redis
+    parcel.viewerCount = await this.viewerCountService.getActiveViewerCount(id);
+    return parcel;
   }
 
   @Patch(':id')

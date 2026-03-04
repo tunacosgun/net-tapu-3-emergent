@@ -8,7 +8,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Auction } from '../entities/auction.entity';
-import { AuctionStatus } from '@nettapu/shared';
+import { AuctionParticipant } from '../entities/auction-participant.entity';
+import { AuctionStatus, Deposit } from '@nettapu/shared';
 import { CreateAuctionDto } from '../dto/create-auction.dto';
 import { UpdateAuctionStatusDto } from '../dto/update-auction-status.dto';
 import { ListAuctionsQueryDto } from '../dto/list-auctions-query.dto';
@@ -30,6 +31,10 @@ export class AuctionService {
   constructor(
     @InjectRepository(Auction)
     private readonly auctionRepo: Repository<Auction>,
+    @InjectRepository(AuctionParticipant)
+    private readonly participantRepo: Repository<AuctionParticipant>,
+    @InjectRepository(Deposit)
+    private readonly depositRepo: Repository<Deposit>,
   ) {}
 
   async create(dto: CreateAuctionDto, userId: string): Promise<Auction> {
@@ -87,6 +92,28 @@ export class AuctionService {
       throw new NotFoundException(`Auction ${id} not found`);
     }
     return auction;
+  }
+
+  async getMyParticipation(
+    auctionId: string,
+    userId: string,
+  ): Promise<{ eligible: boolean; depositStatus: string | null }> {
+    const participant = await this.participantRepo.findOne({
+      where: { auctionId, userId },
+    });
+
+    if (!participant) {
+      return { eligible: false, depositStatus: null };
+    }
+
+    const deposit = await this.depositRepo.findOne({
+      where: { id: participant.depositId },
+    });
+
+    return {
+      eligible: participant.eligible,
+      depositStatus: deposit?.status ?? null,
+    };
   }
 
   async updateStatus(id: string, dto: UpdateAuctionStatusDto): Promise<Auction> {

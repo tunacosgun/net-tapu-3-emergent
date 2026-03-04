@@ -146,14 +146,15 @@ export class AuctionGateway
   @SubscribeMessage('join_auction')
   async handleJoinAuction(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { auctionId: string },
+    @MessageBody() data: { auction_id: string },
   ) {
     const userId = client.data.userId as string;
+    const auctionId = data.auction_id;
 
     // Anti-enumeration: validate UUID format before any DB lookup
     const uuidRe =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!data.auctionId || !uuidRe.test(data.auctionId)) {
+    if (!auctionId || !uuidRe.test(auctionId)) {
       this.logger.warn(
         `Join denied: user ${userId} sent invalid auctionId format`,
       );
@@ -165,7 +166,7 @@ export class AuctionGateway
     // If auction doesn't exist OR user is not participant, same generic error.
     const participant = await this.participantRepo.findOne({
       where: {
-        auctionId: data.auctionId,
+        auctionId,
         userId,
         eligible: true,
       },
@@ -174,7 +175,7 @@ export class AuctionGateway
     if (!participant) {
       // Generic error — do NOT reveal whether auction exists
       this.logger.warn(
-        `Join denied: user ${userId} for auction ${data.auctionId} (not participant or not found)`,
+        `Join denied: user ${userId} for auction ${auctionId} (not participant or not found)`,
       );
       client.emit('error', { message: 'Unable to join auction' });
       return;
@@ -182,7 +183,7 @@ export class AuctionGateway
 
     // Auction exists and user is participant — now load auction state
     const auction = await this.auctionRepo.findOne({
-      where: { id: data.auctionId },
+      where: { id: auctionId },
     });
 
     if (!auction) {
@@ -191,7 +192,7 @@ export class AuctionGateway
       return;
     }
 
-    const room = `auction:${data.auctionId}`;
+    const room = `auction:${auctionId}`;
     await client.join(room);
 
     const effectiveEnd = auction.extendedUntil ?? auction.scheduledEnd;
@@ -223,9 +224,9 @@ export class AuctionGateway
   @SubscribeMessage('leave_auction')
   async handleLeaveAuction(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { auctionId: string },
+    @MessageBody() data: { auction_id: string },
   ) {
-    const room = `auction:${data.auctionId}`;
+    const room = `auction:${data.auction_id}`;
     await client.leave(room);
     this.logger.log(
       `Client ${client.id} (user=${client.data.userId}) left room ${room}`,
@@ -238,9 +239,11 @@ export class AuctionGateway
   async handlePlaceBid(
     @ConnectedSocket() client: Socket,
     @MessageBody()
-    data: { auctionId: string; amount: string; idempotencyKey: string },
+    data: { auction_id: string; amount: string; idempotency_key: string },
   ) {
     const userId = client.data.userId as string;
+    const auctionId = data.auction_id;
+    const idempotencyKey = data.idempotency_key;
     this.metrics.wsBidsTotal.inc();
 
     // ── Bid floor enforcement: reject obviously invalid amounts ──
@@ -347,7 +350,7 @@ export class AuctionGateway
     let auctionRate: { allowed: boolean; current: number };
     try {
       auctionRate = await this.redisLock.checkAuctionRateLimit(
-        data.auctionId,
+        auctionId,
         50,
         3,
       );
@@ -367,7 +370,7 @@ export class AuctionGateway
 
     if (!auctionRate.allowed) {
       this.logger.warn(
-        `Auction rate limit hit: auction ${data.auctionId} received ${auctionRate.current} bids in 3s window`,
+        `Auction rate limit hit: auction ${auctionId} received ${auctionRate.current} bids in 3s window`,
       );
       this.metrics.auctionRateLimitHitsTotal.inc();
       this.metrics.wsBidRejectionsTotal.inc({ reason_code: 'auction_rate_limited' });
@@ -388,16 +391,16 @@ export class AuctionGateway
     const bidStartMs = Date.now();
     try {
       const auction = await this.auctionRepo.findOne({
-        where: { id: data.auctionId },
+        where: { id: auctionId },
       });
       const referencePrice =
         auction?.currentPrice ?? auction?.startingPrice ?? '0';
 
       const dto: PlaceBidDto = {
-        auctionId: data.auctionId,
+        auctionId,
         amount: data.amount,
         referencePrice,
-        idempotencyKey: data.idempotencyKey,
+        idempotencyKey,
       };
 
       // Outbox events (BID_ACCEPTED, SNIPER_EXTENSION) are written

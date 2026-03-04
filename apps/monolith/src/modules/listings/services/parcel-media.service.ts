@@ -6,6 +6,7 @@ import { ParcelDocument } from '../entities/parcel-document.entity';
 import { CreateParcelImageDto } from '../dto/create-parcel-image.dto';
 import { CreateParcelDocumentDto } from '../dto/create-parcel-document.dto';
 import { ParcelService } from './parcel.service';
+import { ImageProcessingService } from './image-processing.service';
 
 @Injectable()
 export class ParcelMediaService {
@@ -17,6 +18,7 @@ export class ParcelMediaService {
     @InjectRepository(ParcelDocument)
     private readonly docRepo: Repository<ParcelDocument>,
     private readonly parcelService: ParcelService,
+    private readonly imageProcessingService: ImageProcessingService,
   ) {}
 
   // ── Images ──
@@ -36,6 +38,12 @@ export class ParcelMediaService {
 
     const saved = await this.imageRepo.save(image);
     this.logger.log(`Image ${saved.id} added to parcel ${parcelId} by user ${userId}`);
+
+    // Trigger async image processing (watermark + thumbnail)
+    this.imageProcessingService.processImage(saved.id).catch((err) => {
+      this.logger.error(`Image processing failed for ${saved.id}: ${(err as Error).message}`);
+    });
+
     return saved;
   }
 

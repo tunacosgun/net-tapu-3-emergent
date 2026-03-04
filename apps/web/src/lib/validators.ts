@@ -64,6 +64,8 @@ export const parcelSchema = z.object({
   landType: z.string().max(100).optional().or(z.literal('')),
   ada: z.string().max(20).optional().or(z.literal('')),
   parsel: z.string().max(20).optional().or(z.literal('')),
+  latitude: z.string().optional().or(z.literal('')),
+  longitude: z.string().optional().or(z.literal('')),
   isAuctionEligible: z.boolean(),
   isFeatured: z.boolean(),
   description: z.string().optional().or(z.literal('')),

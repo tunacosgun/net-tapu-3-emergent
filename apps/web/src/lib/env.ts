@@ -21,8 +21,7 @@ export const env = {
   NEXT_PUBLIC_SITE_URL: optional('NEXT_PUBLIC_SITE_URL', 'http://localhost:3002'),
 } as const;
 
-// Validate critical env at build/startup
-if (typeof window === 'undefined') {
-  // server-side only checks
+// Validate critical env at build/startup (production only)
+if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
   required('API_URL');
 }

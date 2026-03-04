@@ -1,13 +1,16 @@
 import Link from 'next/link';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 const navLinks = [
   { href: '/about', label: 'Hakkımızda' },
   { href: '/vision', label: 'Vizyon' },
   { href: '/mission', label: 'Misyon' },
+  { href: '/how-it-works', label: 'Nasıl Çalışırız' },
   { href: '/faq', label: 'S.S.S.' },
   { href: '/references', label: 'Referanslar' },
   { href: '/press', label: 'Basın' },
   { href: '/legal', label: 'Yasal Bilgiler' },
+  { href: '/withdrawal-rights', label: 'Cayma Hakkı' },
   { href: '/real-estate-guide', label: 'Gayrimenkul Rehberi' },
 ];
 
@@ -23,14 +26,17 @@ export default function ContentLayout({
           <Link href="/" className="text-lg font-bold text-brand-500">
             NetTapu
           </Link>
-          <nav className="flex gap-4 text-sm">
-            <Link href="/parcels" className="hover:text-brand-500 transition-colors">
-              Arsalar
-            </Link>
-            <Link href="/auctions" className="hover:text-brand-500 transition-colors">
-              Acik Artirmalar
-            </Link>
-          </nav>
+          <div className="flex items-center gap-4">
+            <nav className="flex gap-4 text-sm">
+              <Link href="/parcels" className="hover:text-brand-500 transition-colors">
+                Arsalar
+              </Link>
+              <Link href="/auctions" className="hover:text-brand-500 transition-colors">
+                Açık Artırmalar
+              </Link>
+            </nav>
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
 
