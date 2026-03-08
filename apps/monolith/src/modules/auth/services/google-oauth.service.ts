@@ -81,7 +81,7 @@ export class GoogleOAuthService {
       throw new UnauthorizedException('Google authentication failed');
     }
 
-    const tokenData: GoogleTokenResponse = await tokenRes.json();
+    const tokenData = (await tokenRes.json()) as GoogleTokenResponse;
 
     // 2. Get user info
     const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -92,7 +92,7 @@ export class GoogleOAuthService {
       throw new UnauthorizedException('Failed to get Google user info');
     }
 
-    const googleUser: GoogleUserInfo = await userInfoRes.json();
+    const googleUser = (await userInfoRes.json()) as GoogleUserInfo;
 
     if (!googleUser.email || !googleUser.email_verified) {
       throw new UnauthorizedException('Google account email not verified');
