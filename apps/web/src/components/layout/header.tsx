@@ -149,8 +149,7 @@ export function Header() {
                   {profileOpen && (
                     <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-lg py-1 z-50">
                       <div className="px-4 py-2.5 border-b border-[var(--border)]">
-                        <p className="text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
-                        <p className="text-xs text-[var(--muted-foreground)] truncate">{user?.email}</p>
+                        <p className="text-sm font-medium truncate">{user?.email}</p>
                       </div>
                       <Link
                         href="/profile"
