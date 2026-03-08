@@ -26,12 +26,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const areaText = parcel.areaM2 ? `${Number(parcel.areaM2).toLocaleString('tr-TR')} m²` : '';
   const priceText = parcel.price ? `${Number(parcel.price).toLocaleString('tr-TR')} ${parcel.currency === 'USD' ? '$' : parcel.currency === 'EUR' ? '€' : '₺'}` : '';
   const description =
-    [
-      parcel.city && parcel.district ? `📍 ${parcel.city}, ${parcel.district}` : '',
-      areaText ? `📐 ${areaText}` : '',
-      priceText ? `💰 ${priceText}` : '',
-      parcel.description?.slice(0, 100) || '',
-    ].filter(Boolean).join(' • ') || `${parcel.city} ${parcel.district} satılık arsa`;
+    [areaText, priceText, parcel.city && parcel.district ? `${parcel.city}, ${parcel.district}` : '']
+      .filter(Boolean).join(' | ') || `${parcel.city} ${parcel.district} satılık arsa`;
 
   // Resolve OG image — pick cover image or first image
   const coverImage = images.find((i) => i.isCover) || images[0];
