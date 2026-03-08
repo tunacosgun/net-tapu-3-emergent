@@ -20,6 +20,9 @@ export class IpBan {
   @Column({ name: 'expires_at', type: 'timestamptz', nullable: true })
   expiresAt!: Date | null;
 
+  @Column({ name: 'restricted_features', type: 'text', array: true, default: ['full'] })
+  restrictedFeatures!: string[];
+
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 

@@ -42,17 +42,33 @@ export function LegalContent() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold">Yasal Bilgiler</h1>
+      {/* Hero */}
+      <div className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 px-8 py-10 text-white">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5" />
+        <div className="relative">
+          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold lg:text-4xl">Yasal Bilgiler</h1>
+          <p className="mt-2 text-base text-white/70 lg:text-lg">
+            Kullanım koşulları, gizlilik politikası ve yasal düzenlemeler
+          </p>
+        </div>
+      </div>
 
+      {/* Tabs */}
       {sections.length > 1 && (
-        <div className="mt-6 flex gap-1 border-b border-[var(--border)]">
+        <div className="mb-8 flex gap-1 overflow-x-auto rounded-xl bg-[var(--muted)] p-1">
           {sections.map((section, idx) => (
             <button
               key={section.id}
               onClick={() => setActiveTab(idx)}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
+              className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
                 activeTab === idx
-                  ? 'border-b-2 border-brand-500 text-brand-500'
+                  ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
                   : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
               }`}
             >
@@ -62,16 +78,42 @@ export function LegalContent() {
         </div>
       )}
 
+      {/* Content */}
       {sections[activeTab] && (
-        <article className="mt-6">
+        <article className="rounded-xl border border-[var(--border)] p-6 lg:p-8">
           {sections.length === 1 && (
-            <h2 className="text-xl font-semibold">{sections[activeTab].title}</h2>
+            <h2 className="text-xl font-semibold mb-4">{sections[activeTab].title}</h2>
           )}
           {sections[activeTab].content && (
             <div
-              className="prose mt-4 max-w-none"
+              className="prose prose-lg max-w-none
+                prose-headings:text-[var(--foreground)] prose-headings:font-bold
+                prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h2:pb-2 prose-h2:border-b prose-h2:border-[var(--border)]
+                prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-2
+                prose-p:text-[var(--muted-foreground)] prose-p:leading-relaxed
+                prose-a:text-brand-500 prose-a:no-underline hover:prose-a:underline
+                prose-strong:text-[var(--foreground)]
+                prose-ul:text-[var(--muted-foreground)]
+                prose-ol:text-[var(--muted-foreground)]
+                prose-li:marker:text-brand-400
+                prose-table:overflow-hidden prose-table:rounded-lg prose-table:border prose-table:border-[var(--border)]
+                prose-th:bg-[var(--muted)] prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold
+                prose-td:px-4 prose-td:py-2 prose-td:border-t prose-td:border-[var(--border)]"
               dangerouslySetInnerHTML={{ __html: sections[activeTab].content! }}
             />
+          )}
+
+          {/* Updated date */}
+          {sections[activeTab].updatedAt && (
+            <div className="mt-8 border-t border-[var(--border)] pt-4">
+              <p className="text-xs text-[var(--muted-foreground)]">
+                Son güncelleme: {new Date(sections[activeTab].updatedAt).toLocaleDateString('tr-TR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </p>
+            </div>
           )}
         </article>
       )}

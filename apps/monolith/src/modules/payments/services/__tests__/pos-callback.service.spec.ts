@@ -58,10 +58,13 @@ function createService(overrides: Partial<any> = {}): PosCallbackService {
     ),
   };
 
+  const configService = { get: jest.fn().mockReturnValue('mock') };
+
   return new PosCallbackService(
     paymentRepo as any,
     posGateway as any,
     dataSource as any,
+    configService as any,
   );
 }
 

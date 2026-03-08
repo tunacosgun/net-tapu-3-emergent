@@ -17,3 +17,21 @@ export function formatDate(dateStr: string, mode: 'date' | 'datetime' = 'datetim
 export function truncateId(id: string): string {
   return `${id.slice(0, 8)}...`;
 }
+
+/**
+ * Resolve the best available display URL for a ParcelImage.
+ * Prefers thumbnail → watermarked → original.
+ * /uploads/... paths are proxied to the backend via Next.js rewrites.
+ */
+export function resolveImageUrl(img: {
+  thumbnailUrl?: string | null;
+  watermarkedUrl?: string | null;
+  originalUrl?: string;
+  url?: string;
+}): string {
+  const url = img.thumbnailUrl || img.watermarkedUrl || img.originalUrl || img.url || '';
+  // Already absolute → use as-is
+  if (url.startsWith('http')) return url;
+  // Relative /uploads/... paths are proxied via Next.js rewrites
+  return url;
+}

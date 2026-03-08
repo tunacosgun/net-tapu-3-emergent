@@ -36,6 +36,19 @@ export class BanController {
     );
   }
 
+  @Get('login-attempts')
+  async listLoginAttempts(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('email') email?: string,
+  ) {
+    return this.banService.listLoginAttempts(
+      parseInt(page || '1', 10),
+      parseInt(limit || '50', 10),
+      email,
+    );
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createBan(
@@ -48,6 +61,7 @@ export class BanController {
       reason: dto.reason,
       bannedBy: user.sub,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
+      restrictedFeatures: dto.restrictedFeatures,
     });
   }
 

@@ -46,6 +46,16 @@ export class ParcelController {
     return this.parcelService.findAll(query);
   }
 
+  @Get('featured')
+  async findFeatured() {
+    return this.parcelService.findAll({
+      isFeatured: true,
+      status: 'active' as any,
+      limit: 12,
+      page: 1,
+    });
+  }
+
   @Get(':id')
   async findById(@Param('id', ParseUUIDPipe) id: string) {
     const parcel = await this.parcelService.findById(id);

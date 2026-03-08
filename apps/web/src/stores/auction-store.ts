@@ -55,6 +55,9 @@ interface AuctionState {
   winnerIdMasked: string | null;
   finalPrice: string | null;
 
+  // Broadcast name map (admin revealed names for everyone)
+  broadcastNameMap: Record<string, string> | null;
+
   // Optimistic bid tracking
   optimisticBid: OptimisticBid | null;
 
@@ -74,6 +77,8 @@ interface AuctionState {
   applyAuctionEnding: (msg: AuctionEndingMessage) => void;
   applyAuctionEnded: (msg: AuctionEndedMessage) => void;
   setTimeRemaining: (ms: number) => void;
+  setWatcherCount: (count: number) => void;
+  setBroadcastNames: (map: Record<string, string> | null) => void;
 
   // Optimistic bid
   setOptimisticBid: (bid: OptimisticBid) => void;
@@ -102,6 +107,7 @@ const initialState = {
   lastRejection: null as BidRejectedMessage | null,
   winnerIdMasked: null,
   finalPrice: null,
+  broadcastNameMap: null as Record<string, string> | null,
   optimisticBid: null as OptimisticBid | null,
 };
 
@@ -205,6 +211,8 @@ export const useAuctionStore = create<AuctionState>((set) => ({
     }),
 
   setTimeRemaining: (ms) => set({ timeRemainingMs: ms }),
+  setWatcherCount: (count) => set({ watcherCount: count }),
+  setBroadcastNames: (map) => set({ broadcastNameMap: map }),
 
   setOptimisticBid: (bid) =>
     set((state) => {

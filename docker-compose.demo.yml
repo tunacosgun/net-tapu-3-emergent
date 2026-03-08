@@ -1,0 +1,92 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: nettapu-redis
+    command: redis-server --requirepass nettapu_redis_demo --maxmemory 128mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - nettapu
+
+  monolith:
+    build:
+      context: .
+      dockerfile: apps/monolith/Dockerfile
+    container_name: nettapu-monolith
+    environment:
+      NODE_ENV: staging
+      DATABASE_URL: postgresql://neondb_owner:npg_7FL0QIEHWNXJ@ep-sparkling-tree-ad29rdhv-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+      REDIS_URL: redis://:nettapu_redis_demo@redis:6379
+      JWT_SECRET: nettapu_demo_jwt_secret_min_32_characters_long!!
+      JWT_ISSUER: nettapu
+      JWT_AUDIENCE: nettapu-platform
+      JWT_ACCESS_EXPIRATION: 15m
+      JWT_REFRESH_EXPIRATION_DAYS: "7"
+      POS_PROVIDER: mock
+      CORS_ORIGIN: "https://nettapu-demo.tunasoft.tech,http://nettapu-demo.tunasoft.tech"
+      CLUSTER_WORKERS: "1"
+      NOTIFICATION_DISPATCH_ENABLED: "true"
+      NOTIFICATION_POLL_INTERVAL_MS: "10000"
+      INTERNAL_SERVICE_KEY: nettapu_demo_internal_key_2026
+      RECONCILIATION_ENABLED: "false"
+      PORT: 3000
+    volumes:
+      - monolith-uploads:/app/apps/monolith/uploads
+    ports:
+      - "127.0.0.1:4000:3000"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - nettapu
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: nettapu-web
+    environment:
+      NODE_ENV: production
+      API_URL: http://monolith:3000
+      AUCTION_API_URL: http://auction-service:3001
+    ports:
+      - "127.0.0.1:4002:3002"
+    depends_on:
+      - monolith
+      - auction-service
+    restart: unless-stopped
+    networks:
+      - nettapu
+
+  auction-service:
+    build:
+      context: .
+      dockerfile: apps/auction-service/Dockerfile
+    container_name: nettapu-auction
+    environment:
+      NODE_ENV: staging
+      DATABASE_URL: postgresql://neondb_owner:npg_7FL0QIEHWNXJ@ep-sparkling-tree-ad29rdhv-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+      REDIS_URL: redis://:nettapu_redis_demo@redis:6379
+      JWT_SECRET: nettapu_demo_jwt_secret_min_32_characters_long!!
+      JWT_ISSUER: nettapu
+      JWT_AUDIENCE: nettapu-platform
+      CORS_ORIGIN: "https://nettapu-demo.tunasoft.tech,http://nettapu-demo.tunasoft.tech"
+      POS_PROVIDER: mock
+      CLUSTER_WORKERS: "1"
+      MONOLITH_INTERNAL_URL: http://monolith:3000
+      INTERNAL_SERVICE_KEY: nettapu_demo_internal_key_2026
+      NOTIFICATION_CONSUMER_ENABLED: "true"
+      PORT: 3001
+    ports:
+      - "127.0.0.1:4001:3001"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - nettapu
+
+volumes:
+  monolith-uploads:
+
+networks:
+  nettapu:
+    driver: bridge

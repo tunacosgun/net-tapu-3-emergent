@@ -55,6 +55,26 @@ export class ParcelMediaService {
     });
   }
 
+  async setCoverImage(parcelId: string, imageId: string, userId: string): Promise<void> {
+    await this.parcelService.findById(parcelId);
+    // Clear all covers for this parcel
+    await this.imageRepo.update({ parcelId }, { isCover: false });
+    // Set the specified image as cover
+    const result = await this.imageRepo.update({ id: imageId, parcelId }, { isCover: true });
+    if (result.affected === 0) {
+      throw new NotFoundException(`Image ${imageId} not found on parcel ${parcelId}`);
+    }
+    this.logger.log(`Image ${imageId} set as cover for parcel ${parcelId} by user ${userId}`);
+  }
+
+  async reorderImages(parcelId: string, imageIds: string[], userId: string): Promise<void> {
+    await this.parcelService.findById(parcelId);
+    for (let i = 0; i < imageIds.length; i++) {
+      await this.imageRepo.update({ id: imageIds[i], parcelId }, { sortOrder: i });
+    }
+    this.logger.log(`Images reordered for parcel ${parcelId} by user ${userId}`);
+  }
+
   async removeImage(parcelId: string, imageId: string, userId: string): Promise<void> {
     const image = await this.imageRepo.findOne({ where: { id: imageId, parcelId } });
     if (!image) {

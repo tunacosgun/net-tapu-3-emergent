@@ -10,22 +10,34 @@ import { TableSkeleton } from '@/components/skeleton';
 import { parcelSchema, type ParcelFormData } from '@/lib/validators';
 import { FormField, FormTextarea, FormCheckbox } from '@/components/form-field';
 import { AddressGeocoder } from '@/components/address-geocoder';
+import { ImageUpload } from '@/components/image-upload';
 import { useRateLimit } from '@/hooks/use-rate-limit';
 import { Button, PageHeader } from '@/components/ui';
 import type { Parcel } from '@/types';
 
+interface ParcelImage {
+  id: string;
+  originalUrl: string;
+  thumbnailUrl: string | null;
+  watermarkedUrl: string | null;
+  status: string;
+  sortOrder: number;
+  isCover: boolean;
+}
+
 const statusLabels: Record<string, string> = {
   draft: 'Taslak',
   active: 'Aktif',
-  deposit_taken: 'Depozito Alındı',
-  sold: 'Satıldı',
-  withdrawn: 'Geri Çekildi',
+  deposit_taken: 'Depozito Alindi',
+  sold: 'Satildi',
+  withdrawn: 'Geri Cekildi',
 };
 
 export default function AdminEditParcelPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [parcel, setParcel] = useState<Parcel | null>(null);
+  const [parcelImages, setParcelImages] = useState<ParcelImage[]>([]);
   const [loading, setLoading] = useState(true);
   const { cooldown, isLimited, checkRateLimit } = useRateLimit();
 
@@ -49,26 +61,30 @@ export default function AdminEditParcelPage() {
     let cancelled = false;
     async function fetchParcel() {
       try {
-        const { data } = await apiClient.get<Parcel>(`/parcels/${params.id}`);
+        const [{ data: parcelData }, { data: imagesData }] = await Promise.all([
+          apiClient.get<Parcel>(`/parcels/${params.id}`),
+          apiClient.get<ParcelImage[]>(`/parcels/${params.id}/images`),
+        ]);
         if (!cancelled) {
-          setParcel(data);
+          setParcel(parcelData);
+          setParcelImages(imagesData || []);
           reset({
-            title: data.title,
-            city: data.city,
-            district: data.district,
-            neighborhood: data.neighborhood || '',
-            address: data.address || '',
-            latitude: data.latitude || '',
-            longitude: data.longitude || '',
-            areaM2: data.areaM2 || '',
-            price: data.price || '',
-            zoningStatus: data.zoningStatus || '',
-            landType: data.landType || '',
-            ada: data.ada || '',
-            parsel: data.parsel || '',
-            isAuctionEligible: data.isAuctionEligible,
-            isFeatured: data.isFeatured,
-            description: data.description || '',
+            title: parcelData.title,
+            city: parcelData.city,
+            district: parcelData.district,
+            neighborhood: parcelData.neighborhood || '',
+            address: parcelData.address || '',
+            latitude: parcelData.latitude || '',
+            longitude: parcelData.longitude || '',
+            areaM2: parcelData.areaM2 || '',
+            price: parcelData.price || '',
+            zoningStatus: parcelData.zoningStatus || '',
+            landType: parcelData.landType || '',
+            ada: parcelData.ada || '',
+            parsel: parcelData.parsel || '',
+            isAuctionEligible: parcelData.isAuctionEligible,
+            isFeatured: parcelData.isFeatured,
+            description: parcelData.description || '',
           });
           setLoading(false);
         }
@@ -117,12 +133,12 @@ export default function AdminEditParcelPage() {
   }
 
   if (loading) return <TableSkeleton />;
-  if (!parcel) return <p className="text-red-600">Arsa bulunamadı.</p>;
+  if (!parcel) return <p className="text-red-600">Arsa bulunamadi.</p>;
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <PageHeader
-        title="Arsa Düzenle"
+        title="Arsa Duzenle"
         subtitle={`ID: ${parcel.id}`}
       />
 
@@ -144,18 +160,18 @@ export default function AdminEditParcelPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <FormField
-          label="Başlık *"
+          label="Baslik *"
           error={errors.title?.message}
           {...register('title')}
         />
         <div className="grid grid-cols-2 gap-4">
           <FormField
-            label="Şehir *"
+            label="Sehir *"
             error={errors.city?.message}
             {...register('city')}
           />
           <FormField
-            label="İlçe *"
+            label="Ilce *"
             error={errors.district?.message}
             {...register('district')}
           />
@@ -173,7 +189,7 @@ export default function AdminEditParcelPage() {
           />
         </div>
 
-        {/* ── Address Geocoder / Map ── */}
+        {/* Address Geocoder / Map */}
         <AddressGeocoder
           latitude={watchedLat}
           longitude={watchedLng}
@@ -189,7 +205,7 @@ export default function AdminEditParcelPage() {
 
         <div className="grid grid-cols-3 gap-4">
           <FormField
-            label="Alan (m²)"
+            label="Alan (m2)"
             type="number"
             error={errors.areaM2?.message}
             {...register('areaM2')}
@@ -201,14 +217,14 @@ export default function AdminEditParcelPage() {
             {...register('price')}
           />
           <FormField
-            label="İmar Durumu"
+            label="Imar Durumu"
             error={errors.zoningStatus?.message}
             {...register('zoningStatus')}
           />
         </div>
         <div className="grid grid-cols-3 gap-4">
           <FormField
-            label="Arazi Türü"
+            label="Arazi Turu"
             error={errors.landType?.message}
             {...register('landType')}
           />
@@ -236,6 +252,17 @@ export default function AdminEditParcelPage() {
           error={errors.description?.message}
           {...register('description')}
         />
+
+        {/* Image Upload with existing images */}
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-6">
+          <h2 className="text-sm font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-4">Görseller</h2>
+          <ImageUpload
+            parcelId={params.id}
+            images={parcelImages}
+            onChange={setParcelImages}
+          />
+        </div>
+
         <div className="flex gap-3">
           <Button type="submit" disabled={isSubmitting || isLimited}>
             {isLimited

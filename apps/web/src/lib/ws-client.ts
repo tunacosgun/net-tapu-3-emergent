@@ -92,6 +92,19 @@ export function connectToAuction(auctionId: string) {
   events.forEach((event) => {
     socket?.on(event, (data: ServerMessage) => handleMessage(data));
   });
+
+  // Live watcher count updates
+  socket.on('watcher_update', (data: { watcher_count: number }) => {
+    useAuctionStore.getState().setWatcherCount(data.watcher_count);
+  });
+
+  // Admin broadcast: names revealed/hidden for all clients
+  socket.on('names_revealed', (data: { name_map: Record<string, string> }) => {
+    useAuctionStore.getState().setBroadcastNames(data.name_map);
+  });
+  socket.on('names_hidden', () => {
+    useAuctionStore.getState().setBroadcastNames(null);
+  });
 }
 
 export function placeBid(auctionId: string, amount: string, referencePrice: string): string {
@@ -117,6 +130,10 @@ export function placeBid(auctionId: string, amount: string, referencePrice: stri
   });
 
   return idempotencyKey;
+}
+
+export function getSocket(): Socket | null {
+  return socket;
 }
 
 export function disconnectFromAuction() {

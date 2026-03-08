@@ -50,7 +50,7 @@ export function CallMeForm({
 
   async function onSubmit(data: CallMeFormData) {
     try {
-      await apiClient.post('/contact-requests', {
+      await apiClient.post('/crm/contact-requests', {
         type: 'call_me',
         parcelId,
         name: data.name,

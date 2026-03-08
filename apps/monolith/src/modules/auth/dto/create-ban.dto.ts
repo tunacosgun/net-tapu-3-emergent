@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsUUID, MaxLength, IsDateString, ValidateIf } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MaxLength, IsDateString, ValidateIf, IsArray } from 'class-validator';
 
 export class CreateBanDto {
   @IsOptional()
@@ -16,6 +16,11 @@ export class CreateBanDto {
   @IsOptional()
   @IsDateString()
   expiresAt?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  restrictedFeatures?: string[];
 
   @ValidateIf((o) => !o.ipAddress && !o.userId)
   @IsString({ message: 'En az bir hedef (IP veya kullanıcı) belirtilmelidir' })

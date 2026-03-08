@@ -7,10 +7,12 @@ import {
   PaymentStatus,
   IPosGateway,
   POS_GATEWAY,
+  Deposit,
 } from '@nettapu/shared';
 import { Payment } from '../entities/payment.entity';
 import { PosTransaction } from '../entities/pos-transaction.entity';
 import { MetricsService } from '../../../metrics/metrics.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PosCallbackService {
@@ -22,6 +24,7 @@ export class PosCallbackService {
     @Inject(POS_GATEWAY)
     private readonly posGateway: IPosGateway,
     private readonly dataSource: DataSource,
+    private readonly config: ConfigService,
     @Optional() private readonly metrics?: MetricsService,
   ) {}
 
@@ -229,6 +232,11 @@ export class PosCallbackService {
             metadata: { posReference: provisionResult.posReference },
           }),
         );
+
+        // Create Deposit + AuctionParticipant for auction payments
+        if (locked.auctionId) {
+          await this.createDepositAndParticipant(qr.manager, locked);
+        }
       } else {
         locked.status = PaymentStatus.FAILED;
         await qr.manager.save(Payment, locked);
@@ -279,6 +287,58 @@ export class PosCallbackService {
       throw err;
     } finally {
       await qr.release();
+    }
+  }
+
+  /** Create Deposit + AuctionParticipant when auction payment is provisioned */
+  private async createDepositAndParticipant(
+    manager: import('typeorm').EntityManager,
+    payment: Payment,
+  ): Promise<void> {
+    try {
+      const provider = this.config.get<string>('POS_PROVIDER', 'mock');
+      const deposit = manager.create(Deposit, {
+        userId: payment.userId,
+        auctionId: payment.auctionId!,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: 'collected',
+        paymentMethod: payment.paymentMethod ?? 'credit_card',
+        posProvider: provider !== 'mock' ? provider : null,
+        posTransactionId: null,
+        idempotencyKey: payment.idempotencyKey,
+      });
+      const savedDeposit = await manager.save(Deposit, deposit);
+
+      await manager.query(
+        `INSERT INTO auctions.auction_participants (auction_id, user_id, deposit_id, eligible, registered_at)
+         VALUES ($1, $2, $3, TRUE, NOW())
+         ON CONFLICT (auction_id, user_id) DO UPDATE SET
+           deposit_id = EXCLUDED.deposit_id,
+           eligible = TRUE,
+           revoked_at = NULL,
+           revoke_reason = NULL`,
+        [payment.auctionId, payment.userId, savedDeposit.id],
+      );
+
+      this.logger.log(
+        JSON.stringify({
+          event: 'deposit_and_participant_created_3ds',
+          payment_id: payment.id,
+          deposit_id: savedDeposit.id,
+          auction_id: payment.auctionId,
+          user_id: payment.userId,
+        }),
+      );
+    } catch (err) {
+      this.logger.error(
+        JSON.stringify({
+          event: 'CRITICAL_deposit_creation_failed_3ds',
+          payment_id: payment.id,
+          auction_id: payment.auctionId,
+          error: (err as Error).message,
+        }),
+      );
     }
   }
 

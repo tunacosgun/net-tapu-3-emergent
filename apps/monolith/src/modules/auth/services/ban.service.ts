@@ -32,7 +32,7 @@ export class BanService {
    * Check if an IP or user is banned.
    * Returns the ban reason if banned, null otherwise.
    */
-  async checkBan(ipAddress?: string, userId?: string): Promise<string | null> {
+  async checkBan(ipAddress?: string, userId?: string): Promise<{ reason: string; type: 'ip' | 'user'; expiresAt: Date | null; restrictedFeatures: string[] } | null> {
     const now = new Date();
     const conditions: string[] = [];
     const params: Record<string, unknown> = {};
@@ -56,7 +56,60 @@ export class BanService {
       .orderBy('b.created_at', 'DESC')
       .getOne();
 
-    return ban ? ban.reason : null;
+    if (!ban) return null;
+
+    const type = ban.userId ? 'user' : 'ip';
+    return { reason: ban.reason, type, expiresAt: ban.expiresAt, restrictedFeatures: ban.restrictedFeatures || ['full'] };
+  }
+
+  /**
+   * Check if a specific feature is banned for an IP/user.
+   */
+  async checkFeatureBan(ipAddress?: string, userId?: string, feature?: string): Promise<{ reason: string; type: 'ip' | 'user'; expiresAt: Date | null; restrictedFeatures: string[] } | null> {
+    const ban = await this.checkBan(ipAddress, userId);
+    if (!ban) return null;
+    const features = ban.restrictedFeatures;
+    if (features.includes('full') || (feature && features.includes(feature))) {
+      return ban;
+    }
+    return null;
+  }
+
+  /**
+   * Get all active bans for a user (for ban-status endpoint).
+   */
+  async getUserBanStatus(ipAddress?: string, userId?: string): Promise<{ banned: boolean; bans: { reason: string; restrictedFeatures: string[]; expiresAt: Date | null }[] }> {
+    const now = new Date();
+    const conditions: string[] = [];
+    const params: Record<string, unknown> = {};
+
+    if (ipAddress) {
+      conditions.push('(b.ip_address = :ip)');
+      params.ip = ipAddress;
+    }
+    if (userId) {
+      conditions.push('(b.user_id = :userId)');
+      params.userId = userId;
+    }
+    if (conditions.length === 0) return { banned: false, bans: [] };
+
+    const bans = await this.banRepo
+      .createQueryBuilder('b')
+      .where(`b.is_active = true AND (${conditions.join(' OR ')})`)
+      .andWhere('(b.expires_at IS NULL OR b.expires_at > :now)', { ...params, now })
+      .orderBy('b.created_at', 'DESC')
+      .getMany();
+
+    if (bans.length === 0) return { banned: false, bans: [] };
+
+    return {
+      banned: true,
+      bans: bans.map(b => ({
+        reason: b.reason,
+        restrictedFeatures: b.restrictedFeatures || ['full'],
+        expiresAt: b.expiresAt,
+      })),
+    };
   }
 
   /**
@@ -123,6 +176,28 @@ export class BanService {
   }
 
   /**
+   * Admin: list login attempts.
+   */
+  async listLoginAttempts(
+    page = 1,
+    limit = 50,
+    email?: string,
+  ): Promise<{ data: LoginAttempt[]; total: number }> {
+    const qb = this.loginAttemptRepo.createQueryBuilder('la');
+
+    if (email) {
+      qb.where('la.email ILIKE :email', { email: `%${email}%` });
+    }
+
+    qb.orderBy('la.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total };
+  }
+
+  /**
    * Admin: create a ban.
    */
   async createBan(params: {
@@ -131,6 +206,7 @@ export class BanService {
     reason: string;
     bannedBy: string;
     expiresAt?: Date;
+    restrictedFeatures?: string[];
   }): Promise<IpBan> {
     const ban = this.banRepo.create({
       ipAddress: params.ipAddress ?? null,
@@ -138,6 +214,7 @@ export class BanService {
       reason: params.reason,
       bannedBy: params.bannedBy,
       expiresAt: params.expiresAt ?? null,
+      restrictedFeatures: params.restrictedFeatures ?? ['full'],
     });
 
     const saved = await this.banRepo.save(ban);

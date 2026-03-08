@@ -11,3 +11,4 @@ coverage/
 load-tests/results/
 .next
 apps/web/.next
+apps/web/.next.zip

@@ -27,6 +27,11 @@ const nextConfig = {
         source: '/api/v1/bids/:path*',
         destination: `${auctionTarget}/api/v1/auctions/bids/:path*`,
       },
+      // Static uploads (images, documents)
+      {
+        source: '/uploads/:path*',
+        destination: `${apiTarget}/uploads/:path*`,
+      },
       // Monolith catch-all (must be last)
       {
         source: '/api/v1/:path*',

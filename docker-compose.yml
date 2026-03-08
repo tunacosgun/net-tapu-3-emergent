@@ -64,7 +64,7 @@ services:
     container_name: nettapu-monolith
     environment:
       NODE_ENV: ${NODE_ENV:-staging}
-      DATABASE_URL: postgresql://nettapu_app:${POSTGRES_APP_PASSWORD:-app_secret_change_me}@postgres:5432/nettapu
+      DATABASE_URL: ${DATABASE_URL:-postgresql://nettapu_app:app_secret_change_me@postgres:5432/nettapu}
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret_change_me}@redis:6379
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production_min_32_chars!!}
       JWT_ISSUER: ${JWT_ISSUER:-nettapu}
@@ -73,11 +73,36 @@ services:
       JWT_REFRESH_EXPIRATION_DAYS: "7"
       POS_PROVIDER: ${POS_PROVIDER:-mock}
       POS_TIMEOUT_MS: ${POS_TIMEOUT_MS:-7000}
+      PAYTR_MERCHANT_ID: ${PAYTR_MERCHANT_ID:-}
+      PAYTR_MERCHANT_KEY: ${PAYTR_MERCHANT_KEY:-}
+      PAYTR_MERCHANT_SALT: ${PAYTR_MERCHANT_SALT:-}
+      PAYTR_BASE_URL: ${PAYTR_BASE_URL:-https://www.paytr.com}
+      IYZICO_API_KEY: ${IYZICO_API_KEY:-}
+      IYZICO_SECRET_KEY: ${IYZICO_SECRET_KEY:-}
+      IYZICO_BASE_URL: ${IYZICO_BASE_URL:-https://sandbox-api.iyzipay.com}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       CLUSTER_WORKERS: ${CLUSTER_WORKERS:-1}
+      # Notification providers
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-noreply@nettapu.com}
+      NETGSM_USERCODE: ${NETGSM_USERCODE:-}
+      NETGSM_PASSWORD: ${NETGSM_PASSWORD:-}
+      NETGSM_MSGHEADER: ${NETGSM_MSGHEADER:-NETTAPU}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
+      NOTIFICATION_DISPATCH_ENABLED: ${NOTIFICATION_DISPATCH_ENABLED:-true}
+      NOTIFICATION_POLL_INTERVAL_MS: ${NOTIFICATION_POLL_INTERVAL_MS:-5000}
+      NOTIFICATION_BATCH_SIZE: ${NOTIFICATION_BATCH_SIZE:-10}
+      EMAIL_VERIFICATION_EXPIRY_HOURS: ${EMAIL_VERIFICATION_EXPIRY_HOURS:-24}
+      PASSWORD_RESET_EXPIRY_MINUTES: ${PASSWORD_RESET_EXPIRY_MINUTES:-30}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-change_me_internal_service_secret}
+      RECONCILIATION_ENABLED: ${RECONCILIATION_ENABLED:-true}
       PORT: 3000
     ports:
       - "3000:3000"
+    volumes:
+      - monolith_uploads:/app/apps/monolith/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -110,7 +135,7 @@ services:
     container_name: nettapu-auction
     environment:
       NODE_ENV: ${NODE_ENV:-staging}
-      DATABASE_URL: postgresql://nettapu_app:${POSTGRES_APP_PASSWORD:-app_secret_change_me}@postgres:5432/nettapu
+      DATABASE_URL: ${DATABASE_URL:-postgresql://nettapu_app:app_secret_change_me@postgres:5432/nettapu}
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret_change_me}@redis:6379
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production_min_32_chars!!}
       JWT_ISSUER: ${JWT_ISSUER:-nettapu}
@@ -118,7 +143,11 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       SNIPER_EXTENSION_SECONDS: ${SNIPER_EXTENSION_SECONDS:-60}
       POS_FAIL_MODE: ${POS_FAIL_MODE:-false}
+      POS_PROVIDER: ${POS_PROVIDER:-mock}
       CLUSTER_WORKERS: ${CLUSTER_WORKERS:-1}
+      MONOLITH_INTERNAL_URL: http://monolith:3000
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-change_me_internal_service_secret}
+      NOTIFICATION_CONSUMER_ENABLED: ${NOTIFICATION_CONSUMER_ENABLED:-true}
       PORT: 3001
     ports:
       - "3001:3001"
@@ -152,8 +181,12 @@ services:
     container_name: nettapu-nginx
     ports:
       - "80:80"
+      - "443:443"
+      - "8080:8080"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/certbot:/var/www/certbot:ro
     depends_on:
       monolith:
         condition: service_healthy
@@ -179,3 +212,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  monolith_uploads:

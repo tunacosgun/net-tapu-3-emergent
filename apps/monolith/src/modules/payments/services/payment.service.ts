@@ -18,6 +18,7 @@ import {
   ProvisionInitiationResponse,
 } from '@nettapu/shared';
 import { ConfigService } from '@nestjs/config';
+import { Deposit } from '@nettapu/shared';
 import { Payment } from '../entities/payment.entity';
 import { PosTransaction } from '../entities/pos-transaction.entity';
 import { IdempotencyKey } from '../entities/idempotency-key.entity';
@@ -39,6 +40,8 @@ export class PaymentService {
     private readonly posTxRepo: Repository<PosTransaction>,
     @InjectRepository(IdempotencyKey)
     private readonly idempotencyRepo: Repository<IdempotencyKey>,
+    @InjectRepository(Deposit)
+    private readonly depositRepo: Repository<Deposit>,
     @Inject(POS_GATEWAY)
     private readonly posGateway: IPosGateway,
     private readonly dataSource: DataSource,
@@ -382,6 +385,11 @@ export class PaymentService {
         );
 
         this.metrics?.paymentProvisionedTotal.inc({ provider: this.provider, currency: payment.currency });
+
+        // ── Create Deposit + AuctionParticipant if this is an auction deposit ──
+        if (locked.auctionId) {
+          await this.createDepositAndParticipant(qr2.manager, locked);
+        }
       } else {
         locked.status = PaymentStatus.FAILED;
         await qr2.manager.save(Payment, locked);
@@ -408,6 +416,60 @@ export class PaymentService {
       throw err;
     } finally {
       await qr2.release();
+    }
+  }
+
+  // ── Deposit + Participant creation (auction payments) ──────
+  private async createDepositAndParticipant(
+    manager: import('typeorm').EntityManager,
+    payment: Payment,
+  ): Promise<void> {
+    try {
+      // 1. Create Deposit record in payments.deposits
+      const deposit = manager.create(Deposit, {
+        userId: payment.userId,
+        auctionId: payment.auctionId!,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: 'collected',
+        paymentMethod: payment.paymentMethod ?? 'credit_card',
+        posProvider: this.provider !== 'mock' ? this.provider : null,
+        posTransactionId: null,
+        idempotencyKey: payment.idempotencyKey,
+      });
+      const savedDeposit = await manager.save(Deposit, deposit);
+
+      // 2. Create AuctionParticipant in auctions.auction_participants (cross-schema, raw SQL)
+      await manager.query(
+        `INSERT INTO auctions.auction_participants (auction_id, user_id, deposit_id, eligible, registered_at)
+         VALUES ($1, $2, $3, TRUE, NOW())
+         ON CONFLICT (auction_id, user_id) DO UPDATE SET
+           deposit_id = EXCLUDED.deposit_id,
+           eligible = TRUE,
+           revoked_at = NULL,
+           revoke_reason = NULL`,
+        [payment.auctionId, payment.userId, savedDeposit.id],
+      );
+
+      this.logger.log(
+        JSON.stringify({
+          event: 'deposit_and_participant_created',
+          payment_id: payment.id,
+          deposit_id: savedDeposit.id,
+          auction_id: payment.auctionId,
+          user_id: payment.userId,
+        }),
+      );
+    } catch (err) {
+      // Log but don't fail the payment — deposit can be reconciled manually
+      this.logger.error(
+        JSON.stringify({
+          event: 'CRITICAL_deposit_creation_failed',
+          payment_id: payment.id,
+          auction_id: payment.auctionId,
+          error: (err as Error).message,
+        }),
+      );
     }
   }
 

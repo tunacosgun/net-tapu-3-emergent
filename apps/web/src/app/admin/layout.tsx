@@ -16,6 +16,13 @@ const navSections = [
     ],
   },
   {
+    title: 'Kullanıcılar',
+    items: [
+      { href: '/admin/users', label: 'Kullanıcılar', icon: '👥' },
+      { href: '/admin/bans', label: 'Yasaklamalar', icon: '🚫' },
+    ],
+  },
+  {
     title: 'Gayrimenkul',
     items: [
       { href: '/admin/parcels', label: 'Arsalar', icon: '📦' },
@@ -38,6 +45,14 @@ const navSections = [
     ],
   },
   {
+    title: 'İçerik',
+    items: [
+      { href: '/admin/pages', label: 'Sayfalar', icon: '📄' },
+      { href: '/admin/faq', label: 'S.S.S.', icon: '❓' },
+      { href: '/admin/references', label: 'Referanslar', icon: '🏆' },
+    ],
+  },
+  {
     title: 'Pazarlama',
     items: [
       { href: '/admin/campaigns', label: 'Kampanyalar', icon: '🎯' },
@@ -48,7 +63,6 @@ const navSections = [
     title: 'Sistem',
     items: [
       { href: '/admin/settings', label: 'Ayarlar', icon: '⚙️' },
-      { href: '/admin/bans', label: 'Yasaklamalar', icon: '🚫' },
       { href: '/admin/notifications', label: 'Bildirimler', icon: '🔔' },
     ],
   },
@@ -86,13 +100,16 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex flex-1">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-[var(--border)] bg-[var(--muted)] p-4">
-        <Link href="/admin" className="text-lg font-bold text-brand-500">
-          NetTapu Admin
-        </Link>
-        <nav className="mt-6 space-y-4">
+      <aside className="hidden w-64 shrink-0 border-r border-[var(--border)] bg-[var(--muted)] p-4 lg:block">
+        <div className="flex items-center gap-2 px-3 py-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded bg-brand-500">
+            <span className="text-xs font-bold text-white">NT</span>
+          </div>
+          <span className="text-sm font-bold text-brand-500">Admin Panel</span>
+        </div>
+        <nav className="mt-4 space-y-4">
           {navSections.map((section, i) => (
             <div key={i}>
               {section.title && (
@@ -118,15 +135,15 @@ export default function AdminLayout({
       </aside>
 
       {/* Main content */}
-      <div className="flex-1">
-        <header className="border-b border-[var(--border)] px-6 py-3 flex items-center justify-between">
-          <span className="text-sm text-[var(--muted-foreground)]">
-            {user.email}
+      <div className="flex-1 min-w-0">
+        <div className="border-b border-[var(--border)] px-6 py-2 flex items-center justify-between bg-[var(--muted)]/50">
+          <span className="text-xs text-[var(--muted-foreground)]">
+            Admin: {user.email}
           </span>
-          <Link href="/" className="text-sm text-brand-500 hover:underline">
-            Siteye Dön
+          <Link href="/" className="text-xs text-brand-500 hover:underline">
+            Siteye Dön →
           </Link>
-        </header>
+        </div>
         <main className="p-6">{children}</main>
       </div>
     </div>

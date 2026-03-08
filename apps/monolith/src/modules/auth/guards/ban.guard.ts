@@ -17,12 +17,22 @@ export class BanGuard implements CanActivate {
       request.ip;
     const userId = request.user?.sub;
 
-    const banReason = await this.banService.checkBan(ipAddress, userId);
+    const ban = await this.banService.checkBan(ipAddress, userId);
 
-    if (banReason) {
-      throw new ForbiddenException(
-        `Hesabınız veya IP adresiniz engellenmiştir: ${banReason}`,
-      );
+    if (ban) {
+      const expiresText = ban.expiresAt
+        ? `Bu engel ${new Date(ban.expiresAt).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} tarihine kadar geçerlidir.`
+        : 'Bu engel süresizdir.';
+
+      if (ban.type === 'ip') {
+        throw new ForbiddenException(
+          `Bu cihazdan erişiminiz engellenmiştir. Sebep: ${ban.reason}. ${expiresText}`,
+        );
+      } else {
+        throw new ForbiddenException(
+          `Hesabınız engellenmiştir. Sebep: ${ban.reason}. ${expiresText}`,
+        );
+      }
     }
 
     return true;

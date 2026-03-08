@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import apiClient from '@/lib/api-client';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, resolveImageUrl } from '@/lib/format';
 import { Card, Badge, Button, LoadingState } from '@/components/ui';
 import { parcelStatusConfig } from '@/components/ui/badge';
 import { ShareButtons } from '@/components/share-buttons';
@@ -135,7 +135,7 @@ export function ParcelDetailModal({ parcelId, onClose }: ParcelDetailModalProps)
                 {images.slice(0, 6).map((img) => (
                   <img
                     key={img.id}
-                    src={img.url}
+                    src={resolveImageUrl(img)}
                     alt={img.caption || parcel.title}
                     className="h-32 w-full rounded-lg object-cover border border-[var(--border)]"
                   />

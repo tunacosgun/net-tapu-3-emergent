@@ -138,9 +138,9 @@ export default function AdminAnalyticsPage() {
           <section>
             <h2 className="text-lg font-semibold">Kullanıcılar</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <StatCard label="Toplam Kullanıcı" value={String(data.users.total)} />
-              <StatCard label="Bu Ay Yeni" value={String(data.users.newThisMonth)} variant="success" />
-              <StatCard label="Doğrulanmış" value={String(data.users.verified)} />
+              <StatCard label="Toplam Kullanıcı" value={String(data.users?.total ?? 0)} />
+              <StatCard label="Bu Ay Yeni" value={String(data.users?.newThisMonth ?? 0)} variant="success" />
+              <StatCard label="Doğrulanmış" value={String(data.users?.verified ?? 0)} />
             </div>
           </section>
 
@@ -148,9 +148,9 @@ export default function AdminAnalyticsPage() {
           <section>
             <h2 className="text-lg font-semibold">Finans</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <StatCard label="Toplam Gelir" value={formatPrice(data.finance.totalRevenue)} size="lg" />
-              <StatCard label="Toplam Depozito" value={formatPrice(data.finance.totalDeposits)} />
-              <StatCard label="Toplam İade" value={formatPrice(data.finance.totalRefunds)} variant="danger" />
+              <StatCard label="Toplam Gelir" value={formatPrice(data.finance?.totalRevenue ?? '0')} size="lg" />
+              <StatCard label="Toplam Depozito" value={formatPrice(data.finance?.totalDeposits ?? '0')} />
+              <StatCard label="Toplam İade" value={formatPrice(data.finance?.totalRefunds ?? '0')} variant="danger" />
             </div>
           </section>
 
@@ -158,13 +158,13 @@ export default function AdminAnalyticsPage() {
           <section>
             <h2 className="text-lg font-semibold">CRM</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <StatCard label="İletişim Talepleri" value={String(data.crm.contactRequests)} />
+              <StatCard label="İletişim Talepleri" value={String(data.crm?.contactRequests ?? 0)} />
               <StatCard
                 label="Bekleyen Teklifler"
-                value={String(data.crm.pendingOffers)}
-                variant={data.crm.pendingOffers > 0 ? 'warning' : 'default'}
+                value={String(data.crm?.pendingOffers ?? 0)}
+                variant={(data.crm?.pendingOffers ?? 0) > 0 ? 'warning' : 'default'}
               />
-              <StatCard label="Randevular" value={String(data.crm.appointments)} />
+              <StatCard label="Randevular" value={String(data.crm?.appointments ?? 0)} />
             </div>
           </section>
 

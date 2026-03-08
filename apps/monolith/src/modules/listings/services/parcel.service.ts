@@ -5,8 +5,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { Parcel } from '../entities/parcel.entity';
+import { ParcelImage } from '../entities/parcel-image.entity';
 import { ParcelStatusHistory } from '../entities/parcel-status-history.entity';
 import { ParcelStatus } from '@nettapu/shared';
 import { CreateParcelDto } from '../dto/create-parcel.dto';
@@ -28,12 +29,27 @@ export class ParcelService {
   constructor(
     @InjectRepository(Parcel)
     private readonly parcelRepo: Repository<Parcel>,
+    @InjectRepository(ParcelImage)
+    private readonly imageRepo: Repository<ParcelImage>,
     @InjectRepository(ParcelStatusHistory)
     private readonly historyRepo: Repository<ParcelStatusHistory>,
     private readonly dataSource: DataSource,
   ) {}
 
   private async nextListingId(): Promise<string> {
+    // Generate a unique random listing ID like NT-7X4K9M
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0,O,1,I to avoid confusion
+    const maxAttempts = 10;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      let code = '';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      const candidate = `NT-${code}`;
+      const existing = await this.parcelRepo.findOne({ where: { listingId: candidate }, select: ['id'] });
+      if (!existing) return candidate;
+    }
+    // Fallback to sequence-based if random collides (extremely unlikely)
     const [{ nextval }] = await this.dataSource.query<{ nextval: string }[]>(
       `SELECT nextval('listings.listing_id_seq')`,
     );
@@ -141,6 +157,26 @@ export class ParcelService {
       return entity;
     });
 
+    // Load ready images for all returned parcels
+    if (data.length > 0) {
+      const parcelIds = data.map((p) => p.id);
+      const images = await this.imageRepo.find({
+        where: { parcelId: In(parcelIds), status: 'ready' },
+        order: { sortOrder: 'ASC', createdAt: 'ASC' },
+      });
+
+      const imagesByParcel = new Map<string, ParcelImage[]>();
+      for (const img of images) {
+        const list = imagesByParcel.get(img.parcelId) || [];
+        list.push(img);
+        imagesByParcel.set(img.parcelId, list);
+      }
+
+      for (const parcel of data) {
+        parcel.images = imagesByParcel.get(parcel.id) || [];
+      }
+    }
+
     return {
       data,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
@@ -161,6 +197,12 @@ export class ParcelService {
     if (!parcel) {
       throw new NotFoundException(`Parcel ${id} not found`);
     }
+
+    // Load ready images
+    parcel.images = await this.imageRepo.find({
+      where: { parcelId: id, status: 'ready' },
+      order: { sortOrder: 'ASC', createdAt: 'ASC' },
+    });
 
     const result = parcel as Parcel & { favoriteCount: number; viewerCount: number };
     result.favoriteCount = parseInt(raw[0]?.p_favoriteCount ?? '0', 10);

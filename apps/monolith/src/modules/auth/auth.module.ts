@@ -20,6 +20,8 @@ import { EmailVerificationService } from './services/email-verification.service'
 import { BanService } from './services/ban.service';
 import { AuthController } from './auth.controller';
 import { BanController } from './controllers/ban.controller';
+import { AdminUserController } from './controllers/admin-user.controller';
+import { AdminUserService } from './services/admin-user.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
 import { BanGuard } from './guards/ban.guard';
@@ -57,12 +59,13 @@ import { BanGuard } from './guards/ban.guard';
       },
     }),
   ],
-  controllers: [AuthController, BanController],
+  controllers: [AuthController, BanController, AdminUserController],
   providers: [
     AuthService,
     PasswordResetService,
     EmailVerificationService,
     BanService,
+    AdminUserService,
     JwtStrategy,
     RolesGuard,
     BanGuard,

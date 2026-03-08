@@ -14,6 +14,7 @@ import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { PasswordResetService } from './services/password-reset.service';
 import { EmailVerificationService } from './services/email-verification.service';
+import { BanService } from './services/ban.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtPayload } from './auth.service';
@@ -32,6 +33,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly passwordResetService: PasswordResetService,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly banService: BanService,
   ) {}
 
   @Post('register')
@@ -149,5 +151,16 @@ export class AuthController {
       dto.newPassword,
     );
     return { message: 'Şifreniz başarıyla değiştirildi' };
+  }
+
+  // ── Ban Status ─────────────────────────────────────────────
+
+  @Get('ban-status')
+  @UseGuards(JwtAuthGuard)
+  async getBanStatus(@CurrentUser() user: JwtPayload, @Req() req: Request) {
+    const ipAddress =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
+      req.ip;
+    return this.banService.getUserBanStatus(ipAddress, user.sub);
   }
 }

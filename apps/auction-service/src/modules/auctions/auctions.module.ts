@@ -16,6 +16,7 @@ import { OutboxWriterService } from './services/outbox-writer.service';
 import { AuctionService } from './services/auction.service';
 import { RedisLockService } from './services/redis-lock.service';
 import { SettlementService } from './services/settlement.service';
+import { ConsentService } from './services/consent.service';
 import { DepositLifecycleService } from './services/deposit-lifecycle.service';
 import { PAYMENT_SERVICE, MockPaymentService } from './services/payment.service';
 import { RealPaymentService } from './services/real-payment.service';
@@ -54,6 +55,7 @@ import { NotificationEventConsumer } from './events/consumers/notification-event
   controllers: [AuctionController, BidController, AdminSettlementController, AdminFinanceController],
   providers: [
     AuctionService,
+    ConsentService,
     BidService,
     RedisLockService,
     AuctionGateway,

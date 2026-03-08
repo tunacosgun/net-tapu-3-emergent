@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { ParcelImage } from './parcel-image.entity';
 
 @Entity({ schema: 'listings', name: 'parcels' })
 export class Parcel {
@@ -91,6 +92,9 @@ export class Parcel {
 
   @Column({ name: 'listed_at', type: 'timestamptz', nullable: true })
   listedAt!: Date | null;
+
+  /** Populated by service queries — not a TypeORM relation to avoid circular issues */
+  images?: ParcelImage[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;

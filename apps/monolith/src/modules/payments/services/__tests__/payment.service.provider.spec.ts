@@ -72,10 +72,13 @@ describe('PaymentService — Fix 3: provider from ConfigService', () => {
       }),
     };
 
+    const depositRepo = { create: jest.fn((e: any) => e), save: jest.fn((e: any, v: any) => Promise.resolve({ ...v, id: 'dep-1' })) };
+
     const service = new PaymentService(
       paymentRepo as any,
       posTxRepo as any,
       idempotencyRepo as any,
+      depositRepo as any,
       posGateway as any,
       dataSource as any,
       config as any,

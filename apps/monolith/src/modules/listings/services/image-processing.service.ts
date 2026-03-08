@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
 import path from 'path';
@@ -22,6 +22,7 @@ export class ImageProcessingService {
     @InjectRepository(ParcelImage)
     private readonly imageRepo: Repository<ParcelImage>,
     private readonly config: ConfigService,
+    private readonly dataSource: DataSource,
   ) {
     this.uploadsDir = this.config.get<string>('UPLOADS_DIR') || path.join(process.cwd(), 'uploads');
     this.baseUrl = this.config.get<string>('UPLOADS_BASE_URL') || '/uploads';
@@ -81,7 +82,8 @@ export class ImageProcessingService {
   }
 
   /**
-   * Apply semi-transparent watermark text to the image and save.
+   * Apply watermark to the image. Uses admin-uploaded logo if available,
+   * otherwise falls back to text-based watermark.
    */
   private async applyWatermark(buffer: Buffer, outputPath: string): Promise<void> {
     const metadata = await sharp(buffer).metadata();
@@ -90,19 +92,124 @@ export class ImageProcessingService {
       ? Math.round((width / (metadata.width || width)) * metadata.height)
       : undefined;
 
-    // Create SVG watermark overlay
-    const watermarkSvg = this.createWatermarkSvg(width, height || 900);
+    // Try to load admin-uploaded watermark logo
+    const logoBuffer = await this.getWatermarkLogo();
+
+    let watermarkInput: Buffer;
+    if (logoBuffer) {
+      watermarkInput = await this.createLogoWatermark(logoBuffer, width, height || 900);
+    } else {
+      const watermarkSvg = this.createTextWatermarkSvg(width, height || 900);
+      watermarkInput = Buffer.from(watermarkSvg);
+    }
 
     await sharp(buffer)
       .resize(width, height, { fit: 'inside', withoutEnlargement: true })
       .composite([
         {
-          input: Buffer.from(watermarkSvg),
+          input: watermarkInput,
           gravity: 'center',
         },
       ])
       .jpeg({ quality: 85, mozjpeg: true })
       .toFile(outputPath);
+  }
+
+  /**
+   * Get the admin-uploaded watermark logo from system settings.
+   * Returns the logo as a Buffer, or null if not configured.
+   */
+  private async getWatermarkLogo(): Promise<Buffer | null> {
+    try {
+      const result = await this.dataSource.query(
+        `SELECT value FROM admin.system_settings WHERE key = 'watermark_logo'`,
+      );
+      if (!result?.[0]?.value) return null;
+
+      // JSONB value: pg driver returns parsed JSON. Could be string directly or object.
+      let logoUrl: string = result[0].value;
+      // If it's still an object (shouldn't happen for a string), stringify
+      if (typeof logoUrl !== 'string') {
+        logoUrl = String(logoUrl);
+      }
+      // Strip any surrounding quotes
+      logoUrl = logoUrl.replace(/^"|"$/g, '').trim();
+
+      if (!logoUrl || logoUrl === 'null' || logoUrl.length < 5) return null;
+
+      this.logger.log(`Loading watermark logo from: ${logoUrl}`);
+      return this.downloadImage(logoUrl);
+    } catch (err) {
+      this.logger.warn(`Failed to load watermark logo: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Create a tiled watermark overlay using the logo image.
+   * The logo is repeated across the image with transparency.
+   */
+  private async createLogoWatermark(
+    logoBuffer: Buffer,
+    width: number,
+    height: number,
+  ): Promise<Buffer> {
+    // Resize logo to a reasonable watermark size
+    const logoSize = Math.max(60, Math.round(width * 0.1));
+    const resizedLogo = await sharp(logoBuffer)
+      .resize(logoSize, logoSize, { fit: 'inside', withoutEnlargement: true })
+      .ensureAlpha()
+      .png()
+      .toBuffer();
+
+    const logoMeta = await sharp(resizedLogo).metadata();
+    const lw = logoMeta.width || logoSize;
+    const lh = logoMeta.height || logoSize;
+
+    // Make logo semi-transparent by compositing with an alpha mask
+    const opacity = WATERMARK_OPACITY;
+    const alphaMask = await sharp({
+      create: { width: lw, height: lh, channels: 4, background: { r: 255, g: 255, b: 255, alpha: opacity } },
+    }).png().toBuffer();
+
+    const semiTransparentLogo = await sharp(resizedLogo)
+      .composite([{ input: alphaMask, blend: 'dest-in' }])
+      .png()
+      .toBuffer();
+
+    // Tile logos across the canvas
+    const spacingX = Math.round(lw * 2.5);
+    const spacingY = Math.round(lh * 2.5);
+    const compositeOps: { input: Buffer; left: number; top: number }[] = [];
+
+    for (let y = spacingY / 2; y < height; y += spacingY) {
+      for (let x = spacingX / 2; x < width; x += spacingX) {
+        const left = Math.round(x - lw / 2);
+        const top = Math.round(y - lh / 2);
+        if (left >= 0 && top >= 0 && left + lw <= width && top + lh <= height) {
+          compositeOps.push({ input: semiTransparentLogo, left, top });
+        }
+      }
+    }
+
+    if (compositeOps.length === 0) {
+      // At least put one in center
+      compositeOps.push({
+        input: semiTransparentLogo,
+        left: Math.round((width - lw) / 2),
+        top: Math.round((height - lh) / 2),
+      });
+    }
+
+    // Limit to avoid memory issues
+    const ops = compositeOps.slice(0, 50);
+
+    return sharp({
+      create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+      .composite(ops)
+      .png()
+      .toBuffer();
   }
 
   /**
@@ -117,13 +224,13 @@ export class ImageProcessingService {
 
   /**
    * Create an SVG watermark with "NetTapu" text rendered diagonally and tiled.
+   * Used as fallback when no logo is uploaded.
    */
-  private createWatermarkSvg(width: number, height: number): string {
+  private createTextWatermarkSvg(width: number, height: number): string {
     const opacity = WATERMARK_OPACITY;
     const fontSize = Math.max(24, Math.round(width * 0.04));
     const spacing = Math.round(fontSize * 5);
 
-    // Create tiled diagonal watermark pattern
     let textElements = '';
     for (let y = -spacing; y < height + spacing; y += spacing) {
       for (let x = -spacing; x < width + spacing; x += spacing) {
@@ -140,7 +247,13 @@ export class ImageProcessingService {
    * Download image from URL and return as buffer.
    */
   private async downloadImage(url: string): Promise<Buffer> {
-    // Handle local file URLs
+    // Handle local file URLs (e.g. /uploads/parcels/{id}/file.jpg)
+    if (url.startsWith('/uploads/')) {
+      const relativePath = url.replace('/uploads/', '');
+      const filePath = path.join(this.uploadsDir, relativePath);
+      return fs.readFile(filePath);
+    }
+
     if (url.startsWith('/') || url.startsWith('file://')) {
       const filePath = url.replace('file://', '');
       return fs.readFile(filePath);

@@ -132,8 +132,11 @@ export class AuctionGateway
     );
     for (const room of auctionRooms) {
       client.leave(room);
+      // Broadcast updated watcher count after leave
+      const watcherCount = this.server.sockets.adapter.rooms.get(room)?.size ?? 0;
+      this.server.to(room).emit('watcher_update', { watcher_count: watcherCount });
       this.logger.log(
-        `Cleanup: ${client.id} force-left room ${room} on disconnect`,
+        `Cleanup: ${client.id} force-left room ${room} on disconnect (watchers=${watcherCount})`,
       );
     }
     this.logger.log(
@@ -195,6 +198,12 @@ export class AuctionGateway
     const room = `auction:${auctionId}`;
     await client.join(room);
 
+    // Live counts: participants from DB, watchers from Socket.IO room
+    const participantCount = await this.participantRepo.count({
+      where: { auctionId, eligible: true },
+    });
+    const watcherCount = this.server.sockets.adapter.rooms.get(room)?.size ?? 0;
+
     const effectiveEnd = auction.extendedUntil ?? auction.scheduledEnd;
     const snapshot: AuctionStateMessage = {
       type: 'AUCTION_STATE',
@@ -202,8 +211,8 @@ export class AuctionGateway
       status: auction.status,
       current_price: auction.currentPrice ?? auction.startingPrice,
       bid_count: auction.bidCount,
-      participant_count: auction.participantCount,
-      watcher_count: auction.watcherCount,
+      participant_count: participantCount,
+      watcher_count: watcherCount,
       time_remaining_ms: effectiveEnd
         ? Math.max(
             0,
@@ -214,8 +223,12 @@ export class AuctionGateway
     };
 
     client.emit('auction_state', snapshot);
+
+    // Broadcast updated watcher count to all in room
+    this.server.to(room).emit('watcher_update', { watcher_count: watcherCount });
+
     this.logger.log(
-      `Client ${client.id} (user=${userId}) joined room ${room}`,
+      `Client ${client.id} (user=${userId}) joined room ${room} (watchers=${watcherCount}, participants=${participantCount})`,
     );
   }
 
@@ -228,9 +241,43 @@ export class AuctionGateway
   ) {
     const room = `auction:${data.auction_id}`;
     await client.leave(room);
+    const watcherCount = this.server.sockets.adapter.rooms.get(room)?.size ?? 0;
+    this.server.to(room).emit('watcher_update', { watcher_count: watcherCount });
     this.logger.log(
       `Client ${client.id} (user=${client.data.userId}) left room ${room}`,
     );
+  }
+
+  // ── reveal_names / hide_names (admin only) ───────────────────────
+
+  @SubscribeMessage('reveal_names')
+  handleRevealNames(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { auction_id: string; name_map: Record<string, string> },
+  ) {
+    const roles = (client.data.roles as string[]) ?? [];
+    if (!roles.includes('admin') && !roles.includes('superadmin')) {
+      client.emit('error', { message: 'Unauthorized' });
+      return;
+    }
+    const room = `auction:${data.auction_id}`;
+    this.server.to(room).emit('names_revealed', { name_map: data.name_map });
+    this.logger.log(`Admin ${client.data.userId} revealed names in ${room}`);
+  }
+
+  @SubscribeMessage('hide_names')
+  handleHideNames(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { auction_id: string },
+  ) {
+    const roles = (client.data.roles as string[]) ?? [];
+    if (!roles.includes('admin') && !roles.includes('superadmin')) {
+      client.emit('error', { message: 'Unauthorized' });
+      return;
+    }
+    const room = `auction:${data.auction_id}`;
+    this.server.to(room).emit('names_hidden', {});
+    this.logger.log(`Admin ${client.data.userId} hid names in ${room}`);
   }
 
   // ── place_bid (hardened) ───────────────────────────────────────
@@ -247,10 +294,13 @@ export class AuctionGateway
     this.metrics.wsBidsTotal.inc();
 
     // ── Bid floor enforcement: reject obviously invalid amounts ──
+    // NUMERIC(15,2) max = 9,999,999,999,999.99
+    const MAX_BID = 9_999_999_999_999.99;
     if (
       !data.amount ||
       !VALID_AMOUNT_RE.test(data.amount) ||
-      parseFloat(data.amount) <= 0
+      parseFloat(data.amount) <= 0 ||
+      parseFloat(data.amount) > MAX_BID
     ) {
       this.logger.warn(
         `Bid floor reject: user ${userId} sent invalid amount "${data.amount}"`,

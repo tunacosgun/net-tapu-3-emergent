@@ -41,11 +41,21 @@ export interface Parcel {
   updatedAt: string;
   favoriteCount?: number;
   viewerCount?: number;
+  images?: ParcelImage[];
 }
 
 export interface ParcelImage {
   id: string;
   parcelId: string;
+  originalUrl: string;
+  watermarkedUrl: string | null;
+  thumbnailUrl: string | null;
+  status: string;
+  sortOrder: number;
+  isCover: boolean;
+  fileSizeBytes: number | null;
+  mimeType: string | null;
+  /** @deprecated use originalUrl */
   url: string;
   caption: string | null;
   displayOrder: number;
