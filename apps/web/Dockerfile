@@ -20,8 +20,10 @@ RUN npm run build --workspace=packages/shared
 WORKDIR /app/apps/web
 ARG API_URL=http://monolith:3000
 ARG AUCTION_API_URL=http://auction-service:3001
+ARG NEXT_PUBLIC_SITE_URL=https://nettapu.com
 ENV API_URL=$API_URL
 ENV AUCTION_API_URL=$AUCTION_API_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 RUN npm run build
 WORKDIR /app
 

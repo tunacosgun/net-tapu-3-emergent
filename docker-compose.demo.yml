@@ -43,6 +43,8 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: https://nettapu-demo.tunasoft.tech
     container_name: nettapu-web
     environment:
       NODE_ENV: production
