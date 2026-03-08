@@ -22,6 +22,7 @@ import { AuthController } from './auth.controller';
 import { BanController } from './controllers/ban.controller';
 import { AdminUserController } from './controllers/admin-user.controller';
 import { AdminUserService } from './services/admin-user.service';
+import { GoogleOAuthService } from './services/google-oauth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
 import { BanGuard } from './guards/ban.guard';
@@ -66,6 +67,7 @@ import { BanGuard } from './guards/ban.guard';
     EmailVerificationService,
     BanService,
     AdminUserService,
+    GoogleOAuthService,
     JwtStrategy,
     RolesGuard,
     BanGuard,

@@ -5,16 +5,19 @@ import {
   Patch,
   Body,
   Req,
+  Res,
+  Query,
   HttpCode,
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { PasswordResetService } from './services/password-reset.service';
 import { EmailVerificationService } from './services/email-verification.service';
 import { BanService } from './services/ban.service';
+import { GoogleOAuthService } from './services/google-oauth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtPayload } from './auth.service';
@@ -34,6 +37,7 @@ export class AuthController {
     private readonly passwordResetService: PasswordResetService,
     private readonly emailVerificationService: EmailVerificationService,
     private readonly banService: BanService,
+    private readonly googleOAuthService: GoogleOAuthService,
   ) {}
 
   @Post('register')
@@ -162,5 +166,51 @@ export class AuthController {
       (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
       req.ip;
     return this.banService.getUserBanStatus(ipAddress, user.sub);
+  }
+
+  // ── Google OAuth ──────────────────────────────────────────────
+
+  @Get('google')
+  async googleAuth(@Res() res: Response, @Query('returnTo') returnTo?: string) {
+    const state = returnTo ? Buffer.from(returnTo).toString('base64') : '';
+    const url = this.googleOAuthService.getAuthUrl(state);
+    res.redirect(url);
+  }
+
+  @Get('google/callback')
+  async googleCallback(
+    @Query('code') code: string,
+    @Query('state') state: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    try {
+      const deviceInfo = req.headers['user-agent'] ?? undefined;
+      const ipAddress =
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
+        req.ip;
+
+      const result = await this.googleOAuthService.handleCallback(
+        code,
+        deviceInfo,
+        ipAddress,
+      );
+
+      const returnTo = state
+        ? Buffer.from(state, 'base64').toString('utf-8')
+        : '/';
+
+      // Redirect to frontend with tokens as query params (short-lived)
+      const frontendUrl = process.env.FRONTEND_URL || 'https://nettapu-demo.tunasoft.tech';
+      const params = new URLSearchParams({
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        returnTo,
+      });
+      res.redirect(`${frontendUrl}/auth/social-callback?${params.toString()}`);
+    } catch {
+      const frontendUrl = process.env.FRONTEND_URL || 'https://nettapu-demo.tunasoft.tech';
+      res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+    }
   }
 }

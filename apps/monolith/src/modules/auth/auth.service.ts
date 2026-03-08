@@ -263,6 +263,22 @@ export class AuthService {
     this.logger.log(`Password changed for user ${userId}`);
   }
 
+  // ── OAuth helpers (used by social login services) ───────────────
+
+  async getUserRolesPublic(userId: string): Promise<string[]> {
+    return this.getUserRoles(userId);
+  }
+
+  async issueTokensForOAuth(
+    user: User,
+    roles: string[],
+    deviceInfo?: string,
+    ipAddress?: string,
+  ) {
+    const tokens = await this.issueTokens(user, roles, deviceInfo, ipAddress);
+    return { ...tokens, user: { id: user.id, email: user.email, roles } };
+  }
+
   // ── private helpers ──────────────────────────────────────────────
 
   private async issueTokens(

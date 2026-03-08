@@ -1,0 +1,4 @@
+-- Social login provider IDs
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE;
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS apple_id VARCHAR(255) UNIQUE;
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS avatar_url TEXT;

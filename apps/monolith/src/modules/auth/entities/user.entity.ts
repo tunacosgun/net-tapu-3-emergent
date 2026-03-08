@@ -29,6 +29,15 @@ export class User {
   @Column({ type: 'boolean', name: 'is_active', default: true })
   isActive!: boolean;
 
+  @Column({ type: 'varchar', name: 'google_id', length: 255, nullable: true, unique: true })
+  googleId!: string | null;
+
+  @Column({ type: 'varchar', name: 'apple_id', length: 255, nullable: true, unique: true })
+  appleId!: string | null;
+
+  @Column({ type: 'text', name: 'avatar_url', nullable: true })
+  avatarUrl!: string | null;
+
   @Column({ name: 'last_login_at', type: 'timestamptz', nullable: true })
   lastLoginAt!: Date | null;
 
