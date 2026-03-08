@@ -22,25 +22,15 @@ function SocialCallbackContent() {
     // Store tokens and set session cookie
     (async () => {
       try {
-        // Set auth store
+        // Set auth store (setTokens decodes JWT and sets user automatically)
         useAuthStore.getState().setTokens(accessToken, refreshToken);
 
-        // Fetch user info
-        const meRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/auth/me`,
-          { headers: { Authorization: `Bearer ${accessToken}` } },
-        );
-
-        let role = 'user';
-        if (meRes.ok) {
-          const userData = await meRes.json();
-          useAuthStore.getState().setUser(userData);
-          role = userData.roles?.includes('superadmin')
-            ? 'superadmin'
-            : userData.roles?.includes('admin')
-              ? 'admin'
-              : 'user';
-        }
+        const user = useAuthStore.getState().user;
+        const role = user?.roles?.includes('superadmin')
+          ? 'superadmin'
+          : user?.roles?.includes('admin')
+            ? 'admin'
+            : 'user';
 
         // Persist session in httpOnly cookies
         await fetch('/api/auth/session', {
