@@ -56,8 +56,6 @@ function LoginContent() {
   const returnTo = searchParams.get('returnTo') || '/';
   const oauthError = searchParams.get('error');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
   async function onSubmit(data: LoginFormData) {
     setServerError(null);
     try {
@@ -93,7 +91,8 @@ function LoginContent() {
   }
 
   function handleGoogleLogin() {
-    const googleUrl = `${API_URL}/api/v1/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
+    // Use window.location.origin to ensure we go through nginx (which proxies /api/v1 to backend)
+    const googleUrl = `${window.location.origin}/api/v1/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
     window.location.href = googleUrl;
   }
 
