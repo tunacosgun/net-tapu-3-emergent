@@ -47,6 +47,8 @@ services:
     environment:
       NODE_ENV: production
       API_URL: http://monolith:3000
+      NEXT_PUBLIC_SITE_URL: https://nettapu-demo.tunasoft.tech
+      SITE_URL: https://nettapu-demo.tunasoft.tech
       AUCTION_API_URL: http://auction-service:3001
     ports:
       - "127.0.0.1:4002:3002"

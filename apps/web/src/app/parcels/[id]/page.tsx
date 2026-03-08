@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { fetchParcelServer, fetchParcelImagesServer, fetchSiteSettingsServer } from '@/lib/server-api';
 import ParcelDetailClient from './parcel-detail-client';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nettapu.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://nettapu.com';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -24,9 +24,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const title = `${parcel.title} - ${parcel.city}, ${parcel.district}`;
   const areaText = parcel.areaM2 ? `${Number(parcel.areaM2).toLocaleString('tr-TR')} m²` : '';
+  const priceText = parcel.price ? `${Number(parcel.price).toLocaleString('tr-TR')} ${parcel.currency === 'USD' ? '$' : parcel.currency === 'EUR' ? '€' : '₺'}` : '';
   const description =
-    parcel.description?.slice(0, 160) ||
-    `${parcel.city} ${parcel.district} ${areaText} ${parcel.status === 'active' ? 'satılık arsa' : 'arsa'}. Detayları görmek için tıklayın.`.trim();
+    [
+      parcel.city && parcel.district ? `📍 ${parcel.city}, ${parcel.district}` : '',
+      areaText ? `📐 ${areaText}` : '',
+      priceText ? `💰 ${priceText}` : '',
+      parcel.description?.slice(0, 100) || '',
+    ].filter(Boolean).join(' • ') || `${parcel.city} ${parcel.district} satılık arsa`;
 
   // Resolve OG image — pick cover image or first image
   const coverImage = images.find((i) => i.isCover) || images[0];
