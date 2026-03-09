@@ -61,35 +61,40 @@ export default function HomePage() {
     <main>
       {/* ─── Hero Section ─── */}
       <section className="relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-600 via-brand-500 to-emerald-500" />
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} />
-        {/* Gradient overlay at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[var(--background)] to-transparent" />
+        {/* Background - dark premium */}
+        <div className="absolute inset-0 bg-[#0a1628]" />
+        {/* Gradient orbs */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-brand-500/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-emerald-500/15 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-600/10 rounded-full blur-[150px]" />
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:py-28 lg:py-36">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-white mb-6">
-              <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />
+            <div className="animate-fadeInDown inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md px-5 py-2 text-sm font-medium text-white/90 mb-8">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-glow-pulse" />
               Canlı Açık Artırmalar Devam Ediyor
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]">
+            <h1 className="animate-fadeInUp text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-[64px] leading-[1.08]">
               Hayalinizdeki Arsayı{' '}
-              <span className="relative">
-                <span className="relative z-10">NetTapu</span>
-                <span className="absolute bottom-1 left-0 right-0 h-3 bg-white/20 rounded-sm -z-0" />
+              <span className="relative inline-block">
+                <span className="relative z-10 bg-gradient-to-r from-brand-300 to-emerald-300 bg-clip-text text-transparent">NetTapu</span>
               </span>
+              <br className="hidden sm:block" />
               &apos;da Bulun
             </h1>
-            <p className="mt-5 text-lg text-white/80 max-w-xl mx-auto leading-relaxed">
+            <p className="animate-fadeInUp mt-6 text-lg text-white/60 max-w-xl mx-auto leading-relaxed" style={{ animationDelay: '100ms' }}>
               Gayrimenkul ve arsa satışı için Türkiye&apos;nin canlı açık artırma
               platformu. Güvenilir, şeffaf ve hızlı.
             </p>
 
             {/* Hero Search */}
-            <form onSubmit={handleSearch} className="mx-auto mt-10 max-w-xl">
-              <div className="flex overflow-hidden rounded-2xl bg-white shadow-2xl shadow-black/20 focus-within:ring-4 focus-within:ring-white/30 transition-all">
-                <div className="flex items-center pl-5 text-gray-400">
+            <form onSubmit={handleSearch} className="animate-fadeInUp mx-auto mt-10 max-w-xl" style={{ animationDelay: '200ms' }}>
+              <div className="group flex overflow-hidden rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 shadow-2xl shadow-black/20 focus-within:bg-white/95 focus-within:border-white/50 transition-all duration-500">
+                <div className="flex items-center pl-5 text-white/40 group-focus-within:text-gray-400 transition-colors duration-500">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                   </svg>
@@ -99,35 +104,35 @@ export default function HomePage() {
                   placeholder="Şehir, ilçe veya arsa adı ile arayın..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent px-4 py-4 text-sm text-gray-900 outline-none placeholder:text-gray-400"
+                  className="flex-1 bg-transparent px-4 py-4.5 text-sm text-white outline-none placeholder:text-white/40 focus:text-gray-900 focus:placeholder:text-gray-400 transition-colors duration-500"
                 />
                 <button
                   type="submit"
-                  className="m-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-2.5 text-sm font-bold text-white hover:from-brand-600 hover:to-brand-700 transition-all shadow-md"
+                  className="btn-shine m-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-2.5 text-sm font-bold text-white hover:from-brand-600 hover:to-brand-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-brand-500/25"
                 >
                   Ara
                 </button>
               </div>
             </form>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <div className="animate-fadeInUp mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center" style={{ animationDelay: '300ms' }}>
               <Link
                 href="/parcels"
-                className="rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-brand-600 shadow-lg shadow-black/10 hover:bg-white/90 transition-all"
+                className="btn-shine rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-brand-600 shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
               >
                 Arsaları Keşfet
               </Link>
               <Link
                 href="/auctions"
-                className="rounded-xl border-2 border-white/30 backdrop-blur-sm px-7 py-3.5 text-sm font-bold text-white hover:bg-white/10 transition-all"
+                className="rounded-xl border border-white/20 backdrop-blur-sm px-7 py-3.5 text-sm font-bold text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300"
               >
                 Açık Artırmalar
               </Link>
               <button
                 onClick={() => setShowVideo(true)}
-                className="rounded-xl border-2 border-white/20 backdrop-blur-sm px-7 py-3.5 text-sm font-bold text-white/90 hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                className="group rounded-xl border border-white/10 backdrop-blur-sm px-7 py-3.5 text-sm font-bold text-white/80 hover:bg-white/10 hover:text-white transition-all duration-300 flex items-center justify-center gap-2"
               >
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
                 Tanıtım Videosu
@@ -176,7 +181,7 @@ export default function HomePage() {
               </svg>
             </Link>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="stagger-children grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featuredParcels.map((parcel) => (
               <ParcelCard key={parcel.id} parcel={parcel} />
             ))}
