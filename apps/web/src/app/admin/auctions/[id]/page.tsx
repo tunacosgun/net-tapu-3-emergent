@@ -1,14 +1,19 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import apiClient from '@/lib/api-client';
 import { showApiError } from '@/components/api-error-toast';
 import { TableSkeleton } from '@/components/skeleton';
-import { formatPrice, formatDate } from '@/lib/format';
-import { StatCard, Card, PageHeader, Button, Alert } from '@/components/ui';
-import { connectToAuction, disconnectFromAuction } from '@/lib/ws-client';
-import { useAuctionStore, type BidFeedItem } from '@/stores/auction-store';
+import { formatPrice } from '@/lib/format';
+import { StatCard, Card, PageHeader, Button } from '@/components/ui';
+import {
+  connectToAuction,
+  disconnectFromAuction,
+  adminExtendTime,
+  adminSendAnnouncement,
+} from '@/lib/ws-client';
+import { useAuctionStore } from '@/stores/auction-store';
 import { useConnectionStore } from '@/stores/connection-store';
 import type { Auction } from '@/types';
 
@@ -48,6 +53,10 @@ export default function AdminAuctionDetailPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [changingStatus, setChangingStatus] = useState(false);
+
+  // Admin controls
+  const [announcementText, setAnnouncementText] = useState('');
+  const [extendConfirm, setExtendConfirm] = useState<number | null>(null);
 
   // Live WS state
   const wsStatus = useConnectionStore((s) => s.status);
@@ -108,15 +117,12 @@ export default function AdminAuctionDetailPage() {
     return () => { cancelled = true; };
   }, [auctionId]);
 
-  // Connect WS for live auctions
+  // Connect WS — admin always connects for live view
   useEffect(() => {
     if (!auction) return;
-    const isLive = ['live', 'ending', 'deposit_open'].includes(auction.status);
-    if (isLive) {
-      connectToAuction(auctionId);
-      return () => disconnectFromAuction();
-    }
-  }, [auction?.status, auctionId]);
+    connectToAuction(auctionId);
+    return () => disconnectFromAuction();
+  }, [auction, auctionId]);
 
   async function handleStatusChange(newStatus: string) {
     if (!auction) return;
@@ -129,6 +135,23 @@ export default function AdminAuctionDetailPage() {
       setAuction(data);
     } catch (err) { showApiError(err); }
     finally { setChangingStatus(false); }
+  }
+
+  function handleExtendTime(minutes: number) {
+    if (extendConfirm === minutes) {
+      adminExtendTime(auctionId, minutes);
+      setExtendConfirm(null);
+    } else {
+      setExtendConfirm(minutes);
+      // Auto-cancel confirmation after 3s
+      setTimeout(() => setExtendConfirm((c) => c === minutes ? null : c), 3000);
+    }
+  }
+
+  function handleSendAnnouncement() {
+    if (!announcementText.trim()) return;
+    adminSendAnnouncement(auctionId, announcementText.trim());
+    setAnnouncementText('');
   }
 
   if (loading) return <TableSkeleton />;
@@ -166,11 +189,11 @@ export default function AdminAuctionDetailPage() {
           </span>
         )}
         {wsStatus === 'connecting' && (
-          <span className="text-xs text-yellow-600">WebSocket Bağlanıyor...</span>
+          <span className="text-xs text-yellow-600">Bağlanıyor...</span>
         )}
 
         {isLive && (
-          <span className="ml-auto font-mono text-2xl font-bold text-brand-600">{displayTime}</span>
+          <span className="font-mono text-3xl font-bold text-brand-600">{displayTime}</span>
         )}
 
         <select
@@ -181,20 +204,72 @@ export default function AdminAuctionDetailPage() {
         >
           {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        {changingStatus && <span className="text-xs text-[var(--muted-foreground)]">Güncelleniyor...</span>}
       </div>
 
       {/* Live stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          size="sm"
-          label="Güncel Fiyat"
-          value={formatPrice(effectivePrice)}
-        />
+        <StatCard size="sm" label="Güncel Fiyat" value={formatPrice(effectivePrice)} />
         <StatCard size="sm" label="Toplam Teklif" value={String(effectiveBidCount)} />
         <StatCard size="sm" label="Katılımcı" value={String(currentPrice ? participantCount : auction.participantCount)} />
         <StatCard size="sm" label="İzleyici" value={String(watcherCount || auction.watcherCount || 0)} />
       </div>
+
+      {/* Admin Control Panel */}
+      {isLive && wsStatus === 'connected' && (
+        <Card className="border-2 border-brand-500 bg-brand-50/50 dark:bg-brand-950/10 space-y-4">
+          <h3 className="text-sm font-bold flex items-center gap-2">
+            <svg className="h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+            </svg>
+            Canlı Kontrol Paneli
+          </h3>
+
+          {/* Time extension */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-[var(--muted-foreground)]">Süre Uzat</p>
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 5, 10, 15, 30].map((min) => (
+                <button
+                  key={min}
+                  onClick={() => handleExtendTime(min)}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+                    extendConfirm === min
+                      ? 'bg-red-500 text-white ring-2 ring-red-300 scale-105'
+                      : 'bg-white dark:bg-gray-800 border border-[var(--border)] hover:border-brand-500 hover:text-brand-600'
+                  }`}
+                >
+                  {extendConfirm === min ? `${min}dk onayla?` : `+${min} dk`}
+                </button>
+              ))}
+            </div>
+            {extendConfirm !== null && (
+              <p className="text-xs text-red-600 animate-pulse">
+                Onaylamak için tekrar tıklayın. Tüm katılımcılar süre uzatma animasyonu görecek.
+              </p>
+            )}
+          </div>
+
+          {/* Announcement */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-[var(--muted-foreground)]">Duyuru Gönder</p>
+            <div className="flex gap-2">
+              <input
+                value={announcementText}
+                onChange={(e) => setAnnouncementText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendAnnouncement()}
+                placeholder="Tüm katılımcılara mesaj gönder..."
+                className="flex-1 rounded-md border border-[var(--input)] bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              />
+              <Button
+                onClick={handleSendAnnouncement}
+                disabled={!announcementText.trim()}
+              >
+                Gönder
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Bid Feed - 2 columns */}
@@ -223,7 +298,7 @@ export default function AdminAuctionDetailPage() {
                     {bidFeed.map((bid, i) => (
                       <tr
                         key={bid.bid_id}
-                        className={`border-b border-[var(--border)] ${i === 0 ? 'bg-brand-50' : ''}`}
+                        className={`border-b border-[var(--border)] ${i === 0 ? 'bg-brand-50 dark:bg-brand-950/20' : ''}`}
                       >
                         <td className="px-4 py-2 text-[var(--muted-foreground)]">{bidFeed.length - i}</td>
                         <td className="px-4 py-2 font-mono text-xs">{bid.user_id_masked}</td>
@@ -254,9 +329,7 @@ export default function AdminAuctionDetailPage() {
               {(winnerIdMasked || auction.winnerId) && (
                 <DetailRow label="Kazanan" value={winnerIdMasked || auction.winnerId || '-'} />
               )}
-              {(finalPrice) && (
-                <DetailRow label="Final Fiyat (Live)" value={formatPrice(finalPrice)} mono />
-              )}
+              {finalPrice && <DetailRow label="Final Fiyat (Live)" value={formatPrice(finalPrice)} mono />}
             </div>
           </Card>
 
@@ -272,7 +345,7 @@ export default function AdminAuctionDetailPage() {
           </Card>
         </div>
 
-        {/* Right column: Participants */}
+        {/* Right column: Participants + System */}
         <div className="space-y-4">
           <Card className="p-0">
             <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">

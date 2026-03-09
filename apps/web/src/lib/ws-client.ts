@@ -105,6 +105,25 @@ export function connectToAuction(auctionId: string) {
   socket.on('names_hidden', () => {
     useAuctionStore.getState().setBroadcastNames(null);
   });
+
+  // Admin time extension
+  socket.on('admin_time_extended', (data: {
+    auction_id: string;
+    new_end_time: string;
+    added_minutes: number;
+    time_remaining_ms: number;
+  }) => {
+    const s = useAuctionStore.getState();
+    s.applyAdminTimeExtended(data.added_minutes, data.time_remaining_ms, data.new_end_time);
+  });
+
+  // Admin announcement
+  socket.on('admin_announcement', (data: {
+    message: string;
+    timestamp: string;
+  }) => {
+    useAuctionStore.getState().addAnnouncement(data.message, data.timestamp);
+  });
 }
 
 export function placeBid(auctionId: string, amount: string, referencePrice: string): string {
@@ -134,6 +153,22 @@ export function placeBid(auctionId: string, amount: string, referencePrice: stri
 
 export function getSocket(): Socket | null {
   return socket;
+}
+
+export function adminExtendTime(auctionId: string, minutes: number) {
+  socket?.emit('admin_extend_time', { auction_id: auctionId, minutes });
+}
+
+export function adminSendAnnouncement(auctionId: string, message: string) {
+  socket?.emit('admin_send_announcement', { auction_id: auctionId, message });
+}
+
+export function adminRevealNames(auctionId: string, nameMap: Record<string, string>) {
+  socket?.emit('reveal_names', { auction_id: auctionId, name_map: nameMap });
+}
+
+export function adminHideNames(auctionId: string) {
+  socket?.emit('hide_names', { auction_id: auctionId });
 }
 
 export function disconnectFromAuction() {

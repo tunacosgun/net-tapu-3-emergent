@@ -61,6 +61,12 @@ interface AuctionState {
   // Optimistic bid tracking
   optimisticBid: OptimisticBid | null;
 
+  // Admin time extension animation
+  timeExtensionAnimation: { addedMinutes: number; timestamp: number } | null;
+
+  // Admin announcements
+  announcements: Array<{ message: string; timestamp: string }>;
+
   // REST actions
   setAuctionDetail: (auction: Auction) => void;
   setAuctionLoading: (loading: boolean) => void;
@@ -79,6 +85,11 @@ interface AuctionState {
   setTimeRemaining: (ms: number) => void;
   setWatcherCount: (count: number) => void;
   setBroadcastNames: (map: Record<string, string> | null) => void;
+
+  // Admin
+  applyAdminTimeExtended: (addedMinutes: number, timeRemainingMs: number, newEndTime: string) => void;
+  addAnnouncement: (message: string, timestamp: string) => void;
+  clearTimeExtensionAnimation: () => void;
 
   // Optimistic bid
   setOptimisticBid: (bid: OptimisticBid) => void;
@@ -109,6 +120,8 @@ const initialState = {
   finalPrice: null,
   broadcastNameMap: null as Record<string, string> | null,
   optimisticBid: null as OptimisticBid | null,
+  timeExtensionAnimation: null as { addedMinutes: number; timestamp: number } | null,
+  announcements: [] as Array<{ message: string; timestamp: string }>,
 };
 
 export const useAuctionStore = create<AuctionState>((set) => ({
@@ -223,6 +236,20 @@ export const useAuctionStore = create<AuctionState>((set) => ({
   setTimeRemaining: (ms) => set({ timeRemainingMs: ms }),
   setWatcherCount: (count) => set({ watcherCount: count }),
   setBroadcastNames: (map) => set({ broadcastNameMap: map }),
+
+  applyAdminTimeExtended: (addedMinutes, timeRemainingMs, newEndTime) =>
+    set({
+      timeRemainingMs: timeRemainingMs,
+      extendedUntil: newEndTime,
+      timeExtensionAnimation: { addedMinutes, timestamp: Date.now() },
+    }),
+
+  addAnnouncement: (message, timestamp) =>
+    set((state) => ({
+      announcements: [{ message, timestamp }, ...state.announcements].slice(0, 20),
+    })),
+
+  clearTimeExtensionAnimation: () => set({ timeExtensionAnimation: null }),
 
   setOptimisticBid: (bid) =>
     set((state) => {

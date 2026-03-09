@@ -17,6 +17,7 @@ import * as jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { Auction } from '../entities/auction.entity';
 import { AuctionParticipant } from '../entities/auction-participant.entity';
+import { Bid } from '../entities/bid.entity';
 import { BidService } from '../services/bid.service';
 import { RedisLockService } from '../services/redis-lock.service';
 import { PlaceBidDto } from '../dto/place-bid.dto';
@@ -62,6 +63,8 @@ export class AuctionGateway
     private readonly auctionRepo: Repository<Auction>,
     @InjectRepository(AuctionParticipant)
     private readonly participantRepo: Repository<AuctionParticipant>,
+    @InjectRepository(Bid)
+    private readonly bidRepo: Repository<Bid>,
     private readonly bidService: BidService,
     private readonly redisLock: RedisLockService,
     private readonly config: ConfigService,
@@ -165,26 +168,32 @@ export class AuctionGateway
       return;
     }
 
-    // Single query: participant + auction existence in one check.
-    // If auction doesn't exist OR user is not participant, same generic error.
-    const participant = await this.participantRepo.findOne({
-      where: {
-        auctionId,
-        userId,
-        eligible: true,
-      },
-    });
+    // Admin/superadmin bypass participant check
+    const roles = (client.data.roles as string[]) ?? [];
+    const isAdmin = roles.includes('admin') || roles.includes('superadmin');
 
-    if (!participant) {
-      // Generic error — do NOT reveal whether auction exists
-      this.logger.warn(
-        `Join denied: user ${userId} for auction ${auctionId} (not participant or not found)`,
-      );
-      client.emit('error', { message: 'Unable to join auction' });
-      return;
+    if (!isAdmin) {
+      // Single query: participant + auction existence in one check.
+      // If auction doesn't exist OR user is not participant, same generic error.
+      const participant = await this.participantRepo.findOne({
+        where: {
+          auctionId,
+          userId,
+          eligible: true,
+        },
+      });
+
+      if (!participant) {
+        // Generic error — do NOT reveal whether auction exists
+        this.logger.warn(
+          `Join denied: user ${userId} for auction ${auctionId} (not participant or not found)`,
+        );
+        client.emit('error', { message: 'Unable to join auction' });
+        return;
+      }
     }
 
-    // Auction exists and user is participant — now load auction state
+    // Load auction state
     const auction = await this.auctionRepo.findOne({
       where: { id: auctionId },
     });
@@ -204,6 +213,13 @@ export class AuctionGateway
     });
     const watcherCount = this.server.sockets.adapter.rooms.get(room)?.size ?? 0;
 
+    // Fetch recent bids for bid history (last 50, newest first)
+    const recentBids = await this.bidRepo.find({
+      where: { auctionId },
+      order: { serverTs: 'DESC' },
+      take: 50,
+    });
+
     const effectiveEnd = auction.extendedUntil ?? auction.scheduledEnd;
     const snapshot: AuctionStateMessage = {
       type: 'AUCTION_STATE',
@@ -220,6 +236,12 @@ export class AuctionGateway
           )
         : null,
       extended_until: auction.extendedUntil?.toISOString() ?? null,
+      recent_bids: recentBids.map((b) => ({
+        id: b.id,
+        user_id: b.userId,
+        amount: b.amount,
+        server_ts: b.serverTs.toISOString(),
+      })),
     };
 
     client.emit('auction_state', snapshot);
@@ -278,6 +300,84 @@ export class AuctionGateway
     const room = `auction:${data.auction_id}`;
     this.server.to(room).emit('names_hidden', {});
     this.logger.log(`Admin ${client.data.userId} hid names in ${room}`);
+  }
+
+  // ── admin_extend_time (admin only) ────────────────────────────
+
+  @SubscribeMessage('admin_extend_time')
+  async handleAdminExtendTime(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { auction_id: string; minutes: number },
+  ) {
+    const roles = (client.data.roles as string[]) ?? [];
+    if (!roles.includes('admin') && !roles.includes('superadmin')) {
+      client.emit('error', { message: 'Unauthorized' });
+      return;
+    }
+
+    const auctionId = data.auction_id;
+    const minutes = Math.min(Math.max(data.minutes || 0, 1), 60); // 1-60 min
+
+    const auction = await this.auctionRepo.findOne({ where: { id: auctionId } });
+    if (!auction) {
+      client.emit('error', { message: 'Auction not found' });
+      return;
+    }
+
+    // Calculate new end time from current effective end
+    const currentEnd = auction.extendedUntil ?? auction.scheduledEnd;
+    if (!currentEnd) {
+      client.emit('error', { message: 'Auction has no end time' });
+      return;
+    }
+
+    const newEnd = new Date(new Date(currentEnd).getTime() + minutes * 60_000);
+    await this.auctionRepo.update(auctionId, {
+      extendedUntil: newEnd,
+      extensionCount: () => 'extension_count + 1',
+    });
+
+    const room = `auction:${auctionId}`;
+    const timeRemainingMs = Math.max(0, newEnd.getTime() - Date.now());
+
+    // Broadcast to all clients in room
+    this.server.to(room).emit('admin_time_extended', {
+      type: 'ADMIN_TIME_EXTENDED',
+      auction_id: auctionId,
+      new_end_time: newEnd.toISOString(),
+      added_minutes: minutes,
+      time_remaining_ms: timeRemainingMs,
+    });
+
+    this.logger.log(
+      `Admin ${client.data.userId} extended auction ${auctionId} by ${minutes}min → ${newEnd.toISOString()}`,
+    );
+  }
+
+  // ── admin_add_time_at_last_minute (auto-extend config) ──────
+
+  @SubscribeMessage('admin_send_announcement')
+  handleAdminAnnouncement(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { auction_id: string; message: string },
+  ) {
+    const roles = (client.data.roles as string[]) ?? [];
+    if (!roles.includes('admin') && !roles.includes('superadmin')) {
+      client.emit('error', { message: 'Unauthorized' });
+      return;
+    }
+
+    const room = `auction:${data.auction_id}`;
+    this.server.to(room).emit('admin_announcement', {
+      type: 'ADMIN_ANNOUNCEMENT',
+      auction_id: data.auction_id,
+      message: data.message,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(
+      `Admin ${client.data.userId} announcement in ${data.auction_id}: ${data.message}`,
+    );
   }
 
   // ── place_bid (hardened) ───────────────────────────────────────
