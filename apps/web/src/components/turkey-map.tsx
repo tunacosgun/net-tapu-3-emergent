@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import apiClient from '@/lib/api-client';
 import type { Parcel, PaginatedResponse } from '@/types';
 
-// Turkey's 81 provinces with approximate center coordinates
 const PROVINCES: { name: string; x: number; y: number }[] = [
   { name: 'Adana', x: 555, y: 365 },
   { name: 'Adıyaman', x: 615, y: 325 },
@@ -89,13 +89,6 @@ const PROVINCES: { name: string; x: number; y: number }[] = [
   { name: 'Zonguldak', x: 425, y: 215 },
 ];
 
-interface ProvinceData {
-  name: string;
-  x: number;
-  y: number;
-  parcelCount: number;
-}
-
 interface TurkeyMapProps {
   onProvinceClick?: (province: string) => void;
 }
@@ -122,7 +115,7 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
         } while (page <= totalPages && !cancelled);
         if (!cancelled) setParcels(all);
       } catch {
-        // Silently fail — map still renders empty
+        // Silently fail
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -131,52 +124,68 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
     return () => { cancelled = true; };
   }, []);
 
-  // Aggregate parcels by city — exact match against parcel.city field
   const provinceData = useMemo(() => {
     const countByCity = new Map<string, number>();
     for (const parcel of parcels) {
-      const city = parcel.city;
-      if (city) {
-        countByCity.set(city, (countByCity.get(city) || 0) + 1);
+      if (parcel.city) {
+        countByCity.set(parcel.city, (countByCity.get(parcel.city) || 0) + 1);
       }
     }
-
-    return PROVINCES.map((prov): ProvinceData => ({
+    return PROVINCES.map((prov) => ({
       ...prov,
       parcelCount: countByCity.get(prov.name) || 0,
     }));
   }, [parcels]);
 
+  const totalParcels = parcels.length;
+  const activeCities = provinceData.filter((p) => p.parcelCount > 0).length;
   const hovered = provinceData.find((p) => p.name === hoveredProvince);
 
   return (
     <div className="relative">
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[var(--background)]/80 z-10">
-          <p className="text-sm text-[var(--muted-foreground)]">Harita yükleniyor...</p>
+        <div className="absolute inset-0 flex items-center justify-center z-10 bg-white/80 backdrop-blur-sm rounded-2xl">
+          <div className="flex items-center gap-3">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+            <p className="text-sm font-medium text-gray-500">Harita yükleniyor...</p>
+          </div>
         </div>
       )}
 
-      {/* Legend */}
-      <div className="flex gap-4 mb-4 text-xs">
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-brand-500" /> Arsa Mevcut
-        </span>
+      {/* Map Stats Bar */}
+      <div className="flex items-center justify-between mb-6 px-1">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-brand-500 shadow-sm shadow-brand-500/30" />
+            <span className="text-xs font-semibold text-gray-600">Arsa Mevcut</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-gray-200" />
+            <span className="text-xs font-semibold text-gray-400">Arsa Yok</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 text-xs">
+          <span className="font-bold text-brand-600">{totalParcels} arsa</span>
+          <span className="text-gray-400">·</span>
+          <span className="font-bold text-gray-600">{activeCities} il</span>
+        </div>
       </div>
 
+      {/* SVG Map */}
       <svg
-        viewBox="180 180 620 230"
+        viewBox="180 175 620 240"
         className="w-full h-auto"
         role="img"
         aria-label="Türkiye Haritası"
       >
         {/* Background */}
-        <rect x="180" y="180" width="620" height="230" fill="transparent" />
+        <rect x="180" y="175" width="620" height="240" fill="transparent" />
 
         {provinceData.map((prov) => {
           const hasData = prov.parcelCount > 0;
           const isHovered = hoveredProvince === prov.name;
-          const radius = hasData ? Math.min(6 + prov.parcelCount * 2, 14) : 4;
+          const baseRadius = hasData ? Math.min(7 + prov.parcelCount * 2.5, 16) : 4.5;
+          const radius = isHovered ? baseRadius + 3 : baseRadius;
 
           return (
             <g
@@ -186,43 +195,92 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
               onMouseLeave={() => setHoveredProvince(null)}
               onClick={() => onProvinceClick?.(prov.name)}
             >
+              {/* Pulse ring for provinces with data */}
+              {hasData && isHovered && (
+                <circle
+                  cx={prov.x}
+                  cy={prov.y}
+                  r={radius + 6}
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth={1.5}
+                  opacity={0.3}
+                >
+                  <animate attributeName="r" from={String(radius)} to={String(radius + 12)} dur="1s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" from="0.4" to="0" dur="1s" repeatCount="indefinite" />
+                </circle>
+              )}
+
+              {/* Main circle */}
               <circle
                 cx={prov.x}
                 cy={prov.y}
-                r={isHovered ? radius + 2 : radius}
-                fill={hasData ? '#22c55e' : 'var(--muted)'}
-                stroke={isHovered ? 'var(--foreground)' : hasData ? '#22c55e' : 'var(--border)'}
-                strokeWidth={isHovered ? 2 : 1}
-                opacity={hasData ? 0.85 : 0.4}
-                className="transition-all duration-150"
+                r={radius}
+                fill={hasData ? (isHovered ? '#16a34a' : '#22c55e') : (isHovered ? '#d1d5db' : '#e5e7eb')}
+                stroke={isHovered ? (hasData ? '#15803d' : '#9ca3af') : 'transparent'}
+                strokeWidth={isHovered ? 2 : 0}
+                className="transition-all duration-200"
               />
+
+              {/* Count text on data markers */}
               {hasData && (
                 <text
                   x={prov.x}
                   y={prov.y + 1}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className="fill-white text-[7px] font-bold pointer-events-none"
+                  className="fill-white font-bold pointer-events-none select-none"
+                  fontSize={baseRadius > 10 ? 8 : 7}
                 >
                   {prov.parcelCount}
                 </text>
+              )}
+
+              {/* Province name label on hover */}
+              {isHovered && (
+                <g>
+                  <rect
+                    x={prov.x - 40}
+                    y={prov.y - radius - 22}
+                    width={80}
+                    height={18}
+                    rx={4}
+                    fill={hasData ? '#15803d' : '#374151'}
+                    opacity={0.95}
+                  />
+                  <text
+                    x={prov.x}
+                    y={prov.y - radius - 11}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-white font-bold pointer-events-none select-none"
+                    fontSize={8}
+                  >
+                    {prov.name}
+                  </text>
+                </g>
               )}
             </g>
           );
         })}
       </svg>
 
-      {/* Tooltip */}
+      {/* Floating Info Card */}
       {hovered && (
-        <div className="absolute top-2 right-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 shadow-lg text-sm">
-          <p className="font-semibold">{hovered.name}</p>
+        <div className="absolute bottom-4 right-4 rounded-xl bg-white border border-gray-200 shadow-xl p-4 min-w-[180px] animate-fadeInUp">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`h-3 w-3 rounded-full ${hovered.parcelCount > 0 ? 'bg-brand-500' : 'bg-gray-300'}`} />
+            <p className="text-sm font-bold text-gray-900">{hovered.name}</p>
+          </div>
           {hovered.parcelCount > 0 ? (
-            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-              {hovered.parcelCount} arsa
-            </p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-extrabold text-brand-600">{hovered.parcelCount}</span>
+              <span className="text-xs font-medium text-gray-500">arsa mevcut</span>
+            </div>
           ) : (
-            <p className="mt-1 text-xs text-[var(--muted-foreground)]">Arsa yok</p>
+            <p className="text-xs text-gray-400">Henüz arsa bulunmuyor</p>
           )}
+          <p className="mt-2 text-[10px] text-gray-400">Tıklayarak arsaları görüntüleyin</p>
         </div>
       )}
     </div>
