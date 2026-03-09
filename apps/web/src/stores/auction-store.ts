@@ -149,8 +149,16 @@ export const useAuctionStore = create<AuctionState>((set) => ({
       depositVersion: state.depositVersion + 1,
     })),
 
-  applyAuctionState: (msg) =>
-    set({
+  applyAuctionState: (msg) => {
+    // Hydrate bid feed from recent_bids (for late joiners)
+    const historicFeed: BidFeedItem[] = (msg.recent_bids ?? []).map((b) => ({
+      bid_id: b.id,
+      user_id_masked: b.user_id,
+      amount: b.amount,
+      server_timestamp: b.server_ts,
+    }));
+
+    return set({
       auctionId: msg.auction_id,
       status: msg.status,
       currentPrice: msg.current_price,
@@ -159,7 +167,9 @@ export const useAuctionStore = create<AuctionState>((set) => ({
       watcherCount: msg.watcher_count,
       timeRemainingMs: msg.time_remaining_ms,
       extendedUntil: msg.extended_until,
-    }),
+      bidFeed: historicFeed,
+    });
+  },
 
   applyBidAccepted: (msg) =>
     set((state) => {

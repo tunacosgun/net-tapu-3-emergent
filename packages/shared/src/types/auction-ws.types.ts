@@ -17,6 +17,12 @@ export interface AuctionStateMessage {
   watcher_count: number;
   time_remaining_ms: number | null;
   extended_until: string | null;  // ISO 8601 or null
+  recent_bids?: Array<{
+    id: string;
+    user_id: string;
+    amount: string;
+    server_ts: string;
+  }>;
 }
 
 export interface BidAcceptedMessage {
