@@ -63,7 +63,8 @@ export default function AdminAuctionDetailPage() {
 
   // Admin controls
   const [announcementText, setAnnouncementText] = useState('');
-  const [extendConfirm, setExtendConfirm] = useState<number | null>(null);
+  const [extendConfirm, setExtendConfirm] = useState<{ minutes: number; silent: boolean } | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Live WS state
   const wsStatus = useConnectionStore((s) => s.status);
@@ -144,14 +145,19 @@ export default function AdminAuctionDetailPage() {
     finally { setChangingStatus(false); }
   }
 
-  function handleExtendTime(minutes: number) {
-    if (extendConfirm === minutes) {
-      adminExtendTime(auctionId, minutes);
+  function handleExtendTime(minutes: number, silent: boolean) {
+    if (extendConfirm?.minutes === minutes && extendConfirm?.silent === silent) {
+      adminExtendTime(auctionId, minutes, silent);
       setExtendConfirm(null);
     } else {
-      setExtendConfirm(minutes);
-      setTimeout(() => setExtendConfirm((c) => c === minutes ? null : c), 3000);
+      setExtendConfirm({ minutes, silent });
+      setTimeout(() => setExtendConfirm((c) => c?.minutes === minutes && c?.silent === silent ? null : c), 3000);
     }
+  }
+
+  function handlePreviewAnimation() {
+    // Show local-only preview of the time extension animation
+    setShowPreview(true);
   }
 
   function handleSendAnnouncement() {
@@ -239,26 +245,72 @@ export default function AdminAuctionDetailPage() {
           </h3>
 
           {/* Time extension */}
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-[var(--muted-foreground)]">Süre Uzat</p>
-            <div className="flex flex-wrap gap-2">
-              {[1, 2, 5, 10, 15, 30].map((min) => (
-                <button
-                  key={min}
-                  onClick={() => handleExtendTime(min)}
-                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
-                    extendConfirm === min
-                      ? 'bg-red-500 text-white ring-2 ring-red-300 scale-105'
-                      : 'bg-white dark:bg-gray-800 border border-[var(--border)] hover:border-brand-500 hover:text-brand-600'
-                  }`}
-                >
-                  {extendConfirm === min ? `${min}dk onayla?` : `+${min} dk`}
-                </button>
-              ))}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-[var(--muted-foreground)]">Süre Uzat</p>
+              <button
+                onClick={handlePreviewAnimation}
+                className="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Animasyon Önizleme
+              </button>
             </div>
+
+            {/* Animated extend (clients see animation) */}
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 font-semibold">Animasyonlu (kullanıcılar görecek)</p>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 5, 10, 15, 30].map((min) => {
+                  const isConfirming = extendConfirm?.minutes === min && !extendConfirm?.silent;
+                  return (
+                    <button
+                      key={`anim-${min}`}
+                      onClick={() => handleExtendTime(min, false)}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all ${
+                        isConfirming
+                          ? 'bg-red-500 text-white ring-2 ring-red-300 scale-105'
+                          : 'bg-white dark:bg-gray-800 border border-[var(--border)] hover:border-brand-500 hover:text-brand-600'
+                      }`}
+                    >
+                      {isConfirming ? `${min}dk onayla?` : `+${min} dk`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Silent extend (no animation for clients) */}
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 font-semibold">Sessiz (animasyonsuz, sadece sayaç güncellenir)</p>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 5, 10, 15, 30].map((min) => {
+                  const isConfirming = extendConfirm?.minutes === min && extendConfirm?.silent;
+                  return (
+                    <button
+                      key={`silent-${min}`}
+                      onClick={() => handleExtendTime(min, true)}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+                        isConfirming
+                          ? 'bg-orange-500 text-white ring-2 ring-orange-300 scale-105'
+                          : 'bg-gray-50 dark:bg-gray-900 border border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-gray-400 hover:text-[var(--foreground)]'
+                      }`}
+                    >
+                      {isConfirming ? `${min}dk onayla?` : `+${min} dk`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {extendConfirm !== null && (
-              <p className="text-xs text-red-600 animate-pulse">
-                Onaylamak için tekrar tıklayın. Tüm katılımcılar süre uzatma animasyonu görecek.
+              <p className={`text-xs animate-pulse ${extendConfirm.silent ? 'text-orange-600' : 'text-red-600'}`}>
+                {extendConfirm.silent
+                  ? 'Onaylamak için tekrar tıklayın. Sayaç sessizce güncellenecek.'
+                  : 'Onaylamak için tekrar tıklayın. Tüm katılımcılar süre uzatma animasyonu görecek.'}
               </p>
             )}
           </div>
@@ -444,6 +496,34 @@ export default function AdminAuctionDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Animation preview overlay (admin-only, local) */}
+      {showPreview && (
+        <div className="fixed inset-0 z-[100] pointer-events-none flex items-center justify-center">
+          <div className="absolute inset-0 bg-brand-500 opacity-30 animate-pulse" />
+          <div className="relative animate-bounce-in">
+            <div className="rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border-2 border-brand-500 px-12 py-8 text-center space-y-3 pointer-events-auto">
+              <div className="relative inline-flex items-center justify-center">
+                <div className="absolute h-20 w-20 rounded-full bg-brand-500/20 animate-ping" />
+                <div className="relative h-16 w-16 rounded-full bg-brand-500 flex items-center justify-center">
+                  <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-lg font-bold">Süre Uzatıldı!</p>
+              <p className="text-4xl font-black text-brand-600 dark:text-brand-400 tabular-nums">+10 dakika</p>
+              <p className="text-sm text-[var(--muted-foreground)]">Bu bir önizlemedir — sadece siz görüyorsunuz</p>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="mt-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 pointer-events-auto"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

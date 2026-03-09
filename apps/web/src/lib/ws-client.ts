@@ -112,9 +112,10 @@ export function connectToAuction(auctionId: string) {
     new_end_time: string;
     added_minutes: number;
     time_remaining_ms: number;
+    silent?: boolean;
   }) => {
     const s = useAuctionStore.getState();
-    s.applyAdminTimeExtended(data.added_minutes, data.time_remaining_ms, data.new_end_time);
+    s.applyAdminTimeExtended(data.added_minutes, data.time_remaining_ms, data.new_end_time, !!data.silent);
   });
 
   // Admin announcement
@@ -155,8 +156,8 @@ export function getSocket(): Socket | null {
   return socket;
 }
 
-export function adminExtendTime(auctionId: string, minutes: number) {
-  socket?.emit('admin_extend_time', { auction_id: auctionId, minutes });
+export function adminExtendTime(auctionId: string, minutes: number, silent = false) {
+  socket?.emit('admin_extend_time', { auction_id: auctionId, minutes, silent });
 }
 
 export function adminSendAnnouncement(auctionId: string, message: string) {

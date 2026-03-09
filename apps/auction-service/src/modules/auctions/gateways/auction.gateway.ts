@@ -307,7 +307,7 @@ export class AuctionGateway
   @SubscribeMessage('admin_extend_time')
   async handleAdminExtendTime(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { auction_id: string; minutes: number },
+    @MessageBody() data: { auction_id: string; minutes: number; silent?: boolean },
   ) {
     const roles = (client.data.roles as string[]) ?? [];
     if (!roles.includes('admin') && !roles.includes('superadmin')) {
@@ -317,6 +317,7 @@ export class AuctionGateway
 
     const auctionId = data.auction_id;
     const minutes = Math.min(Math.max(data.minutes || 0, 1), 60); // 1-60 min
+    const silent = !!data.silent;
 
     const auction = await this.auctionRepo.findOne({ where: { id: auctionId } });
     if (!auction) {
@@ -347,6 +348,7 @@ export class AuctionGateway
       new_end_time: newEnd.toISOString(),
       added_minutes: minutes,
       time_remaining_ms: timeRemainingMs,
+      silent,
     });
 
     this.logger.log(

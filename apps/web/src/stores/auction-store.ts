@@ -87,7 +87,7 @@ interface AuctionState {
   setBroadcastNames: (map: Record<string, string> | null) => void;
 
   // Admin
-  applyAdminTimeExtended: (addedMinutes: number, timeRemainingMs: number, newEndTime: string) => void;
+  applyAdminTimeExtended: (addedMinutes: number, timeRemainingMs: number, newEndTime: string, silent?: boolean) => void;
   addAnnouncement: (message: string, timestamp: string) => void;
   clearTimeExtensionAnimation: () => void;
 
@@ -237,11 +237,11 @@ export const useAuctionStore = create<AuctionState>((set) => ({
   setWatcherCount: (count) => set({ watcherCount: count }),
   setBroadcastNames: (map) => set({ broadcastNameMap: map }),
 
-  applyAdminTimeExtended: (addedMinutes, timeRemainingMs, newEndTime) =>
+  applyAdminTimeExtended: (addedMinutes, timeRemainingMs, newEndTime, silent) =>
     set({
       timeRemainingMs: timeRemainingMs,
       extendedUntil: newEndTime,
-      timeExtensionAnimation: { addedMinutes, timestamp: Date.now() },
+      timeExtensionAnimation: silent ? null : { addedMinutes, timestamp: Date.now() },
     }),
 
   addAnnouncement: (message, timestamp) =>
