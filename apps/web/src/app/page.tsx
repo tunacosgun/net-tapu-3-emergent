@@ -60,42 +60,65 @@ export default function HomePage() {
   return (
     <main>
       {/* ─── Hero Section ─── */}
-      <section className="relative overflow-hidden">
-        {/* Background - dark premium */}
-        <div className="absolute inset-0 bg-[#0a1628]" />
-        {/* Gradient orbs */}
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-brand-500/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-emerald-500/15 rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-600/10 rounded-full blur-[150px]" />
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />
+      <section className="relative overflow-hidden min-h-[92vh] flex items-center">
+        {/* Background */}
+        <div className="absolute inset-0 bg-[#070f1e]" />
+        {/* Animated gradient mesh */}
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-brand-500/15 rounded-full blur-[150px] animate-float" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[130px] animate-float" style={{ animationDelay: '1.5s' }} />
+        <div className="absolute top-[30%] right-[20%] w-[300px] h-[300px] bg-blue-500/8 rounded-full blur-[100px] animate-float" style={{ animationDelay: '3s' }} />
+        {/* Subtle noise texture */}
+        <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' fill=\'white\'/%3E%3C/svg%3E")' }} />
+        {/* Bottom gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white via-white/80 to-transparent" />
+        {/* Decorative lines */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-32 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
 
-        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:py-28 lg:py-36">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="animate-fadeInDown inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md px-5 py-2 text-sm font-medium text-white/90 mb-8">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-glow-pulse" />
-              Canlı Açık Artırmalar Devam Ediyor
-            </div>
-            <h1 className="animate-fadeInUp text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-[64px] leading-[1.08]">
-              Hayalinizdeki Arsayı{' '}
-              <span className="relative inline-block">
-                <span className="relative z-10 bg-gradient-to-r from-brand-300 to-emerald-300 bg-clip-text text-transparent">NetTapu</span>
+        <div className="relative w-full mx-auto max-w-7xl px-4 py-24 sm:py-32 lg:py-0">
+          <div className="mx-auto max-w-4xl text-center">
+            {/* Badge */}
+            <div className="animate-fadeInDown inline-flex items-center gap-2.5 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl px-5 py-2.5 mb-10">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
               </span>
-              <br className="hidden sm:block" />
+              <span className="text-[13px] font-medium text-white/70 tracking-wide">Canlı Açık Artırmalar Devam Ediyor</span>
+              <Link href="/auctions" className="text-[13px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors ml-1">
+                İncele →
+              </Link>
+            </div>
+
+            {/* Main heading */}
+            <h1 className="animate-fadeInUp text-[42px] sm:text-[56px] lg:text-[72px] font-extrabold tracking-[-0.03em] text-white leading-[1.05]">
+              Hayalinizdeki Arsayı
+              <br />
+              <span className="relative">
+                <span className="bg-gradient-to-r from-brand-400 via-emerald-400 to-brand-300 bg-clip-text text-transparent">NetTapu</span>
+                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
+                  <path d="M2 8C50 2 100 2 150 6C200 10 250 4 298 8" stroke="url(#hero-underline)" strokeWidth="3" strokeLinecap="round" />
+                  <defs>
+                    <linearGradient id="hero-underline" x1="0" y1="0" x2="300" y2="0">
+                      <stop stopColor="#4ade80" stopOpacity="0" />
+                      <stop offset="0.3" stopColor="#4ade80" stopOpacity="0.6" />
+                      <stop offset="0.7" stopColor="#34d399" stopOpacity="0.6" />
+                      <stop offset="1" stopColor="#34d399" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </span>
               &apos;da Bulun
             </h1>
-            <p className="animate-fadeInUp mt-6 text-lg text-white/60 max-w-xl mx-auto leading-relaxed" style={{ animationDelay: '100ms' }}>
-              Gayrimenkul ve arsa satışı için Türkiye&apos;nin canlı açık artırma
-              platformu. Güvenilir, şeffaf ve hızlı.
+
+            <p className="animate-fadeInUp mt-7 text-[17px] sm:text-lg text-white/45 max-w-lg mx-auto leading-relaxed font-light" style={{ animationDelay: '100ms' }}>
+              Türkiye&apos;nin en güvenilir gayrimenkul ve arsa açık artırma
+              platformu. Şeffaf süreç, güvenli ödeme.
             </p>
 
-            {/* Hero Search */}
-            <form onSubmit={handleSearch} className="animate-fadeInUp mx-auto mt-10 max-w-xl" style={{ animationDelay: '200ms' }}>
-              <div className="group flex overflow-hidden rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 shadow-2xl shadow-black/20 focus-within:bg-white/95 focus-within:border-white/50 transition-all duration-500">
-                <div className="flex items-center pl-5 text-white/40 group-focus-within:text-gray-400 transition-colors duration-500">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            {/* Search */}
+            <form onSubmit={handleSearch} className="animate-fadeInUp mx-auto mt-12 max-w-2xl" style={{ animationDelay: '200ms' }}>
+              <div className="group relative flex overflow-hidden rounded-2xl bg-white/[0.06] backdrop-blur-xl border border-white/[0.08] shadow-2xl shadow-black/30 focus-within:bg-white focus-within:border-white/80 focus-within:shadow-brand-500/10 transition-all duration-500">
+                <div className="flex items-center pl-6 text-white/30 group-focus-within:text-gray-400 transition-colors duration-500">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                   </svg>
                 </div>
@@ -104,60 +127,109 @@ export default function HomePage() {
                   placeholder="Şehir, ilçe veya arsa adı ile arayın..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent px-4 py-4.5 text-sm text-white outline-none placeholder:text-white/40 focus:text-gray-900 focus:placeholder:text-gray-400 transition-colors duration-500"
+                  className="flex-1 bg-transparent px-4 py-5 text-[15px] text-white outline-none placeholder:text-white/30 focus:text-gray-900 focus:placeholder:text-gray-400 transition-colors duration-500"
                 />
                 <button
                   type="submit"
-                  className="btn-shine m-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-2.5 text-sm font-bold text-white hover:from-brand-600 hover:to-brand-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-brand-500/25"
+                  className="btn-shine m-2.5 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 text-sm font-bold text-white hover:from-brand-600 hover:to-brand-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-brand-500/30"
                 >
                   Ara
                 </button>
               </div>
+              {/* Popular searches */}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <span className="text-xs text-white/25">Popüler:</span>
+                {['Antalya', 'Muğla', 'Mersin', 'Bursa'].map((city) => (
+                  <button
+                    key={city}
+                    type="button"
+                    onClick={() => router.push(`/parcels?city=${city}`)}
+                    className="rounded-lg bg-white/[0.04] border border-white/[0.06] px-3 py-1 text-xs font-medium text-white/40 hover:text-white/70 hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-300"
+                  >
+                    {city}
+                  </button>
+                ))}
+              </div>
             </form>
 
-            <div className="animate-fadeInUp mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center" style={{ animationDelay: '300ms' }}>
+            {/* CTA Buttons */}
+            <div className="animate-fadeInUp mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center" style={{ animationDelay: '300ms' }}>
               <Link
                 href="/parcels"
-                className="btn-shine rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-brand-600 shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+                className="btn-shine group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-[15px] font-bold text-gray-900 shadow-xl shadow-black/10 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
               >
                 Arsaları Keşfet
+                <svg className="h-4 w-4 text-brand-500 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               </Link>
               <Link
                 href="/auctions"
-                className="rounded-xl border border-white/20 backdrop-blur-sm px-7 py-3.5 text-sm font-bold text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.12] backdrop-blur-sm px-8 py-4 text-[15px] font-semibold text-white/80 hover:bg-white/[0.06] hover:border-white/[0.2] hover:text-white transition-all duration-300"
               >
+                <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+                </svg>
                 Açık Artırmalar
               </Link>
               <button
                 onClick={() => setShowVideo(true)}
-                className="group rounded-xl border border-white/10 backdrop-blur-sm px-7 py-3.5 text-sm font-bold text-white/80 hover:bg-white/10 hover:text-white transition-all duration-300 flex items-center justify-center gap-2"
+                className="group inline-flex items-center justify-center gap-2.5 rounded-xl px-8 py-4 text-[15px] font-semibold text-white/50 hover:text-white/80 transition-all duration-300"
               >
-                <svg className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 border border-white/10 group-hover:bg-white/15 group-hover:scale-110 transition-all duration-300">
+                  <svg className="h-3.5 w-3.5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
                 Tanıtım Videosu
               </button>
+            </div>
+
+            {/* Trust line */}
+            <div className="animate-fadeInUp mt-16 flex items-center justify-center gap-8 opacity-0" style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}>
+              <div className="flex items-center gap-2 text-white/20">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+                <span className="text-xs font-medium">SSL Korumalı</span>
+              </div>
+              <div className="h-3 w-px bg-white/10" />
+              <div className="flex items-center gap-2 text-white/20">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                </svg>
+                <span className="text-xs font-medium">3D Secure Ödeme</span>
+              </div>
+              <div className="h-3 w-px bg-white/10" />
+              <div className="flex items-center gap-2 text-white/20">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+                <span className="text-xs font-medium">KVKK Uyumlu</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ─── Stats Counter ─── */}
-      <section className="mx-auto max-w-5xl px-4 -mt-10 relative z-10">
-        <div className="grid grid-cols-3 gap-4 sm:gap-6">
+      <section className="mx-auto max-w-6xl px-4 -mt-14 relative z-10">
+        <div className="grid grid-cols-3 divide-x divide-gray-100 rounded-2xl bg-white shadow-2xl shadow-gray-200/60 border border-gray-100/80">
           {[
-            { value: `${stats.parcels}+`, label: 'Aktif İlan', icon: 'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z' },
-            { value: `${stats.auctions}`, label: 'Açık Artırma', icon: 'M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z' },
-            { value: `${stats.cities}+`, label: 'Farklı İl', icon: 'M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z' },
+            { value: `${stats.parcels}+`, label: 'Aktif İlan', icon: 'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z', color: 'text-brand-500 bg-brand-50' },
+            { value: `${stats.auctions}`, label: 'Canlı Açık Artırma', icon: 'M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z', color: 'text-emerald-500 bg-emerald-50' },
+            { value: `${stats.cities}+`, label: 'Farklı İl', icon: 'M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z', color: 'text-blue-500 bg-blue-50' },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-2xl bg-white shadow-xl shadow-gray-200/50 border border-gray-100 p-6 sm:p-8 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50">
-                <svg className="h-6 w-6 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <div key={stat.label} className="flex items-center gap-4 px-6 sm:px-10 py-7 sm:py-8">
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${stat.color}`}>
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d={stat.icon} />
                 </svg>
               </div>
-              <p className="text-3xl sm:text-4xl font-extrabold text-gray-900">{stat.value}</p>
-              <p className="mt-1 text-sm font-medium text-[var(--muted-foreground)]">{stat.label}</p>
+              <div>
+                <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">{stat.value}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-400">{stat.label}</p>
+              </div>
             </div>
           ))}
         </div>
