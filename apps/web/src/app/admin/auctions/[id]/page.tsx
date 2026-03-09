@@ -190,7 +190,6 @@ export default function AdminAuctionDetailPage() {
           size="sm"
           label="Güncel Fiyat"
           value={formatPrice(effectivePrice)}
-          className={isLive ? 'ring-2 ring-brand-500' : ''}
         />
         <StatCard size="sm" label="Toplam Teklif" value={String(effectiveBidCount)} />
         <StatCard size="sm" label="Katılımcı" value={String(currentPrice ? participantCount : auction.participantCount)} />
