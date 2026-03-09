@@ -340,18 +340,37 @@ export class AdminAnalyticsService {
     }
   }
 
-  /** Get auction participants with real names (admin only) */
+  /** Get auction participants with full details (admin only) */
   async getAuctionParticipantNames(auctionId: string): Promise<
-    Array<{ userId: string; userIdMasked: string; fullName: string; email: string }>
+    Array<{
+      userId: string;
+      userIdMasked: string;
+      fullName: string;
+      email: string;
+      phone: string | null;
+      registeredAt: string;
+      ipAddress: string | null;
+      city: string | null;
+      bidCount: number;
+      lastBidAt: string | null;
+      lastBidAmount: string | null;
+    }>
   > {
     const rows = await this.dataSource.query(
       `SELECT
          ap.user_id,
          u.first_name,
          u.last_name,
-         u.email
+         u.email,
+         u.phone,
+         ap.registered_at,
+         ac.ip_address,
+         (SELECT COUNT(*)::int FROM auctions.bids b WHERE b.auction_id = $1 AND b.user_id = ap.user_id) AS bid_count,
+         (SELECT MAX(b.server_ts) FROM auctions.bids b WHERE b.auction_id = $1 AND b.user_id = ap.user_id) AS last_bid_at,
+         (SELECT b.amount FROM auctions.bids b WHERE b.auction_id = $1 AND b.user_id = ap.user_id ORDER BY b.server_ts DESC LIMIT 1) AS last_bid_amount
        FROM auctions.auction_participants ap
        JOIN auth.users u ON u.id = ap.user_id
+       LEFT JOIN auctions.auction_consents ac ON ac.auction_id = ap.auction_id AND ac.user_id = ap.user_id
        WHERE ap.auction_id = $1 AND ap.eligible = TRUE
        ORDER BY ap.registered_at`,
       [auctionId],
@@ -362,6 +381,13 @@ export class AdminAnalyticsService {
       userIdMasked: r.user_id.slice(0, 8) + '***',
       fullName: [r.first_name, r.last_name].filter(Boolean).join(' ') || r.email,
       email: r.email,
+      phone: r.phone || null,
+      registeredAt: r.registered_at,
+      ipAddress: r.ip_address ? String(r.ip_address) : null,
+      city: null, // IP-based geolocation can be added later
+      bidCount: r.bid_count || 0,
+      lastBidAt: r.last_bid_at || null,
+      lastBidAmount: r.last_bid_amount || null,
     }));
   }
 }

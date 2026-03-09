@@ -37,11 +37,17 @@ const statusColors: Record<string, string> = {
 };
 
 interface Participant {
-  id: string;
   userId: string;
-  eligible: boolean;
-  joinedAt: string;
-  user?: { firstName?: string; lastName?: string; email?: string };
+  userIdMasked: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  registeredAt: string;
+  ipAddress: string | null;
+  city: string | null;
+  bidCount: number;
+  lastBidAt: string | null;
+  lastBidAmount: string | null;
 }
 
 export default function AdminAuctionDetailPage() {
@@ -53,6 +59,7 @@ export default function AdminAuctionDetailPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [changingStatus, setChangingStatus] = useState(false);
+  const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
 
   // Admin controls
   const [announcementText, setAnnouncementText] = useState('');
@@ -98,14 +105,14 @@ export default function AdminAuctionDetailPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [timeRemainingMs]);
 
-  // Fetch auction + participants
+  // Fetch auction + participants (from admin analytics endpoint)
   useEffect(() => {
     let cancelled = false;
     async function fetchData() {
       try {
         const [auctionRes, participantsRes] = await Promise.allSettled([
           apiClient.get<Auction>(`/auctions/${auctionId}`),
-          apiClient.get<Participant[]>(`/auctions/${auctionId}/participants`),
+          apiClient.get<Participant[]>(`/admin/analytics/auctions/${auctionId}/participants`),
         ]);
         if (cancelled) return;
         if (auctionRes.status === 'fulfilled') setAuction(auctionRes.value.data);
@@ -143,7 +150,6 @@ export default function AdminAuctionDetailPage() {
       setExtendConfirm(null);
     } else {
       setExtendConfirm(minutes);
-      // Auto-cancel confirmation after 3s
       setTimeout(() => setExtendConfirm((c) => c === minutes ? null : c), 3000);
     }
   }
@@ -153,6 +159,14 @@ export default function AdminAuctionDetailPage() {
     adminSendAnnouncement(auctionId, announcementText.trim());
     setAnnouncementText('');
   }
+
+  // Build userId -> participant map for bid feed name resolution
+  const participantMap = useRef<Record<string, Participant>>({});
+  useEffect(() => {
+    const map: Record<string, Participant> = {};
+    participants.forEach((p) => { map[p.userId] = p; });
+    participantMap.current = map;
+  }, [participants]);
 
   if (loading) return <TableSkeleton />;
   if (!auction) return <p className="text-red-600">Açık artırma bulunamadı.</p>;
@@ -260,10 +274,7 @@ export default function AdminAuctionDetailPage() {
                 placeholder="Tüm katılımcılara mesaj gönder..."
                 className="flex-1 rounded-md border border-[var(--input)] bg-white dark:bg-gray-800 px-3 py-2 text-sm"
               />
-              <Button
-                onClick={handleSendAnnouncement}
-                disabled={!announcementText.trim()}
-              >
+              <Button onClick={handleSendAnnouncement} disabled={!announcementText.trim()}>
                 Gönder
               </Button>
             </div>
@@ -295,21 +306,28 @@ export default function AdminAuctionDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {bidFeed.map((bid, i) => (
-                      <tr
-                        key={bid.bid_id}
-                        className={`border-b border-[var(--border)] ${i === 0 ? 'bg-brand-50 dark:bg-brand-950/20' : ''}`}
-                      >
-                        <td className="px-4 py-2 text-[var(--muted-foreground)]">{bidFeed.length - i}</td>
-                        <td className="px-4 py-2 font-mono text-xs">{bid.user_id_masked}</td>
-                        <td className="px-4 py-2 text-right font-mono font-semibold">
-                          {formatPrice(bid.amount)}
-                        </td>
-                        <td className="px-4 py-2 text-right text-xs text-[var(--muted-foreground)]">
-                          {new Date(bid.server_timestamp).toLocaleTimeString('tr-TR')}
-                        </td>
-                      </tr>
-                    ))}
+                    {bidFeed.map((bid, i) => {
+                      // Resolve user_id_masked to real name from participant map
+                      const p = participantMap.current[bid.user_id_masked];
+                      return (
+                        <tr
+                          key={bid.bid_id}
+                          className={`border-b border-[var(--border)] ${i === 0 ? 'bg-brand-50 dark:bg-brand-950/20' : ''}`}
+                        >
+                          <td className="px-4 py-2 text-[var(--muted-foreground)]">{bidFeed.length - i}</td>
+                          <td className="px-4 py-2">
+                            <span className="font-medium text-sm">{p?.fullName || bid.user_id_masked}</span>
+                            {p && <span className="ml-2 text-xs text-[var(--muted-foreground)]">{p.email}</span>}
+                          </td>
+                          <td className="px-4 py-2 text-right font-mono font-semibold">
+                            {formatPrice(bid.amount)}
+                          </td>
+                          <td className="px-4 py-2 text-right text-xs text-[var(--muted-foreground)]">
+                            {new Date(bid.server_timestamp).toLocaleTimeString('tr-TR')}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
@@ -352,7 +370,7 @@ export default function AdminAuctionDetailPage() {
               <h3 className="text-sm font-bold">Katılımcılar</h3>
               <span className="text-xs text-[var(--muted-foreground)]">{participants.length} kişi</span>
             </div>
-            <div className="max-h-[400px] overflow-y-auto">
+            <div className="max-h-[600px] overflow-y-auto">
               {participants.length === 0 ? (
                 <div className="flex items-center justify-center py-8 text-sm text-[var(--muted-foreground)]">
                   Henüz katılımcı yok
@@ -360,23 +378,56 @@ export default function AdminAuctionDetailPage() {
               ) : (
                 <ul className="divide-y divide-[var(--border)]">
                   {participants.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between px-4 py-2.5">
-                      <div>
-                        <p className="text-sm font-medium">
-                          {p.user?.firstName
-                            ? `${p.user.firstName} ${p.user.lastName || ''}`
-                            : p.userId.slice(0, 8) + '...'}
-                        </p>
-                        {p.user?.email && (
-                          <p className="text-xs text-[var(--muted-foreground)]">{p.user.email}</p>
-                        )}
+                    <li
+                      key={p.userId}
+                      className="relative px-4 py-3 hover:bg-[var(--accent)] transition-colors cursor-pointer"
+                      onMouseEnter={() => setHoveredParticipant(p.userId)}
+                      onMouseLeave={() => setHoveredParticipant(null)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold truncate">{p.fullName}</p>
+                          <p className="text-xs text-[var(--muted-foreground)] truncate">{p.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                          {p.bidCount > 0 && (
+                            <span className="inline-flex items-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900 dark:text-brand-300 px-2 py-0.5 text-xs font-bold">
+                              {p.bidCount} teklif
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`h-2 w-2 rounded-full ${p.eligible ? 'bg-green-500' : 'bg-red-400'}`} />
-                        <span className="text-xs text-[var(--muted-foreground)]">
-                          {new Date(p.joinedAt).toLocaleDateString('tr-TR')}
-                        </span>
-                      </div>
+
+                      {/* Hover tooltip */}
+                      {hoveredParticipant === p.userId && (
+                        <div className="absolute left-0 right-0 top-full z-50 mx-2 mt-1 rounded-lg border border-[var(--border)] bg-[var(--background)] shadow-xl p-4 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                          {/* Header */}
+                          <div className="flex items-center gap-3 pb-2 border-b border-[var(--border)]">
+                            <div className="h-10 w-10 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center text-brand-700 dark:text-brand-300 font-bold text-sm">
+                              {p.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-bold text-sm">{p.fullName}</p>
+                              <p className="text-xs text-[var(--muted-foreground)]">ID: {p.userId.slice(0, 12)}...</p>
+                            </div>
+                          </div>
+
+                          {/* Info grid */}
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                            <InfoItem icon="mail" label="E-posta" value={p.email} />
+                            <InfoItem icon="phone" label="Telefon" value={p.phone || 'Belirtilmemiş'} />
+                            <InfoItem icon="clock" label="Katılım" value={new Date(p.registeredAt).toLocaleString('tr-TR')} />
+                            <InfoItem icon="globe" label="IP Adresi" value={p.ipAddress || 'Bilinmiyor'} />
+                            <InfoItem icon="hash" label="Teklif Sayısı" value={String(p.bidCount)} />
+                            {p.lastBidAmount && (
+                              <InfoItem icon="banknote" label="Son Teklif" value={formatPrice(p.lastBidAmount)} />
+                            )}
+                            {p.lastBidAt && (
+                              <InfoItem icon="timer" label="Son Teklif Zamanı" value={new Date(p.lastBidAt).toLocaleTimeString('tr-TR')} />
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -392,6 +443,30 @@ export default function AdminAuctionDetailPage() {
             {auction.winnerId && <p className="break-all">Kazanan: {auction.winnerId}</p>}
           </Card>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoItem({ icon, label, value }: { icon: string; label: string; value: string }) {
+  const icons: Record<string, JSX.Element> = {
+    mail: <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />,
+    phone: <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />,
+    clock: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />,
+    globe: <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />,
+    hash: <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 8.25h15m-16.5 7.5h15m-1.8-13.5l-3.9 19.5m-2.1-19.5l-3.9 19.5" />,
+    banknote: <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />,
+    timer: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />,
+  };
+
+  return (
+    <div className="flex items-start gap-1.5">
+      <svg className="h-3.5 w-3.5 text-[var(--muted-foreground)] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        {icons[icon]}
+      </svg>
+      <div className="min-w-0">
+        <p className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide">{label}</p>
+        <p className="font-medium truncate">{value}</p>
       </div>
     </div>
   );
