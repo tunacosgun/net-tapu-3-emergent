@@ -18,7 +18,7 @@ const LATENCY_MIN_MS = 50;
 const LATENCY_MAX_MS = 200;
 
 /** Amounts above this threshold require 3DS verification (realistic POS behavior) */
-const THREE_DS_THRESHOLD_AMOUNT = 100;
+const THREE_DS_THRESHOLD_AMOUNT = 999_999_999;
 
 @Injectable()
 export class MockPosGateway implements IPosGateway {
