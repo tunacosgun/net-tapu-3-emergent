@@ -70,6 +70,13 @@ export class OfferService {
     };
   }
 
+  async findByUser(userId: string): Promise<Offer[]> {
+    return this.offerRepo.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async findById(id: string): Promise<Offer> {
     const entity = await this.offerRepo.findOne({ where: { id } });
     if (!entity) {

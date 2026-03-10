@@ -239,6 +239,22 @@ export class AuthService {
     return this.getProfile(userId);
   }
 
+  async getNotificationPreferences(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Kullanıcı bulunamadı');
+    return user.notificationPreferences ?? {};
+  }
+
+  async updateNotificationPreferences(
+    userId: string,
+    prefs: Record<string, { email: boolean; sms: boolean; push: boolean }>,
+  ) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Kullanıcı bulunamadı');
+    await this.userRepo.update(userId, { notificationPreferences: prefs } as any);
+    return prefs;
+  }
+
   async changePassword(
     userId: string,
     currentPassword: string,

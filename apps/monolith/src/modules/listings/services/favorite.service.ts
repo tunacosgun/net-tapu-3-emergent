@@ -31,6 +31,7 @@ export class FavoriteService {
   async listByUser(userId: string): Promise<Favorite[]> {
     return this.favoriteRepo.find({
       where: { userId },
+      relations: ['parcel'],
       order: { createdAt: 'DESC' },
     });
   }

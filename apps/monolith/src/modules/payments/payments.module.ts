@@ -16,6 +16,7 @@ import { PosCallbackService } from './services/pos-callback.service';
 import { FinancialLogger } from './services/financial-logger.service';
 import { posGatewayFactory } from './services/pos-gateway.factory';
 import { PaymentController } from './controllers/payment.controller';
+import { DepositController } from './controllers/deposit.controller';
 import { RefundController } from './controllers/refund.controller';
 import { ReconciliationController } from './controllers/reconciliation.controller';
 import { PosCallbackController } from './controllers/pos-callback.controller';
@@ -35,7 +36,7 @@ import { PosCallbackController } from './controllers/pos-callback.controller';
       ReconciliationRun,
     ]),
   ],
-  controllers: [PaymentController, RefundController, ReconciliationController, PosCallbackController],
+  controllers: [PaymentController, DepositController, RefundController, ReconciliationController, PosCallbackController],
   providers: [
     PaymentService,
     RefundService,

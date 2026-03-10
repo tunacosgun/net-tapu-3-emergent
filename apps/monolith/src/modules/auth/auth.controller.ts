@@ -157,6 +157,24 @@ export class AuthController {
     return { message: 'Şifreniz başarıyla değiştirildi' };
   }
 
+  // ── Notification Preferences ─────────────────────────────────
+
+  @Get('notification-preferences')
+  @UseGuards(JwtAuthGuard)
+  async getNotificationPreferences(@CurrentUser() user: JwtPayload) {
+    return this.authService.getNotificationPreferences(user.sub);
+  }
+
+  @Patch('notification-preferences')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateNotificationPreferences(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: Record<string, { email: boolean; sms: boolean; push: boolean }>,
+  ) {
+    return this.authService.updateNotificationPreferences(user.sub, body);
+  }
+
   // ── Ban Status ─────────────────────────────────────────────
 
   @Get('ban-status')

@@ -41,6 +41,11 @@ export class OfferController {
     return this.service.findAll(query);
   }
 
+  @Get('mine')
+  async findMyOffers(@CurrentUser() user: JwtPayload) {
+    return this.service.findByUser(user.sub);
+  }
+
   @Get(':id')
   async findById(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findById(id);
