@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, MinLength, Matches } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, MaxLength, MinLength, Matches } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -24,4 +24,8 @@ export class UpdateProfileDto {
   @MinLength(11)
   @Matches(/^\d{11}$/, { message: 'TC Kimlik No 11 haneli olmalıdır' })
   tcKimlikNo?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  showAvatarInAuction?: boolean;
 }
