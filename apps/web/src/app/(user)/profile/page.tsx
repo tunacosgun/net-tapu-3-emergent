@@ -95,6 +95,7 @@ export default function ProfilePage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setProfile((prev) => prev ? { ...prev, avatarUrl: data.avatarUrl } : prev);
+      useAuthStore.getState().setAvatarUrl(data.avatarUrl);
     } catch (err) {
       showApiError(err);
     } finally {

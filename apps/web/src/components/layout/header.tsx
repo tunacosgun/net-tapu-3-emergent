@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
@@ -15,7 +16,7 @@ const mainNav = [
 
 export function Header() {
   const pathname = usePathname();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, avatarUrl } = useAuthStore();
   const s = useSiteSettings();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [announcementDismissed, setAnnouncementDismissed] = useState(false);
@@ -173,10 +174,14 @@ export function Header() {
                 <div className="relative" ref={profileRef}>
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
-                    className="avatar-hover flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-sm font-bold text-white ring-2 ring-white shadow-md"
+                    className="avatar-hover relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-sm font-bold text-white ring-2 ring-white shadow-md overflow-hidden"
                     title="Hesabım"
                   >
-                    {user?.email?.charAt(0).toUpperCase() || 'U'}
+                    {avatarUrl ? (
+                      <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
+                    ) : (
+                      user?.email?.charAt(0).toUpperCase() || 'U'
+                    )}
                   </button>
                   {/* Online indicator */}
                   <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-white animate-glow-pulse" />
@@ -186,8 +191,12 @@ export function Header() {
                       {/* Profile header */}
                       <div className="bg-gradient-to-br from-brand-500 to-brand-600 px-5 py-5">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-lg font-bold text-white backdrop-blur-sm ring-2 ring-white/30">
-                            {user?.email?.charAt(0).toUpperCase() || 'U'}
+                          <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-lg font-bold text-white backdrop-blur-sm ring-2 ring-white/30 overflow-hidden">
+                            {avatarUrl ? (
+                              <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
+                            ) : (
+                              user?.email?.charAt(0).toUpperCase() || 'U'
+                            )}
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-bold text-white truncate">{user?.email}</p>

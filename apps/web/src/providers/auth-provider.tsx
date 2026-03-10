@@ -21,16 +21,26 @@ function isJwtExpired(token: string): boolean {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setTokens, clearTokens, setLoading } = useAuthStore();
+  const { setTokens, clearTokens, setLoading, setAvatarUrl } = useAuthStore();
 
   useEffect(() => {
     let cancelled = false;
+
+    async function fetchAvatar() {
+      try {
+        const { data } = await apiClient.get<{ avatarUrl?: string | null }>('/auth/profile');
+        if (!cancelled && data?.avatarUrl) setAvatarUrl(data.avatarUrl);
+      } catch { /* ignore */ }
+    }
 
     async function hydrate() {
       // 1. Try the non-httpOnly AT cookie (survives refresh)
       const at = getCookie('nettapu_at');
       if (at && !isJwtExpired(at)) {
-        if (!cancelled) setTokens(at, '');
+        if (!cancelled) {
+          setTokens(at, '');
+          fetchAvatar();
+        }
         return;
       }
 
@@ -45,7 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         const { accessToken, refreshToken } = await res.json();
-        if (!cancelled) setTokens(accessToken, refreshToken);
+        if (!cancelled) {
+          setTokens(accessToken, refreshToken);
+          fetchAvatar();
+        }
       } catch {
         if (!cancelled) {
           setLoading(false);
@@ -58,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [setTokens, clearTokens, setLoading]);
+  }, [setTokens, clearTokens, setLoading, setAvatarUrl]);
 
   return <>{children}</>;
 }

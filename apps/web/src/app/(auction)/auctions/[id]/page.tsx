@@ -629,11 +629,12 @@ export default function AuctionDetailPage() {
             const revealedName = broadcastNameMap?.[bid.user_id_masked];
             const adminName = showRealNames ? nameMap[bid.user_id_masked] : null;
             const pInfo = getParticipantInfo(bid.user_id_masked);
-            const displayName = adminName || revealedName || pInfo.label;
-            const isRevealed = !!(adminName || revealedName);
             const isHighest = index === 0 && !bid.bid_id.startsWith('optimistic-');
-            const isMe = bid.user_id_masked === userId;
-            const initials = pInfo.label.replace('Katılımcı ', 'K');
+            const myMaskedId = userId ? userId.slice(0, 8) + '***' : null;
+            const isMe = !!myMaskedId && bid.user_id_masked === myMaskedId;
+            const displayName = adminName || revealedName || (isMe ? 'Siz' : pInfo.label);
+            const isRevealed = !!(adminName || revealedName);
+            const initials = isMe ? '👤' : pInfo.label.replace('Katılımcı ', 'K');
             return (
               <div
                 key={bid.bid_id}
@@ -647,13 +648,12 @@ export default function AuctionDetailPage() {
               >
                 <div className="flex items-center gap-2.5">
                   {/* Avatar */}
-                  <div className={`h-8 w-8 rounded-full ${isRevealed ? 'bg-brand-500' : pInfo.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                    {isRevealed ? displayName.charAt(0).toUpperCase() : initials}
+                  <div className={`h-8 w-8 rounded-full ${isMe ? 'bg-brand-500' : isRevealed ? 'bg-brand-500' : pInfo.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                    {isMe ? '👤' : isRevealed ? displayName.charAt(0).toUpperCase() : initials}
                   </div>
                   <div className="flex flex-col">
                     <span className={`text-sm leading-tight ${isRevealed ? 'text-[var(--foreground)] font-medium' : 'text-[var(--foreground)] font-medium'}`}>
                       {displayName}
-                      {isMe && <span className="ml-1.5 text-[10px] text-brand-500 font-bold">(Siz)</span>}
                     </span>
                     {isHighest && (
                       <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400">
