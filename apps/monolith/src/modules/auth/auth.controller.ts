@@ -10,9 +10,16 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
+import * as path from 'path';
+import * as fs from 'fs';
 import { AuthService } from './auth.service';
 import { PasswordResetService } from './services/password-reset.service';
 import { EmailVerificationService } from './services/email-verification.service';
@@ -139,6 +146,41 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.authService.updateProfile(user.sub, dto);
+  }
+
+  @Post('avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          const dir = path.join(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'), 'avatars');
+          fs.mkdirSync(dir, { recursive: true });
+          cb(null, dir);
+        },
+        filename: (_req, file, cb) => {
+          const ext = path.extname(file.originalname) || '.jpg';
+          cb(null, `${randomUUID()}${ext}`);
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        cb(null, allowed.includes(file.mimetype));
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    if (!file) {
+      return { error: 'Dosya yüklenemedi veya geçersiz dosya türü' };
+    }
+    const uploadsBaseUrl = process.env.UPLOADS_BASE_URL || '/uploads';
+    const avatarUrl = `${uploadsBaseUrl}/avatars/${file.filename}`;
+    await this.authService.updateAvatar(user.sub, avatarUrl);
+    return { avatarUrl };
   }
 
   @Post('change-password')

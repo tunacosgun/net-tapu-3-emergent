@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
+import Image from 'next/image';
 import apiClient from '@/lib/api-client';
 import { showApiError } from '@/components/api-error-toast';
 import { useAuthStore } from '@/stores/auth-store';
@@ -15,6 +16,7 @@ interface UserProfile {
   lastName: string | null;
   phone: string | null;
   isVerified: boolean;
+  avatarUrl: string | null;
   createdAt: string;
   lastLoginAt: string | null;
   roles?: string[];
@@ -29,6 +31,8 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [sendingVerification, setSendingVerification] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -80,6 +84,25 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await apiClient.post<{ avatarUrl: string }>('/auth/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setProfile((prev) => prev ? { ...prev, avatarUrl: data.avatarUrl } : prev);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
   if (loading) return <LoadingState />;
   if (!profile) return <Alert>Profil bilgileri yüklenemedi.</Alert>;
 
@@ -90,8 +113,42 @@ export default function ProfilePage() {
     <div className="space-y-6">
       {/* Profile Header */}
       <div className="flex items-center gap-5">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-500 text-2xl font-bold text-white shadow-lg">
-          {initials}
+        <div className="relative group">
+          <div className="relative h-20 w-20 overflow-hidden rounded-full shadow-lg">
+            {profile.avatarUrl ? (
+              <Image
+                src={profile.avatarUrl}
+                alt="Profil fotoğrafı"
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-brand-500 text-2xl font-bold text-white">
+                {initials}
+              </div>
+            )}
+          </div>
+          {/* Upload overlay */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 group-hover:bg-black/50 transition-colors cursor-pointer"
+          >
+            <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium">
+              {uploadingAvatar ? '...' : '📷'}
+            </span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
+          {/* Green dot for verified */}
+          {profile.isVerified && (
+            <div className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full border-2 border-white dark:border-gray-900 bg-green-500" />
+          )}
         </div>
         <div className="flex-1">
           <h2 className="text-2xl font-bold">

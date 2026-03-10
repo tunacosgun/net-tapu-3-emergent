@@ -204,6 +204,7 @@ export class AuthService {
       phone: user.phone,
       tcKimlikNo: user.tcKimlikNo,
       isVerified: user.isVerified,
+      avatarUrl: user.avatarUrl,
       roles,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
@@ -237,6 +238,10 @@ export class AuthService {
     await this.userRepo.update(userId, updateData);
 
     return this.getProfile(userId);
+  }
+
+  async updateAvatar(userId: string, avatarUrl: string) {
+    await this.userRepo.update(userId, { avatarUrl });
   }
 
   async getNotificationPreferences(userId: string) {
