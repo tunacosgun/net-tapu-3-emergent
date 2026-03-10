@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function fetchAvatar() {
       try {
-        const { data } = await apiClient.get<{ avatarUrl?: string | null }>('/auth/profile');
+        const { data } = await apiClient.get<{ avatarUrl?: string | null }>('/auth/me');
         if (!cancelled && data?.avatarUrl) setAvatarUrl(data.avatarUrl);
       } catch { /* ignore */ }
     }
