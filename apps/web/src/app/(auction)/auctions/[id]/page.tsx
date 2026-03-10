@@ -55,6 +55,8 @@ export default function AuctionDetailPage() {
   const router = useRouter();
   const auctionId = params.id;
   const userId = useAuthStore((s) => s.user?.sub);
+  const myAvatarUrl = useAuthStore((s) => s.avatarUrl);
+  const showAvatarInAuction = useAuthStore((s) => s.showAvatarInAuction);
 
   const {
     auctionDetail,
@@ -648,9 +650,15 @@ export default function AuctionDetailPage() {
               >
                 <div className="flex items-center gap-2.5">
                   {/* Avatar */}
-                  <div className={`h-8 w-8 rounded-full ${isMe ? 'bg-brand-500' : isRevealed ? 'bg-brand-500' : pInfo.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                    {isMe ? '👤' : isRevealed ? displayName.charAt(0).toUpperCase() : initials}
-                  </div>
+                  {isMe && showAvatarInAuction && myAvatarUrl ? (
+                    <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-brand-500">
+                      <img src={myAvatarUrl} alt="Siz" className="h-full w-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className={`h-8 w-8 rounded-full ${isMe ? 'bg-brand-500' : isRevealed ? 'bg-brand-500' : pInfo.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                      {isMe ? '👤' : isRevealed ? displayName.charAt(0).toUpperCase() : initials}
+                    </div>
+                  )}
                   <div className="flex flex-col">
                     <span className={`text-sm leading-tight ${isRevealed ? 'text-[var(--foreground)] font-medium' : 'text-[var(--foreground)] font-medium'}`}>
                       {displayName}

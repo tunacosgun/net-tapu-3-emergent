@@ -41,6 +41,9 @@ export class User {
   @Column({ name: 'notification_preferences', type: 'jsonb', nullable: true })
   notificationPreferences!: Record<string, { email: boolean; sms: boolean; push: boolean }> | null;
 
+  @Column({ name: 'show_avatar_in_auction', type: 'boolean', default: true })
+  showAvatarInAuction!: boolean;
+
   @Column({ name: 'last_login_at', type: 'timestamptz', nullable: true })
   lastLoginAt!: Date | null;
 

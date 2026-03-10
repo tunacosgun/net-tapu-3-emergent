@@ -1,0 +1,1 @@
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS show_avatar_in_auction BOOLEAN NOT NULL DEFAULT TRUE;

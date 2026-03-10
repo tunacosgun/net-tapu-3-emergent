@@ -17,6 +17,7 @@ interface UserProfile {
   phone: string | null;
   isVerified: boolean;
   avatarUrl: string | null;
+  showAvatarInAuction: boolean;
   createdAt: string;
   lastLoginAt: string | null;
   roles?: string[];
@@ -300,6 +301,50 @@ export default function ProfilePage() {
         <QuickStatCard icon="💰" label="Tekliflerim" href="/profile/offers" description="Verdiğiniz teklifler" />
         <QuickStatCard icon="🔨" label="İhale Geçmişim" href="/profile/auctions" description="Katıldığınız ihaleler" />
       </div>
+
+      {/* Privacy Settings */}
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold">Gizlilik Ayarları</h2>
+        <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+          İhale ve profil görünürlük tercihlerinizi yönetin.
+        </p>
+        <div className="mt-4 divide-y divide-[var(--border)]">
+          <div className="flex items-center justify-between py-4">
+            <div>
+              <p className="text-sm font-medium">İhalelerde profil fotoğrafımı göster</p>
+              <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                Açık artırmalarda teklif verdiğinizde profil fotoğrafınız görünür
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={profile.showAvatarInAuction}
+              onClick={async () => {
+                const newVal = !profile.showAvatarInAuction;
+                setProfile((prev) => prev ? { ...prev, showAvatarInAuction: newVal } : prev);
+                useAuthStore.getState().setShowAvatarInAuction(newVal);
+                try {
+                  await apiClient.patch('/auth/profile', { showAvatarInAuction: newVal });
+                } catch (err) {
+                  setProfile((prev) => prev ? { ...prev, showAvatarInAuction: !newVal } : prev);
+                  useAuthStore.getState().setShowAvatarInAuction(!newVal);
+                  showApiError(err);
+                }
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                profile.showAvatarInAuction ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  profile.showAvatarInAuction ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </Card>
 
       {/* Password Change */}
       <Card className="p-6">

@@ -21,15 +21,18 @@ function isJwtExpired(token: string): boolean {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setTokens, clearTokens, setLoading, setAvatarUrl } = useAuthStore();
+  const { setTokens, clearTokens, setLoading, setAvatarUrl, setShowAvatarInAuction } = useAuthStore();
 
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchAvatar() {
+    async function fetchUserMeta() {
       try {
-        const { data } = await apiClient.get<{ avatarUrl?: string | null }>('/auth/me');
-        if (!cancelled && data?.avatarUrl) setAvatarUrl(data.avatarUrl);
+        const { data } = await apiClient.get<{ avatarUrl?: string | null; showAvatarInAuction?: boolean }>('/auth/me');
+        if (!cancelled) {
+          if (data?.avatarUrl) setAvatarUrl(data.avatarUrl);
+          if (data?.showAvatarInAuction !== undefined) setShowAvatarInAuction(data.showAvatarInAuction);
+        }
       } catch { /* ignore */ }
     }
 
@@ -39,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (at && !isJwtExpired(at)) {
         if (!cancelled) {
           setTokens(at, '');
-          fetchAvatar();
+          fetchUserMeta();
         }
         return;
       }
@@ -57,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { accessToken, refreshToken } = await res.json();
         if (!cancelled) {
           setTokens(accessToken, refreshToken);
-          fetchAvatar();
+          fetchUserMeta();
         }
       } catch {
         if (!cancelled) {
@@ -71,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [setTokens, clearTokens, setLoading, setAvatarUrl]);
+  }, [setTokens, clearTokens, setLoading, setAvatarUrl, setShowAvatarInAuction]);
 
   return <>{children}</>;
 }

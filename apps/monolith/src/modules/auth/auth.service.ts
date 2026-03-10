@@ -205,6 +205,7 @@ export class AuthService {
       tcKimlikNo: user.tcKimlikNo,
       isVerified: user.isVerified,
       avatarUrl: user.avatarUrl,
+      showAvatarInAuction: user.showAvatarInAuction ?? true,
       roles,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
@@ -218,6 +219,7 @@ export class AuthService {
       lastName?: string;
       phone?: string;
       tcKimlikNo?: string;
+      showAvatarInAuction?: boolean;
     },
   ) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
@@ -230,6 +232,7 @@ export class AuthService {
     if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
     if (dto.phone !== undefined) updateData.phone = dto.phone;
     if (dto.tcKimlikNo !== undefined) updateData.tcKimlikNo = dto.tcKimlikNo;
+    if (dto.showAvatarInAuction !== undefined) updateData.showAvatarInAuction = dto.showAvatarInAuction;
 
     if (Object.keys(updateData).length === 0) {
       throw new BadRequestException('En az bir alan güncellenmelidir');

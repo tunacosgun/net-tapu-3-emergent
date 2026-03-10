@@ -6,12 +6,14 @@ interface AuthState {
   refreshToken: string | null;
   user: JwtPayload | null;
   avatarUrl: string | null;
+  showAvatarInAuction: boolean;
   isLoading: boolean;
   isAuthenticated: boolean;
   setTokens: (accessToken: string, refreshToken: string) => void;
   clearTokens: () => void;
   setLoading: (loading: boolean) => void;
   setAvatarUrl: (url: string | null) => void;
+  setShowAvatarInAuction: (show: boolean) => void;
 }
 
 function decodeJwtPayload(token: string): JwtPayload | null {
@@ -35,6 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   refreshToken: null,
   user: null,
   avatarUrl: null,
+  showAvatarInAuction: true,
   isLoading: true,
   isAuthenticated: false,
 
@@ -71,4 +74,5 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
   setAvatarUrl: (url) => set({ avatarUrl: url }),
+  setShowAvatarInAuction: (show) => set({ showAvatarInAuction: show }),
 }));
