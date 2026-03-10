@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
@@ -178,7 +177,7 @@ export function Header() {
                     title="Hesabım"
                   >
                     {avatarUrl ? (
-                      <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
+                      <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                     ) : (
                       user?.email?.charAt(0).toUpperCase() || 'U'
                     )}
