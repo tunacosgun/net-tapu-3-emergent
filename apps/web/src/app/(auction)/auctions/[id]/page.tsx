@@ -91,6 +91,26 @@ export default function AuctionDetailPage() {
   const [showConsentDialog, setShowConsentDialog] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Anonymous participant label & color mapping
+  const participantLabelMap = useRef<Record<string, { label: string; color: string }>>({});
+  const participantCounter = useRef(0);
+  const AVATAR_COLORS = [
+    'bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500',
+    'bg-pink-500', 'bg-cyan-500', 'bg-amber-500', 'bg-rose-500',
+    'bg-indigo-500', 'bg-teal-500', 'bg-lime-500', 'bg-fuchsia-500',
+  ];
+  function getParticipantInfo(maskedId: string) {
+    if (!participantLabelMap.current[maskedId]) {
+      participantCounter.current += 1;
+      const num = participantCounter.current;
+      participantLabelMap.current[maskedId] = {
+        label: `Katılımcı ${num}`,
+        color: AVATAR_COLORS[(num - 1) % AVATAR_COLORS.length],
+      };
+    }
+    return participantLabelMap.current[maskedId];
+  }
+
   // Admin: reveal real names
   const userRoles = useAuthStore((s) => s.user?.roles ?? []);
   const isAdmin = userRoles.includes('admin') || userRoles.includes('superadmin');
@@ -608,13 +628,16 @@ export default function AuctionDetailPage() {
           {bidFeed.map((bid, index) => {
             const revealedName = broadcastNameMap?.[bid.user_id_masked];
             const adminName = showRealNames ? nameMap[bid.user_id_masked] : null;
-            const displayName = adminName || revealedName || bid.user_id_masked;
+            const pInfo = getParticipantInfo(bid.user_id_masked);
+            const displayName = adminName || revealedName || pInfo.label;
             const isRevealed = !!(adminName || revealedName);
             const isHighest = index === 0 && !bid.bid_id.startsWith('optimistic-');
+            const isMe = bid.user_id_masked === userId;
+            const initials = pInfo.label.replace('Katılımcı ', 'K');
             return (
               <div
                 key={bid.bid_id}
-                className={`flex items-center justify-between rounded-md px-3 py-2 transition-all ${
+                className={`flex items-center justify-between rounded-md px-3 py-2.5 transition-all ${
                   bid.bid_id.startsWith('optimistic-')
                     ? 'opacity-60 border border-dashed border-[var(--border)]'
                     : isHighest
@@ -622,17 +645,24 @@ export default function AuctionDetailPage() {
                     : 'border border-[var(--border)] animate-bid-flash'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  {isHighest && (
-                    <span className="text-xs font-bold text-brand-600 dark:text-brand-400 whitespace-nowrap">
-                      En yüksek
+                <div className="flex items-center gap-2.5">
+                  {/* Avatar */}
+                  <div className={`h-8 w-8 rounded-full ${isRevealed ? 'bg-brand-500' : pInfo.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                    {isRevealed ? displayName.charAt(0).toUpperCase() : initials}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`text-sm leading-tight ${isRevealed ? 'text-[var(--foreground)] font-medium' : 'text-[var(--foreground)] font-medium'}`}>
+                      {displayName}
+                      {isMe && <span className="ml-1.5 text-[10px] text-brand-500 font-bold">(Siz)</span>}
                     </span>
-                  )}
-                  <span className={`text-sm ${isRevealed ? 'text-[var(--foreground)] font-medium' : 'text-[var(--muted-foreground)]'}`}>
-                    {displayName}
-                  </span>
+                    {isHighest && (
+                      <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400">
+                        En yüksek teklif
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <span className={`font-mono font-semibold ${isHighest ? 'text-brand-600 dark:text-brand-400 text-base' : ''}`}>
+                <span className={`font-mono font-semibold ${isHighest ? 'text-brand-600 dark:text-brand-400 text-lg' : 'text-sm'}`}>
                   {formatPrice(bid.amount)}
                 </span>
               </div>
