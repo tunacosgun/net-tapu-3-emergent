@@ -192,7 +192,7 @@ export function Header() {
                         <div className="flex items-center gap-3">
                           <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-lg font-bold text-white backdrop-blur-sm ring-2 ring-white/30 overflow-hidden">
                             {avatarUrl ? (
-                              <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
+                              <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                             ) : (
                               user?.email?.charAt(0).toUpperCase() || 'U'
                             )}
