@@ -51,6 +51,10 @@ export class AuctionService {
       scheduledEnd: new Date(dto.endTime),
       depositDeadline: new Date(dto.depositDeadline),
       createdBy: userId,
+      sniperEnabled: dto.sniperEnabled ?? true,
+      sniperWindowSeconds: dto.sniperWindowSeconds ?? null,
+      sniperExtensionSeconds: dto.sniperExtensionSeconds ?? null,
+      maxSniperExtensions: dto.maxSniperExtensions ?? null,
     });
 
     const saved = await this.auctionRepo.save(auction);

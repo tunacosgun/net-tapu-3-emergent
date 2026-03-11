@@ -333,15 +333,19 @@ export class BidService {
       auction!.bidCount = auction!.bidCount + 1;
 
       // Sniper protection: extend if bid is within the sniper window.
-      // Uses DB time for consistency with Phase 5b time check.
+      // Per-auction config takes priority, falls back to global env vars.
       let sniperExtended = false;
       let newExtendedUntil: Date | null = null;
-      const sniperWindowSeconds = this.config.get<number>(
-        'SNIPER_EXTENSION_SECONDS',
-      ) ?? 60;
-      const maxExtensions = this.config.get<number>('MAX_SNIPER_EXTENSIONS') ?? 5;
+      const sniperEnabled = auction!.sniperEnabled ?? true;
+      const sniperWindowSeconds = auction!.sniperWindowSeconds
+        ?? this.config.get<number>('SNIPER_EXTENSION_SECONDS')
+        ?? 60;
+      const sniperExtensionSeconds = auction!.sniperExtensionSeconds ?? sniperWindowSeconds;
+      const maxExtensions = auction!.maxSniperExtensions
+        ?? this.config.get<number>('MAX_SNIPER_EXTENSIONS')
+        ?? 5;
 
-      if (effectiveEnd && auction!.extensionCount < maxExtensions) {
+      if (sniperEnabled && effectiveEnd && auction!.extensionCount < maxExtensions) {
         // Use DB time for sniper calculation (atomic with the FOR UPDATE lock)
         const [{ remaining_ms }] = await qr.query(
           `SELECT EXTRACT(EPOCH FROM ($1::timestamptz - NOW())) * 1000 as remaining_ms`,
@@ -353,7 +357,7 @@ export class BidService {
           // Compute extension using DB time
           const [{ new_end }] = await qr.query(
             `SELECT (NOW() + ($1 || ' seconds')::interval) as new_end`,
-            [sniperWindowSeconds],
+            [sniperExtensionSeconds],
           );
           newExtendedUntil = new Date(new_end);
           auction!.extendedUntil = newExtendedUntil;

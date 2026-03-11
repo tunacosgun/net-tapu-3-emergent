@@ -88,5 +88,9 @@ export const auctionSchema = z.object({
   requiredDeposit: z.string().min(1, 'Gerekli depozito gerekli'),
   currency: z.string().max(3).optional().or(z.literal('')),
   description: z.string().optional().or(z.literal('')),
+  sniperEnabled: z.boolean().optional(),
+  sniperWindowSeconds: z.coerce.number().int().min(10).max(600).optional().or(z.literal('')),
+  sniperExtensionSeconds: z.coerce.number().int().min(10).max(600).optional().or(z.literal('')),
+  maxSniperExtensions: z.coerce.number().int().min(1).max(50).optional().or(z.literal('')),
 });
 export type AuctionFormData = z.infer<typeof auctionSchema>;

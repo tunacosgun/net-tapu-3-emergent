@@ -4,6 +4,10 @@ import {
   IsDateString,
   IsOptional,
   IsUUID,
+  IsBoolean,
+  IsInt,
+  Min,
+  Max,
   MaxLength,
   Length,
 } from 'class-validator';
@@ -46,4 +50,27 @@ export class CreateAuctionDto {
   @Length(3, 3)
   @IsOptional()
   currency?: string;
+
+  // Anti-sniping configuration
+  @IsOptional()
+  @IsBoolean()
+  sniperEnabled?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(600)
+  sniperWindowSeconds?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(600)
+  sniperExtensionSeconds?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  maxSniperExtensions?: number;
 }

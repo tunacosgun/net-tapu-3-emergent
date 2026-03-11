@@ -262,6 +262,7 @@ export default function AdminNewAuctionPage() {
   const router = useRouter();
   const { cooldown, isLimited, checkRateLimit } = useRateLimit();
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
+  const [sniperEnabled, setSniperEnabled] = useState(true);
 
   const {
     register,
@@ -271,7 +272,7 @@ export default function AdminNewAuctionPage() {
     formState: { errors, isSubmitting },
   } = useForm<AuctionFormData>({
     resolver: zodResolver(auctionSchema),
-    defaultValues: { currency: 'TRY' },
+    defaultValues: { currency: 'TRY', sniperEnabled: true },
   });
 
   // Auto-fill title when parcel selected
@@ -302,6 +303,10 @@ export default function AdminNewAuctionPage() {
       minimumIncrement: data.minimumIncrement,
       requiredDeposit: data.requiredDeposit,
       currency: data.currency || 'TRY',
+      sniperEnabled: data.sniperEnabled ?? true,
+      ...(data.sniperWindowSeconds && { sniperWindowSeconds: Number(data.sniperWindowSeconds) }),
+      ...(data.sniperExtensionSeconds && { sniperExtensionSeconds: Number(data.sniperExtensionSeconds) }),
+      ...(data.maxSniperExtensions && { maxSniperExtensions: Number(data.maxSniperExtensions) }),
     };
 
     try {
@@ -387,6 +392,59 @@ export default function AdminNewAuctionPage() {
           error={errors.description?.message}
           {...register('description')}
         />
+
+        {/* Anti-Sniping Configuration */}
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">Anti-Sniping Koruması</h3>
+              <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                Son dakika tekliflerinde süre otomatik uzatılır
+              </p>
+            </div>
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                checked={sniperEnabled}
+                onChange={(e) => {
+                  setSniperEnabled(e.target.checked);
+                  setValue('sniperEnabled', e.target.checked);
+                }}
+                className="peer sr-only"
+              />
+              <div className="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-brand-500 peer-checked:after:translate-x-full" />
+            </label>
+          </div>
+
+          {sniperEnabled && (
+            <div className="grid grid-cols-3 gap-4 pt-1">
+              <FormField
+                label="Sniper Penceresi (sn)"
+                type="number"
+                placeholder="120"
+                error={errors.sniperWindowSeconds?.message}
+                {...register('sniperWindowSeconds')}
+              />
+              <FormField
+                label="Uzatma Süresi (sn)"
+                type="number"
+                placeholder="120"
+                error={errors.sniperExtensionSeconds?.message}
+                {...register('sniperExtensionSeconds')}
+              />
+              <FormField
+                label="Maks Uzatma"
+                type="number"
+                placeholder="5"
+                error={errors.maxSniperExtensions?.message}
+                {...register('maxSniperExtensions')}
+              />
+              <p className="col-span-3 text-[11px] text-[var(--muted-foreground)]">
+                Boş bırakırsanız sistem varsayılanları kullanılır (Pencere: 60sn, Uzatma: 60sn, Maks: 5)
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Summary card */}
         {selectedParcel && (

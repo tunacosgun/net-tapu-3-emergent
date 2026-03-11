@@ -64,6 +64,19 @@ export class Auction {
   @Column({ name: 'extension_count', type: 'integer', default: 0 })
   extensionCount!: number;
 
+  // Per-auction anti-sniping config (null = use global env defaults)
+  @Column({ name: 'sniper_enabled', type: 'boolean', default: true })
+  sniperEnabled!: boolean;
+
+  @Column({ name: 'sniper_window_seconds', type: 'integer', nullable: true })
+  sniperWindowSeconds!: number | null;
+
+  @Column({ name: 'sniper_extension_seconds', type: 'integer', nullable: true })
+  sniperExtensionSeconds!: number | null;
+
+  @Column({ name: 'max_sniper_extensions', type: 'integer', nullable: true })
+  maxSniperExtensions!: number | null;
+
   @Column({ type: 'integer', name: 'bid_count', default: 0 })
   bidCount!: number;
 
