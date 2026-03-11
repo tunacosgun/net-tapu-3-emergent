@@ -131,6 +131,7 @@ export interface ContactRequest {
   email: string | null;
   message: string | null;
   assignedTo: string | null;
+  ipAddress: string | null;
   createdAt: string;
   updatedAt: string;
   parcel: { title: string; listingId: string; city: string; district: string; price: string | null } | null;
