@@ -304,9 +304,9 @@ export default function AdminNewAuctionPage() {
       requiredDeposit: data.requiredDeposit,
       currency: data.currency || 'TRY',
       sniperEnabled: data.sniperEnabled ?? true,
-      ...(data.sniperWindowSeconds && { sniperWindowSeconds: Number(data.sniperWindowSeconds) }),
-      ...(data.sniperExtensionSeconds && { sniperExtensionSeconds: Number(data.sniperExtensionSeconds) }),
-      ...(data.maxSniperExtensions && { maxSniperExtensions: Number(data.maxSniperExtensions) }),
+      ...(data.sniperWindowSeconds && !isNaN(data.sniperWindowSeconds) && { sniperWindowSeconds: data.sniperWindowSeconds }),
+      ...(data.sniperExtensionSeconds && !isNaN(data.sniperExtensionSeconds) && { sniperExtensionSeconds: data.sniperExtensionSeconds }),
+      ...(data.maxSniperExtensions && !isNaN(data.maxSniperExtensions) && { maxSniperExtensions: data.maxSniperExtensions }),
     };
 
     try {
@@ -423,21 +423,21 @@ export default function AdminNewAuctionPage() {
                 type="number"
                 placeholder="120"
                 error={errors.sniperWindowSeconds?.message}
-                {...register('sniperWindowSeconds')}
+                {...register('sniperWindowSeconds', { valueAsNumber: true })}
               />
               <FormField
                 label="Uzatma Süresi (sn)"
                 type="number"
                 placeholder="120"
                 error={errors.sniperExtensionSeconds?.message}
-                {...register('sniperExtensionSeconds')}
+                {...register('sniperExtensionSeconds', { valueAsNumber: true })}
               />
               <FormField
                 label="Maks Uzatma"
                 type="number"
                 placeholder="5"
                 error={errors.maxSniperExtensions?.message}
-                {...register('maxSniperExtensions')}
+                {...register('maxSniperExtensions', { valueAsNumber: true })}
               />
               <p className="col-span-3 text-[11px] text-[var(--muted-foreground)]">
                 Boş bırakırsanız sistem varsayılanları kullanılır (Pencere: 60sn, Uzatma: 60sn, Maks: 5)
