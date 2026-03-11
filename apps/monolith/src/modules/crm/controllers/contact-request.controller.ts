@@ -52,6 +52,13 @@ export class ContactRequestController {
     return this.service.findById(id);
   }
 
+  @Get(':id/activity')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'consultant')
+  async getActivity(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.getActivity(id);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'consultant')

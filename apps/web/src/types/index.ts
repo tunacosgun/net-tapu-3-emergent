@@ -133,6 +133,24 @@ export interface ContactRequest {
   assignedTo: string | null;
   createdAt: string;
   updatedAt: string;
+  parcel: { title: string; listingId: string; city: string; district: string; price: string | null } | null;
+  user: { firstName: string; lastName: string; email: string } | null;
+  assignee: { firstName: string; lastName: string } | null;
+}
+
+export interface UserActivity {
+  action: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ActivitySummary {
+  firstVisit: string | null;
+  lastVisit: string | null;
+  totalActions: string;
+  parcelsViewed: string;
 }
 
 export interface Appointment {

@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsInt, Min, Max, IsUUID } from 'class-validator';
+import { IsEnum, IsOptional, IsInt, IsString, Min, Max, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ListContactRequestsQueryDto {
@@ -13,6 +13,10 @@ export class ListContactRequestsQueryDto {
   @IsUUID()
   @IsOptional()
   assigned_to?: string;
+
+  @IsString()
+  @IsOptional()
+  search?: string;
 
   @Type(() => Number)
   @IsInt()
