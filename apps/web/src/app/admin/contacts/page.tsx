@@ -190,7 +190,7 @@ export default function AdminContactsPage() {
                 <tr className="border-b border-[var(--border)] bg-[var(--muted)]/30">
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--muted-foreground)]">Müşteri</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--muted-foreground)]">Telefon</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--muted-foreground)]">İlan Bilgisi</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--muted-foreground)]">Mesaj</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--muted-foreground)]">Tür</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--muted-foreground)]">Durum</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--muted-foreground)]">Zaman</th>
@@ -227,24 +227,23 @@ export default function AdminContactsPage() {
                         </div>
                       </td>
 
-                      {/* İlan Bilgisi */}
-                      <td className="px-4 py-3">
-                        {c.parcel ? (
-                          <div>
-                            <Link
-                              href={`/admin/parcels/${c.parcelId}`}
-                              className="text-xs font-medium text-brand-600 hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {c.parcel.title}
-                            </Link>
-                            <p className="text-[10px] text-[var(--muted-foreground)]">
-                              {c.parcel.listingId} · {c.parcel.city}, {c.parcel.district}
-                              {c.parcel.price && ` · ${formatPrice(c.parcel.price)}`}
-                            </p>
-                          </div>
+                      {/* Mesaj */}
+                      <td className="px-4 py-3 max-w-[300px]">
+                        {c.message ? (
+                          <p className="text-xs text-[var(--foreground)] truncate" title={c.message.replace(/\s*\[İlan:.*?\]\s*/g, '').trim()}>
+                            {c.message.replace(/\s*\[İlan:.*?\]\s*/g, '').trim() || '—'}
+                          </p>
                         ) : (
-                          <span className="text-xs text-[var(--muted-foreground)]">Genel Talep</span>
+                          <span className="text-xs text-[var(--muted-foreground)]">—</span>
+                        )}
+                        {c.parcel && (
+                          <Link
+                            href={`/admin/parcels/${c.parcelId}`}
+                            className="text-[10px] text-brand-600 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            📎 {c.parcel.listingId}
+                          </Link>
                         )}
                       </td>
 
