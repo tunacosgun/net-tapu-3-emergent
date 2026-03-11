@@ -28,6 +28,7 @@ import { PublicContentController } from './controllers/public-content.controller
 import { AdminAnalyticsController } from './controllers/admin-analytics.controller';
 import { AdminNotificationController } from './controllers/admin-notification.controller';
 import { AdminTestimonialController, PublicTestimonialController } from './controllers/admin-testimonial.controller';
+import { AdminDealerController } from './controllers/admin-dealer.controller';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { AdminTestimonialController, PublicTestimonialController } from './contr
     AdminNotificationController,
     AdminTestimonialController,
     PublicTestimonialController,
+    AdminDealerController,
   ],
   providers: [
     PageService,
