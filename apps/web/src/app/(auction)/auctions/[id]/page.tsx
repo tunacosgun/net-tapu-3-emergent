@@ -107,6 +107,10 @@ export default function AuctionDetailPage() {
 
   const [contractHtml, setContractHtml] = useState<string | null>(null);
   const [contractLoading, setContractLoading] = useState(false);
+  const [rulesHtml, setRulesHtml] = useState<string | null>(null);
+  const [rulesLoading, setRulesLoading] = useState(false);
+  const [showRulesPopup, setShowRulesPopup] = useState(false);
+  const [showContractPopup, setShowContractPopup] = useState(false);
 
   const CONSENT_TEXT = `NetTapu E-İhale Katılım Sözleşmesi\n\n1. İhaleye katılarak, belirlenen teminat (depozito) tutarını ödediğimi ve bu tutarın ihale süresince bloke edileceğini kabul ediyorum.\n\n2. İhaleyi kazanmam durumunda, belirlenen süre içinde kalan ödemeyi tamamlamakla yükümlü olduğumu biliyorum.\n\n3. İhaleyi kazanamamam durumunda, yatırdığım teminat tutarının tarafıma iade edileceğini biliyorum.\n\n4. Verdiğim tekliflerin bağlayıcı olduğunu ve geri alınamayacağını kabul ediyorum.\n\n5. İhale sürecinde hile, manipülasyon veya sistemin kötüye kullanılması durumunda hesabımın askıya alınabileceğini ve teminatımın iade edilmeyebileceğini kabul ediyorum.\n\n6. Kişisel verilerimin 6698 sayılı KVKK kapsamında işleneceğini biliyorum ve onaylıyorum.\n\n7. İhale koşullarını, cayma hakkı politikasını ve tüm satış şartlarını okuduğumu ve kabul ettiğimi beyan ederim.`;
 
@@ -135,6 +139,32 @@ export default function AuctionDetailPage() {
       }
     } catch { /* fallback to CONSENT_TEXT */ }
     finally { setContractLoading(false); }
+  }
+
+  async function fetchRulesContent() {
+    if (rulesHtml) return;
+    setRulesLoading(true);
+    try {
+      const { data } = await apiClient.get<{ data: Array<{ content: string }> }>('/content/pages', {
+        params: { pageType: 'auction_rules', status: 'published' },
+      });
+      const page = data.data[0];
+      if (page?.content) {
+        try {
+          const blocks = JSON.parse(page.content);
+          if (Array.isArray(blocks)) {
+            const html = blocks
+              .map((b: Record<string, unknown>) => {
+                const c = b.data && typeof b.data === 'object' ? (b.data as Record<string, unknown>).content : b.content;
+                return typeof c === 'string' ? c : '';
+              })
+              .join('');
+            setRulesHtml(html);
+          }
+        } catch { /* ignore */ }
+      }
+    } catch { /* ignore */ }
+    finally { setRulesLoading(false); }
   }
 
   // 0) If redirected from deposit page
@@ -555,6 +585,54 @@ export default function AuctionDetailPage() {
             </div>
           )}
 
+          {/* Rules popup */}
+          {showRulesPopup && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+              <div className="bg-[var(--background)] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+                  <h2 className="text-lg font-bold">Açık Artırma Kuralları</h2>
+                  <button onClick={() => setShowRulesPopup(false)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xl">✕</button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  {rulesLoading ? (
+                    <div className="flex items-center justify-center py-8"><LoadingState centered={false} /></div>
+                  ) : rulesHtml ? (
+                    <div className="prose prose-sm max-w-none prose-headings:text-[var(--foreground)] prose-headings:font-bold prose-h2:text-lg prose-h2:mt-4 prose-h2:mb-2 prose-p:text-[var(--muted-foreground)] prose-p:leading-relaxed prose-ul:text-[var(--muted-foreground)] prose-li:marker:text-brand-400 prose-strong:text-[var(--foreground)]" dangerouslySetInnerHTML={{ __html: rulesHtml }} />
+                  ) : (
+                    <p className="text-sm text-[var(--muted-foreground)]">Kurallar yüklenemedi.</p>
+                  )}
+                </div>
+                <div className="px-6 py-4 border-t border-[var(--border)] flex justify-end">
+                  <Button variant="secondary" onClick={() => setShowRulesPopup(false)}>Kapat</Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Contract popup */}
+          {showContractPopup && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+              <div className="bg-[var(--background)] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+                  <h2 className="text-lg font-bold">İhale Katılım Sözleşmesi</h2>
+                  <button onClick={() => setShowContractPopup(false)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xl">✕</button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  {contractLoading ? (
+                    <div className="flex items-center justify-center py-8"><LoadingState centered={false} /></div>
+                  ) : contractHtml ? (
+                    <div className="prose prose-sm max-w-none prose-headings:text-[var(--foreground)] prose-headings:font-bold prose-h2:text-lg prose-h2:mt-4 prose-h2:mb-2 prose-p:text-[var(--muted-foreground)] prose-p:leading-relaxed prose-ul:text-[var(--muted-foreground)] prose-li:marker:text-brand-400 prose-strong:text-[var(--foreground)]" dangerouslySetInnerHTML={{ __html: contractHtml }} />
+                  ) : (
+                    <pre className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)] font-sans">{CONSENT_TEXT}</pre>
+                  )}
+                </div>
+                <div className="px-6 py-4 border-t border-[var(--border)] flex justify-end">
+                  <Button variant="secondary" onClick={() => setShowContractPopup(false)}>Kapat</Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Bid form */}
           {isLive && hasActiveDeposit && consentAccepted && (
             <div className="space-y-2">
@@ -634,12 +712,12 @@ export default function AuctionDetailPage() {
 
           {/* Auction rules link */}
           <div className="text-center space-x-4">
-            <a href="/auction-rules" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
-              Açık artırma kurallarını oku ↗
-            </a>
-            <a href="/auction-contract" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
-              İhale katılım sözleşmesi ↗
-            </a>
+            <button onClick={() => { setShowRulesPopup(true); fetchRulesContent(); }} className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
+              Açık artırma kurallarını oku →
+            </button>
+            <button onClick={() => { setShowContractPopup(true); fetchContractContent(); }} className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
+              İhale katılım sözleşmesi →
+            </button>
           </div>
         </div>
 
@@ -687,7 +765,15 @@ export default function AuctionDetailPage() {
                       </div>
                     )}
                     <div className="flex flex-col">
-                      <span className="text-sm leading-tight text-[var(--foreground)] font-medium">{displayName}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm leading-tight text-[var(--foreground)] font-medium">{displayName}</span>
+                        {isMe && isAdmin && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 dark:text-amber-300 leading-none">
+                            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                            Yönetici
+                          </span>
+                        )}
+                      </div>
                       {isHighest && <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400">En yüksek teklif</span>}
                     </div>
                   </div>
