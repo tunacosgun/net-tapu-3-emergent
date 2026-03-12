@@ -135,7 +135,7 @@ export class AuctionService {
 
       await this.ds.query('DELETE FROM auctions.settlement_manifests WHERE auction_id = $1', [id]);
       await this.ds.query('DELETE FROM auctions.bid_rejections WHERE auction_id = $1', [id]);
-      await this.ds.query('DELETE FROM auctions.bids_corrections WHERE auction_id = $1', [id]);
+      await this.ds.query('DELETE FROM auctions.bids_corrections WHERE original_bid_id IN (SELECT id FROM auctions.bids WHERE auction_id = $1)', [id]);
       await this.ds.query('DELETE FROM auctions.bids WHERE auction_id = $1', [id]);
       await this.ds.query('DELETE FROM auctions.auction_consents WHERE auction_id = $1', [id]);
       await this.ds.query('DELETE FROM auctions.auction_participants WHERE auction_id = $1', [id]);
