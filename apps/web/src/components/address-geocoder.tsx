@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
+interface GeoJSONGeometry {
+  type: 'Polygon' | 'MultiPolygon';
+  coordinates: number[][][] | number[][][][];
+}
+
 interface AddressGeocoderProps {
   /** Current latitude value */
   latitude?: string;
@@ -19,6 +24,8 @@ interface AddressGeocoderProps {
   onCoordsChange: (lat: string, lng: string) => void;
   /** Map height */
   height?: string;
+  /** GeoJSON boundary polygon from TKGM */
+  boundary?: GeoJSONGeometry | null;
 }
 
 interface NominatimResult {
@@ -44,6 +51,7 @@ export function AddressGeocoder({
   address,
   onCoordsChange,
   height = '300px',
+  boundary,
 }: AddressGeocoderProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,6 +60,8 @@ export function AddressGeocoder({
   const markerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const leafletRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const polygonRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeStatus, setGeocodeStatus] = useState<string>('');
@@ -138,6 +148,7 @@ export function AddressGeocoder({
         mapRef.current.remove();
         mapRef.current = null;
         markerRef.current = null;
+        polygonRef.current = null;
         leafletRef.current = null;
       }
       setReady(false);
@@ -171,6 +182,42 @@ export function AddressGeocoder({
       mapRef.current.setView([lat, lng], 14);
     }
   }, [ready, latitude, longitude, onCoordsChange]);
+
+  // Draw boundary polygon when available
+  useEffect(() => {
+    if (!ready || !mapRef.current || !leafletRef.current) return;
+    const L = leafletRef.current;
+    const map = mapRef.current;
+
+    // Remove previous polygon
+    if (polygonRef.current) {
+      map.removeLayer(polygonRef.current);
+      polygonRef.current = null;
+    }
+
+    if (!boundary || !boundary.coordinates) return;
+
+    try {
+      const geoLayer = L.geoJSON(boundary, {
+        style: {
+          color: '#dc2626',
+          weight: 3,
+          fillColor: '#dc2626',
+          fillOpacity: 0.15,
+        },
+      }).addTo(map);
+
+      polygonRef.current = geoLayer;
+
+      // Fit map to polygon bounds
+      const bounds = geoLayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 });
+      }
+    } catch {
+      // Invalid boundary data, ignore
+    }
+  }, [ready, boundary]);
 
   // Geocode address via Nominatim
   const geocodeAddress = useCallback(async () => {

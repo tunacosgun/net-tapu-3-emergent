@@ -123,6 +123,8 @@ export default function AdminNewParcelPage() {
   // ── TKGM Lookup ─────────────────────────────────────────────────────
   const [tkgmLoading, setTkgmLoading] = useState(false);
   const [tkgmResult, setTkgmResult] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [tkgmBoundary, setTkgmBoundary] = useState<any>(null);
 
   const watchedAda = watch('ada');
   const watchedParsel = watch('parsel');
@@ -147,6 +149,7 @@ export default function AdminNewParcelPage() {
       if (rd.neighborhood && typeof rd.neighborhood === 'string') {
         setValue('neighborhood', rd.neighborhood, { shouldValidate: true });
       }
+      if (rd.boundary) setTkgmBoundary(rd.boundary);
       setTkgmResult('✓ Parsel bilgileri TKGM\'den alındı');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'TKGM sorgusu başarısız';
@@ -231,6 +234,7 @@ export default function AdminNewParcelPage() {
           district={selectedDistrict}
           neighborhood={watchedNeighborhood}
           address={watchedAddress}
+          boundary={tkgmBoundary}
           onCoordsChange={(lat, lng) => {
             setValue('latitude', lat, { shouldValidate: true });
             setValue('longitude', lng, { shouldValidate: true });
