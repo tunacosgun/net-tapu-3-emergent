@@ -15,9 +15,9 @@ function parseBlocks(content: string | null): ContentBlock[] {
     // Unwrap {type, data: {...}} format to flat {type, ...data}
     return parsed.map((b: Record<string, unknown>) => {
       if (b.data && typeof b.data === 'object') {
-        return { type: b.type, ...(b.data as Record<string, unknown>) } as ContentBlock;
+        return { type: b.type, ...(b.data as Record<string, unknown>) } as unknown as ContentBlock;
       }
-      return b as ContentBlock;
+      return b as unknown as ContentBlock;
     });
   } catch {
     return [{ type: 'text', content } as ContentBlock];
