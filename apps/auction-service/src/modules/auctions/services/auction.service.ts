@@ -127,33 +127,28 @@ export class AuctionService {
       throw new NotFoundException(`Auction ${id} not found`);
     }
 
-    // Clean up all related records, disabling append-only triggers temporarily
-    const qr = this.ds.createQueryRunner();
-    await qr.connect();
-    await qr.startTransaction();
+    // Clean up all related records using raw queries
+    // Disable append-only triggers, delete everything, re-enable
     try {
-      await qr.query('ALTER TABLE auctions.bids DISABLE TRIGGER trg_bids_no_delete');
-      await qr.query('ALTER TABLE auctions.bid_rejections DISABLE TRIGGER trg_bid_rejections_no_delete');
+      await this.ds.query('ALTER TABLE auctions.bids DISABLE TRIGGER trg_bids_no_delete');
+      await this.ds.query('ALTER TABLE auctions.bid_rejections DISABLE TRIGGER trg_bid_rejections_no_delete');
 
-      await qr.query('DELETE FROM auctions.settlement_manifests WHERE auction_id = $1', [id]);
-      await qr.query('DELETE FROM auctions.bid_rejections WHERE auction_id = $1', [id]);
-      await qr.query('DELETE FROM auctions.bids_corrections WHERE auction_id = $1', [id]);
-      await qr.query('DELETE FROM auctions.bids WHERE auction_id = $1', [id]);
-      await qr.query('DELETE FROM auctions.auction_consents WHERE auction_id = $1', [id]);
-      await qr.query('DELETE FROM auctions.auction_participants WHERE auction_id = $1', [id]);
-      await qr.query('DELETE FROM auctions.event_outbox WHERE aggregate_id = $1', [id]);
-      await qr.query('DELETE FROM auctions.auctions WHERE id = $1', [id]);
+      await this.ds.query('DELETE FROM auctions.settlement_manifests WHERE auction_id = $1', [id]);
+      await this.ds.query('DELETE FROM auctions.bid_rejections WHERE auction_id = $1', [id]);
+      await this.ds.query('DELETE FROM auctions.bids_corrections WHERE auction_id = $1', [id]);
+      await this.ds.query('DELETE FROM auctions.bids WHERE auction_id = $1', [id]);
+      await this.ds.query('DELETE FROM auctions.auction_consents WHERE auction_id = $1', [id]);
+      await this.ds.query('DELETE FROM auctions.auction_participants WHERE auction_id = $1', [id]);
+      await this.ds.query('DELETE FROM auctions.event_outbox WHERE aggregate_id = $1', [id]);
+      await this.ds.query('DELETE FROM auctions.auctions WHERE id = $1', [id]);
 
-      await qr.query('ALTER TABLE auctions.bids ENABLE TRIGGER trg_bids_no_delete');
-      await qr.query('ALTER TABLE auctions.bid_rejections ENABLE TRIGGER trg_bid_rejections_no_delete');
-
-      await qr.commitTransaction();
       this.logger.log(`Auction ${id} and all related records deleted`);
     } catch (err) {
-      await qr.rollbackTransaction();
+      this.logger.error(`Failed to delete auction ${id}`, err);
       throw err;
     } finally {
-      await qr.release();
+      await this.ds.query('ALTER TABLE auctions.bids ENABLE TRIGGER trg_bids_no_delete').catch(() => {});
+      await this.ds.query('ALTER TABLE auctions.bid_rejections ENABLE TRIGGER trg_bid_rejections_no_delete').catch(() => {});
     }
   }
 
