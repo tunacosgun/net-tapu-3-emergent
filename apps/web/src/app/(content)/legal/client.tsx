@@ -3,7 +3,26 @@
 import { useEffect, useState, useCallback } from 'react';
 import apiClient from '@/lib/api-client';
 import { LoadingState, Alert, EmptyState } from '@/components/ui';
+import { CmsBlockRenderer } from '@/components/cms-block-renderer';
 import type { CmsPage, PaginatedResponse } from '@/types';
+import type { ContentBlock } from '@/components/block-editor';
+
+function parseBlocks(content: string | null): ContentBlock[] {
+  if (!content) return [];
+  try {
+    const parsed = JSON.parse(content);
+    if (!Array.isArray(parsed)) return [];
+    // Unwrap {type, data: {...}} format to flat {type, ...data}
+    return parsed.map((b: Record<string, unknown>) => {
+      if (b.data && typeof b.data === 'object') {
+        return { type: b.type, ...(b.data as Record<string, unknown>) } as ContentBlock;
+      }
+      return b as ContentBlock;
+    });
+  } catch {
+    return [{ type: 'text', content } as ContentBlock];
+  }
+}
 
 export function LegalContent() {
   const [sections, setSections] = useState<CmsPage[]>([]);
@@ -23,8 +42,11 @@ export function LegalContent() {
           params: { pageType: 'withdrawal_info', status: 'published' },
         }),
       ]);
-      const all = [...withdrawalRes.data.data, ...legalRes.data.data];
-      setSections(all);
+      const map = new Map<string, CmsPage>();
+      for (const p of [...legalRes.data.data, ...withdrawalRes.data.data]) {
+        map.set(p.id, p);
+      }
+      setSections(Array.from(map.values()));
     } catch {
       setError('Yasal bilgiler yüklenirken bir hata oluştu.');
     } finally {
@@ -39,6 +61,9 @@ export function LegalContent() {
   if (loading) return <LoadingState />;
   if (error) return <Alert className="mt-6">{error}</Alert>;
   if (sections.length === 0) return <EmptyState message="Henüz yasal bilgi eklenmemiş." />;
+
+  const activeSection = sections[activeTab];
+  const blocks = parseBlocks(activeSection?.content ?? null);
 
   return (
     <div>
@@ -79,35 +104,14 @@ export function LegalContent() {
       )}
 
       {/* Content */}
-      {sections[activeTab] && (
+      {activeSection && (
         <article className="rounded-xl border border-[var(--border)] p-6 lg:p-8">
-          {sections.length === 1 && (
-            <h2 className="text-xl font-semibold mb-4">{sections[activeTab].title}</h2>
-          )}
-          {sections[activeTab].content && (
-            <div
-              className="prose prose-lg max-w-none
-                prose-headings:text-[var(--foreground)] prose-headings:font-bold
-                prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h2:pb-2 prose-h2:border-b prose-h2:border-[var(--border)]
-                prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-2
-                prose-p:text-[var(--muted-foreground)] prose-p:leading-relaxed
-                prose-a:text-brand-500 prose-a:no-underline hover:prose-a:underline
-                prose-strong:text-[var(--foreground)]
-                prose-ul:text-[var(--muted-foreground)]
-                prose-ol:text-[var(--muted-foreground)]
-                prose-li:marker:text-brand-400
-                prose-table:overflow-hidden prose-table:rounded-lg prose-table:border prose-table:border-[var(--border)]
-                prose-th:bg-[var(--muted)] prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold
-                prose-td:px-4 prose-td:py-2 prose-td:border-t prose-td:border-[var(--border)]"
-              dangerouslySetInnerHTML={{ __html: sections[activeTab].content! }}
-            />
-          )}
+          <CmsBlockRenderer blocks={blocks} />
 
-          {/* Updated date */}
-          {sections[activeTab].updatedAt && (
+          {activeSection.updatedAt && (
             <div className="mt-8 border-t border-[var(--border)] pt-4">
               <p className="text-xs text-[var(--muted-foreground)]">
-                Son güncelleme: {new Date(sections[activeTab].updatedAt).toLocaleDateString('tr-TR', {
+                Son güncelleme: {new Date(activeSection.updatedAt).toLocaleDateString('tr-TR', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
