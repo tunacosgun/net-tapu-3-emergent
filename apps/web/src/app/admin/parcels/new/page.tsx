@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type MouseEvent } from 'react';
 import apiClient from '@/lib/api-client';
 import { showApiError } from '@/components/api-error-toast';
 import { parcelSchema, type ParcelFormData } from '@/lib/validators';
@@ -118,6 +118,42 @@ export default function AdminNewParcelPage() {
 
   function handleNeighborhoodChange(e: React.ChangeEvent<HTMLSelectElement>) {
     setValue('neighborhood', e.target.value, { shouldValidate: true });
+  }
+
+  // ── TKGM Lookup ─────────────────────────────────────────────────────
+  const [tkgmLoading, setTkgmLoading] = useState(false);
+  const [tkgmResult, setTkgmResult] = useState<string | null>(null);
+
+  const watchedAda = watch('ada');
+  const watchedParsel = watch('parsel');
+  const canLookup = !!(selectedCity && selectedDistrict && watchedAda && watchedParsel);
+
+  async function handleTkgmLookup(e: MouseEvent) {
+    e.preventDefault();
+    if (!canLookup) return;
+    setTkgmLoading(true);
+    setTkgmResult(null);
+    try {
+      const { data } = await apiClient.post<{ responseData: Record<string, unknown> }>('/integrations/tkgm/lookup', {
+        city: selectedCity,
+        district: selectedDistrict,
+        ada: watchedAda,
+        parsel: watchedParsel,
+      });
+      const rd = data.responseData;
+      if (rd.areaM2) setValue('areaM2', String(rd.areaM2), { shouldValidate: true });
+      if (rd.latitude) setValue('latitude', String(rd.latitude), { shouldValidate: true });
+      if (rd.longitude) setValue('longitude', String(rd.longitude), { shouldValidate: true });
+      if (rd.neighborhood && typeof rd.neighborhood === 'string') {
+        setValue('neighborhood', rd.neighborhood, { shouldValidate: true });
+      }
+      setTkgmResult('✓ Parsel bilgileri TKGM\'den alındı');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'TKGM sorgusu başarısız';
+      setTkgmResult(`✗ ${msg}`);
+    } finally {
+      setTkgmLoading(false);
+    }
   }
 
   async function onSubmit(data: ParcelFormData) {
@@ -237,6 +273,29 @@ export default function AdminNewParcelPage() {
             {...register('parsel')}
           />
         </div>
+        {/* TKGM Lookup */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            disabled={!canLookup || tkgmLoading}
+            onClick={handleTkgmLookup}
+            className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:bg-blue-950/20 dark:border-blue-800 dark:text-blue-400"
+          >
+            {tkgmLoading ? (
+              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+            ) : (
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+            )}
+            {tkgmLoading ? 'Sorgulanıyor...' : 'TKGM\'den Sorgula'}
+          </button>
+          {!canLookup && <span className="text-xs text-[var(--muted-foreground)]">İl, İlçe, Ada ve Parsel doldurulmalı</span>}
+          {tkgmResult && (
+            <span className={`text-xs font-medium ${tkgmResult.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>
+              {tkgmResult}
+            </span>
+          )}
+        </div>
+
         <div className="flex gap-6">
           <FormCheckbox
             label="Açık Artırmaya Uygun"
