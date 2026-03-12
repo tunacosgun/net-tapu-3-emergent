@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Auction } from '../entities/auction.entity';
 import { AuctionParticipant } from '../entities/auction-participant.entity';
 import { AuctionStatus, Deposit } from '@nettapu/shared';
@@ -35,6 +35,7 @@ export class AuctionService {
     private readonly participantRepo: Repository<AuctionParticipant>,
     @InjectRepository(Deposit)
     private readonly depositRepo: Repository<Deposit>,
+    private readonly ds: DataSource,
   ) {}
 
   async create(dto: CreateAuctionDto, userId: string): Promise<Auction> {
@@ -126,16 +127,34 @@ export class AuctionService {
       throw new NotFoundException(`Auction ${id} not found`);
     }
 
-    // Only draft/scheduled/cancelled/ended/settled auctions can be deleted
-    const deletable = [AuctionStatus.DRAFT, AuctionStatus.SCHEDULED, AuctionStatus.CANCELLED, AuctionStatus.ENDED, AuctionStatus.SETTLED];
-    if (!deletable.includes(auction.status as AuctionStatus)) {
-      throw new BadRequestException(
-        `Cannot delete auction in '${auction.status}' status. Allowed: ${deletable.join(', ')}`,
-      );
-    }
+    // Clean up all related records, disabling append-only triggers temporarily
+    const qr = this.ds.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      await qr.query('ALTER TABLE auctions.bids DISABLE TRIGGER trg_bids_no_delete');
+      await qr.query('ALTER TABLE auctions.bid_rejections DISABLE TRIGGER trg_bid_rejections_no_delete');
 
-    await this.auctionRepo.remove(auction);
-    this.logger.log(`Auction ${id} deleted`);
+      await qr.query('DELETE FROM auctions.settlement_manifests WHERE auction_id = $1', [id]);
+      await qr.query('DELETE FROM auctions.bid_rejections WHERE auction_id = $1', [id]);
+      await qr.query('DELETE FROM auctions.bids_corrections WHERE auction_id = $1', [id]);
+      await qr.query('DELETE FROM auctions.bids WHERE auction_id = $1', [id]);
+      await qr.query('DELETE FROM auctions.auction_consents WHERE auction_id = $1', [id]);
+      await qr.query('DELETE FROM auctions.auction_participants WHERE auction_id = $1', [id]);
+      await qr.query('DELETE FROM auctions.event_outbox WHERE aggregate_id = $1', [id]);
+      await qr.query('DELETE FROM auctions.auctions WHERE id = $1', [id]);
+
+      await qr.query('ALTER TABLE auctions.bids ENABLE TRIGGER trg_bids_no_delete');
+      await qr.query('ALTER TABLE auctions.bid_rejections ENABLE TRIGGER trg_bid_rejections_no_delete');
+
+      await qr.commitTransaction();
+      this.logger.log(`Auction ${id} and all related records deleted`);
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
   }
 
   async updateStatus(id: string, dto: UpdateAuctionStatusDto): Promise<Auction> {
