@@ -8,7 +8,7 @@ import { formatPrice, formatDate } from '@/lib/format';
 import { TurkeyMap } from '@/components/turkey-map';
 import { VideoPopup } from '@/components/video-popup';
 import { ParcelCard } from '@/components/parcel-card';
-import type { Parcel, Auction, PaginatedResponse } from '@/types';
+import type { Parcel, Auction, PaginatedResponse, Reference } from '@/types';
 
 export default function HomePage() {
   const router = useRouter();
@@ -16,6 +16,7 @@ export default function HomePage() {
   const [latestParcels, setLatestParcels] = useState<Parcel[]>([]);
   const [activeAuctions, setActiveAuctions] = useState<Auction[]>([]);
   const [stats, setStats] = useState({ parcels: 0, auctions: 0, cities: 0 });
+  const [testimonials, setTestimonials] = useState<Reference[]>([]);
   const [showVideo, setShowVideo] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -46,6 +47,13 @@ export default function HomePage() {
       .then(({ data }) => {
         setActiveAuctions(data.data);
         setStats((s) => ({ ...s, auctions: data.meta.total }));
+      })
+      .catch(() => {});
+
+    apiClient
+      .get<Reference[]>('/content/references')
+      .then(({ data }) => {
+        setTestimonials(data.filter((r) => r.referenceType === 'testimonial').slice(0, 6));
       })
       .catch(() => {});
   }, []);
@@ -402,23 +410,14 @@ export default function HomePage() {
             <h2 className="mt-1 text-3xl font-extrabold tracking-tight">Kullanıcılarımız Ne Diyor?</h2>
           </div>
           <div className="grid gap-6 sm:grid-cols-3">
-            {[
-              {
-                name: 'Ahmet Y.',
-                location: 'Antalya',
-                text: 'NetTapu sayesinde Antalya\'da aradığım arsayı kolayca buldum. Açık artırma süreci çok şeffaf ve güvenliydi.',
-              },
-              {
-                name: 'Fatma K.',
-                location: 'Muğla',
-                text: 'Online açık artırma sistemi gerçekten çok pratik. Evimden çıkmadan Muğla\'da arsa sahibi oldum.',
-              },
-              {
-                name: 'Mehmet S.',
-                location: 'Bursa',
-                text: 'Danışman desteği harika. Her aşamada bize yardımcı oldular. Tapu işlemleri de çok hızlı tamamlandı.',
-              },
-            ].map((testimonial) => (
+            {(testimonials.length > 0
+              ? testimonials.map((t) => ({ name: t.title, location: '', text: t.description || '' }))
+              : [
+                  { name: 'Ahmet Y.', location: 'Antalya', text: 'NetTapu sayesinde Antalya\'da aradığım arsayı kolayca buldum. Açık artırma süreci çok şeffaf ve güvenliydi.' },
+                  { name: 'Fatma K.', location: 'Muğla', text: 'Online açık artırma sistemi gerçekten çok pratik. Evimden çıkmadan Muğla\'da arsa sahibi oldum.' },
+                  { name: 'Mehmet S.', location: 'Bursa', text: 'Danışman desteği harika. Her aşamada bize yardımcı oldular. Tapu işlemleri de çok hızlı tamamlandı.' },
+                ]
+            ).map((testimonial) => (
               <div
                 key={testimonial.name}
                 className="rounded-2xl border border-[var(--border)] bg-white p-7 shadow-lg shadow-gray-100/50 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
@@ -439,11 +438,16 @@ export default function HomePage() {
                   </div>
                   <div>
                     <p className="text-sm font-bold">{testimonial.name}</p>
-                    <p className="text-xs text-[var(--muted-foreground)]">{testimonial.location}</p>
+                    {testimonial.location && <p className="text-xs text-[var(--muted-foreground)]">{testimonial.location}</p>}
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+          <div className="mt-8 text-center">
+            <Link href="/references" className="text-sm font-semibold text-brand-500 hover:text-brand-600 transition-colors">
+              Tüm referansları görüntüle →
+            </Link>
           </div>
         </div>
       </section>

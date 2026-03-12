@@ -37,7 +37,8 @@ const footerSections = [
     links: [
       { href: '/faq', label: 'Sık Sorulan Sorular' },
       { href: '/real-estate-guide', label: 'Gayrimenkul Rehberi' },
-      { href: '/about', label: 'İletişim' },
+      { href: '/post-sale', label: 'Satış Sonrası' },
+      { href: '/contact', label: 'İletişim' },
     ],
   },
 ];
