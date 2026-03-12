@@ -106,6 +106,7 @@ export function LegalContent() {
       {/* Content */}
       {activeSection && (
         <article className="rounded-xl border border-[var(--border)] p-6 lg:p-8">
+          <h2 className="mb-6 text-2xl font-bold text-[var(--foreground)]">{activeSection.title}</h2>
           <CmsBlockRenderer blocks={blocks} />
 
           {activeSection.updatedAt && (
