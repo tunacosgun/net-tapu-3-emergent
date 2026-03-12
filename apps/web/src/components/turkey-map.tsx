@@ -24,7 +24,7 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
         let totalPages = 1;
         do {
           const { data } = await apiClient.get<PaginatedResponse<Parcel>>('/parcels', {
-            params: { status: 'active', limit: 100, page },
+            params: { limit: 100, page },
           });
           all.push(...data.data);
           totalPages = data.meta.totalPages;
@@ -51,6 +51,31 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
     return map;
   }, [parcels]);
 
+  // Status breakdown per city
+  const statusByCity = useMemo(() => {
+    const map = new Map<string, { active: number; sold: number; deposit: number; other: number }>();
+    for (const parcel of parcels) {
+      if (!parcel.city) continue;
+      const entry = map.get(parcel.city) || { active: 0, sold: 0, deposit: 0, other: 0 };
+      if (parcel.status === 'active') entry.active++;
+      else if (parcel.status === 'sold') entry.sold++;
+      else if (parcel.status === 'deposit_taken') entry.deposit++;
+      else entry.other++;
+      map.set(parcel.city, entry);
+    }
+    return map;
+  }, [parcels]);
+
+  // Determine dominant status for province coloring
+  const getDominantStatus = useCallback((name: string) => {
+    const entry = statusByCity.get(name);
+    if (!entry) return 'none';
+    if (entry.active > 0) return 'active';
+    if (entry.deposit > 0) return 'deposit';
+    if (entry.sold > 0) return 'sold';
+    return 'other';
+  }, [statusByCity]);
+
   const totalParcels = parcels.length;
   const activeCities = countByCity.size;
   const maxCount = Math.max(1, ...countByCity.values());
@@ -75,6 +100,7 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
   const hoveredData = hoveredProvince ? {
     name: getProvinceName(hoveredProvince),
     count: getParcelCount(getProvinceName(hoveredProvince)),
+    status: statusByCity.get(getProvinceName(hoveredProvince)),
   } : null;
 
   return (
@@ -89,13 +115,21 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
       )}
 
       {/* Legend & Stats */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2">
-            <span className="h-2.5 w-5 rounded-sm bg-brand-500" />
-            <span className="text-[11px] font-semibold text-gray-500">Arsa Mevcut</span>
+      <div className="flex flex-wrap items-center justify-between mb-4 px-1 gap-2">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-5 rounded-sm bg-green-500" />
+            <span className="text-[11px] font-semibold text-gray-500">Satışta</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-5 rounded-sm bg-blue-500" />
+            <span className="text-[11px] font-semibold text-gray-500">Kaparo Alındı</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-5 rounded-sm bg-red-400" />
+            <span className="text-[11px] font-semibold text-gray-500">Satıldı</span>
+          </div>
+          <div className="flex items-center gap-1.5">
             <span className="h-2.5 w-5 rounded-sm bg-gray-100 border border-gray-200" />
             <span className="text-[11px] font-semibold text-gray-400">Arsa Yok</span>
           </div>
@@ -135,17 +169,26 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
           // Intensity based on parcel count
           const intensity = hasData ? Math.min(0.4 + (count / maxCount) * 0.6, 1) : 0;
 
+          const dominant = getDominantStatus(prov.name);
+          const statusColors: Record<string, { base: string; hover: string; light: string }> = {
+            active: { base: '#22c55e', hover: '#15803d', light: '#86efac' },
+            deposit: { base: '#3b82f6', hover: '#1d4ed8', light: '#93c5fd' },
+            sold: { base: '#f87171', hover: '#dc2626', light: '#fca5a5' },
+            other: { base: '#a78bfa', hover: '#7c3aed', light: '#c4b5fd' },
+            none: { base: '#f3f4f6', hover: '#d1d5db', light: '#f3f4f6' },
+          };
+          const sc = statusColors[dominant] || statusColors.none;
+
           let fill: string;
           if (isHovered && hasData) {
-            fill = '#15803d';
+            fill = sc.hover;
           } else if (isHovered) {
             fill = '#d1d5db';
           } else if (hasData) {
-            // Gradient from light to dark green based on count
-            const r = Math.round(34 + (1 - intensity) * 100);
-            const g = Math.round(197 - (1 - intensity) * 40);
-            const b = Math.round(94 - (1 - intensity) * 20);
-            fill = `rgb(${r},${g},${b})`;
+            // Intensity based on count
+            const t = intensity;
+            // Interpolate between light and base color
+            fill = t > 0.7 ? sc.base : sc.light;
           } else {
             fill = '#f3f4f6';
           }
@@ -155,7 +198,7 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
               key={prov.id + prov.d.substring(0, 20)}
               d={prov.d}
               fill={fill}
-              stroke={isHovered ? (hasData ? '#15803d' : '#9ca3af') : '#fff'}
+              stroke={isHovered ? (hasData ? sc.hover : '#9ca3af') : '#fff'}
               strokeWidth={isHovered ? 2 : 0.8}
               className="cursor-pointer transition-colors duration-150"
               onMouseEnter={() => setHoveredProvince(prov.id)}
@@ -182,9 +225,24 @@ export function TurkeyMap({ onProvinceClick }: TurkeyMapProps) {
               <p className="text-sm font-bold text-gray-900">{hoveredData.name}</p>
             </div>
             {hoveredData.count > 0 ? (
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-extrabold text-brand-600">{hoveredData.count}</span>
-                <span className="text-[11px] font-medium text-gray-400">arsa mevcut</span>
+              <div>
+                <div className="flex items-baseline gap-1 mb-1.5">
+                  <span className="text-xl font-extrabold text-brand-600">{hoveredData.count}</span>
+                  <span className="text-[11px] font-medium text-gray-400">arsa</span>
+                </div>
+                {hoveredData.status && (
+                  <div className="space-y-0.5 text-[10px]">
+                    {hoveredData.status.active > 0 && (
+                      <div className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-green-500" /><span className="text-gray-500">{hoveredData.status.active} satışta</span></div>
+                    )}
+                    {hoveredData.status.deposit > 0 && (
+                      <div className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-500" /><span className="text-gray-500">{hoveredData.status.deposit} kaparo</span></div>
+                    )}
+                    {hoveredData.status.sold > 0 && (
+                      <div className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-red-400" /><span className="text-gray-500">{hoveredData.status.sold} satıldı</span></div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-[11px] text-gray-400">Henüz arsa bulunmuyor</p>

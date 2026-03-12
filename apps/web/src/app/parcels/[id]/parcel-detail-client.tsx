@@ -401,7 +401,8 @@ export default function ParcelDetailClient() {
 
   const status = parcelStatusConfig(parcel.status);
   const whatsappNumber = siteSettings.whatsapp_number || '905000000000';
-  const whatsappMessage = encodeURIComponent(`Merhaba, ${parcel.listingId} nolu ilan (${parcel.title}) hakkında bilgi almak istiyorum.`);
+  const adaParselInfo = parcel.ada && parcel.parsel ? ` (Ada: ${parcel.ada}, Parsel: ${parcel.parsel})` : '';
+  const whatsappMessage = encodeURIComponent(`Merhaba, ${parcel.listingId} nolu ilan (${parcel.title})${adaParselInfo} hakkında bilgi almak istiyorum.`);
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
   const tkgmUrl = parcel.ada && parcel.parsel ? `https://parselsorgu.tkgm.gov.tr/` : null;
   const pricePerM2 = parcel.price && parcel.areaM2 ? Math.round(parseFloat(parcel.price) / parseFloat(parcel.areaM2)) : null;
