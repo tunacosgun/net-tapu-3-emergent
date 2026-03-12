@@ -634,12 +634,12 @@ export default function AuctionDetailPage() {
 
           {/* Auction rules link */}
           <div className="text-center space-x-4">
-            <Link href="/auction-rules" className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
-              Açık artırma kurallarını oku →
-            </Link>
-            <Link href="/auction-contract" className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
-              İhale katılım sözleşmesi →
-            </Link>
+            <a href="/auction-rules" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
+              Açık artırma kurallarını oku ↗
+            </a>
+            <a href="/auction-contract" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
+              İhale katılım sözleşmesi ↗
+            </a>
           </div>
         </div>
 
