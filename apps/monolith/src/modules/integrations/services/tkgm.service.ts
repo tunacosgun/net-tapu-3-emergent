@@ -8,9 +8,13 @@ import { TkgmLookupDto } from '../dto/tkgm-lookup.dto';
 const TKGM_BASE = 'https://cbsapi.tkgm.gov.tr/megsiswebapi.v3.1/api';
 const TKGM_TIMEOUT = 15_000;
 
-interface TkgmIl { ilKod: number; ilAd: string }
-interface TkgmIlce { ilceKod: number; ilceAd: string }
-interface TkgmMahalle { mahalleKod: number; mahalleAd: string }
+interface TkgmIl { id: number; text: string }
+interface TkgmIlce { id: number; text: string }
+interface TkgmMahalle { id: number; text: string }
+interface TkgmFeatureCollection<T> {
+  type: string;
+  features: Array<{ type: string; properties: T; geometry?: unknown }>;
+}
 
 @Injectable()
 export class TkgmService {
@@ -18,7 +22,7 @@ export class TkgmService {
   private static readonly CACHE_TTL_HOURS = 24;
 
   // In-memory code caches (rarely change)
-  private ilListCache: TkgmIl[] | null = null;
+  private ilListCache: TkgmIl[] = [];
 
   constructor(
     @InjectRepository(TkgmCache)
@@ -69,26 +73,36 @@ export class TkgmService {
       .trim();
   }
 
+  private extractFeatures<T>(fc: TkgmFeatureCollection<T>): T[] {
+    if (fc && Array.isArray(fc.features)) {
+      return fc.features.map((f) => f.properties);
+    }
+    return [];
+  }
+
   private async getIlKod(cityName: string): Promise<number> {
-    if (!this.ilListCache) {
-      this.ilListCache = await this.tkgmFetch<TkgmIl[]>(`${TKGM_BASE}/idariYapi/ilListe`);
+    if (this.ilListCache.length === 0) {
+      const fc = await this.tkgmFetch<TkgmFeatureCollection<TkgmIl>>(`${TKGM_BASE}/idariYapi/ilListe`);
+      this.ilListCache = this.extractFeatures(fc);
     }
     const norm = this.normalize(cityName);
-    const il = this.ilListCache.find((i) => this.normalize(i.ilAd) === norm);
+    const il = this.ilListCache.find((i) => this.normalize(i.text) === norm);
     if (!il) throw new BadGatewayException(`TKGM: İl bulunamadı: ${cityName}`);
-    return il.ilKod;
+    return il.id;
   }
 
   private async getIlceKod(ilKod: number, districtName: string): Promise<number> {
-    const list = await this.tkgmFetch<TkgmIlce[]>(`${TKGM_BASE}/idariYapi/ilceListe/${ilKod}`);
+    const fc = await this.tkgmFetch<TkgmFeatureCollection<TkgmIlce>>(`${TKGM_BASE}/idariYapi/ilceListe/${ilKod}`);
+    const list = this.extractFeatures(fc);
     const norm = this.normalize(districtName);
-    const ilce = list.find((i) => this.normalize(i.ilceAd) === norm);
+    const ilce = list.find((i) => this.normalize(i.text) === norm);
     if (!ilce) throw new BadGatewayException(`TKGM: İlçe bulunamadı: ${districtName}`);
-    return ilce.ilceKod;
+    return ilce.id;
   }
 
   private async getMahalleler(ilceKod: number): Promise<TkgmMahalle[]> {
-    return this.tkgmFetch<TkgmMahalle[]>(`${TKGM_BASE}/idariYapi/mahalleListe/${ilceKod}`);
+    const fc = await this.tkgmFetch<TkgmFeatureCollection<TkgmMahalle>>(`${TKGM_BASE}/idariYapi/mahalleListe/${ilceKod}`);
+    return this.extractFeatures(fc);
   }
 
   private async fetchAndCache(dto: TkgmLookupDto): Promise<TkgmCache> {
@@ -108,12 +122,20 @@ export class TkgmService {
 
       for (const mah of mahalleler) {
         try {
-          const url = `${TKGM_BASE}/parsel/${ilKod}/${ilceKod}/${mah.mahalleKod}/${dto.ada}/${dto.parsel}`;
+          const url = `${TKGM_BASE}/parsel/${ilKod}/${ilceKod}/${mah.id}/${dto.ada}/${dto.parsel}`;
           const data = await this.tkgmFetch<Record<string, unknown>>(url);
-          // TKGM returns object with properties when found
-          if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-            parcelData = data;
-            foundMahalle = mah.mahalleAd;
+          // TKGM may return GeoJSON Feature or FeatureCollection
+          let feature: Record<string, unknown> | null = null;
+          if (data && (data as any).type === 'FeatureCollection' && Array.isArray((data as any).features) && (data as any).features.length > 0) {
+            feature = (data as any).features[0];
+          } else if (data && (data as any).type === 'Feature') {
+            feature = data;
+          } else if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+            feature = data;
+          }
+          if (feature) {
+            parcelData = feature;
+            foundMahalle = mah.text;
             break;
           }
         } catch {
