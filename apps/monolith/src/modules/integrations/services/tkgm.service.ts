@@ -122,7 +122,8 @@ export class TkgmService {
 
       for (const mah of mahalleler) {
         try {
-          const url = `${TKGM_BASE}/parsel/${ilKod}/${ilceKod}/${mah.id}/${dto.ada}/${dto.parsel}`;
+          // TKGM parsel endpoint: /parsel/{mahalleKod}/{ada}/{parsel}
+          const url = `${TKGM_BASE}/parsel/${mah.id}/${dto.ada}/${dto.parsel}`;
           const data = await this.tkgmFetch<Record<string, unknown>>(url);
           // TKGM may return GeoJSON Feature or FeatureCollection
           let feature: Record<string, unknown> | null = null;
@@ -153,7 +154,11 @@ export class TkgmService {
       // 3. Extract useful data
       const geometry = parcelData.geometry as Record<string, unknown> | undefined;
       const properties = parcelData.properties as Record<string, unknown> | undefined;
-      const alan = properties?.alan ?? parcelData.alan;
+      const alanRaw = properties?.alan ?? parcelData.alan;
+      // Parse Turkish number format: "100.301,93" → 100301.93
+      const alan = typeof alanRaw === 'string'
+        ? Number(alanRaw.replace(/\./g, '').replace(',', '.'))
+        : alanRaw;
 
       // Calculate centroid from coordinates if available
       let latitude: number | null = null;
@@ -195,6 +200,9 @@ export class TkgmService {
         district: dto.district,
         neighborhood: foundMahalle,
         areaM2: alan ? Number(alan) : null,
+        nitelik: properties?.nitelik ?? null,
+        pafta: properties?.pafta ?? null,
+        mevkii: properties?.mevkii ?? null,
         latitude,
         longitude,
         boundary,
