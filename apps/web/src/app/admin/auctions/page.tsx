@@ -23,35 +23,47 @@ const statusColors: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-700',
 };
 
-const columns: Column<Auction>[] = [
-  { header: 'Başlık', accessor: (a) => <span className="font-medium">{a.title}</span> },
-  {
-    header: 'Durum',
-    accessor: (a) => (
-      <Badge className={statusColors[a.status] || 'bg-gray-100 text-gray-700'}>
-        {statusLabels[a.status] || a.status}
-      </Badge>
-    ),
-  },
-  { header: 'Güncel Fiyat', accessor: (a) => <span className="font-mono">{formatPrice(a.currentPrice)}</span> },
-  { header: 'Teklifler', accessor: (a) => a.bidCount },
-  {
-    header: 'Başlangıç',
-    accessor: (a) => <span className="text-xs text-[var(--muted-foreground)]">{formatDate(a.scheduledStart)}</span>,
-  },
-  {
-    header: '',
-    accessor: (a) => (
-      <Link href={`/admin/auctions/${a.id}`} className="text-brand-500 hover:underline text-xs">Düzenle</Link>
-    ),
-  },
-];
+function getColumns(onDelete: (id: string, title: string) => void, deletingId: string | null): Column<Auction>[] {
+  return [
+    { header: 'Başlık', accessor: (a) => <span className="font-medium">{a.title}</span> },
+    {
+      header: 'Durum',
+      accessor: (a) => (
+        <Badge className={statusColors[a.status] || 'bg-gray-100 text-gray-700'}>
+          {statusLabels[a.status] || a.status}
+        </Badge>
+      ),
+    },
+    { header: 'Güncel Fiyat', accessor: (a) => <span className="font-mono">{formatPrice(a.currentPrice)}</span> },
+    { header: 'Teklifler', accessor: (a) => a.bidCount },
+    {
+      header: 'Başlangıç',
+      accessor: (a) => <span className="text-xs text-[var(--muted-foreground)]">{formatDate(a.scheduledStart)}</span>,
+    },
+    {
+      header: '',
+      accessor: (a) => (
+        <div className="flex items-center gap-2">
+          <Link href={`/admin/auctions/${a.id}`} className="text-brand-500 hover:underline text-xs">Düzenle</Link>
+          <button
+            onClick={() => onDelete(a.id, a.title)}
+            disabled={deletingId === a.id}
+            className="text-red-500 hover:text-red-700 text-xs disabled:opacity-50"
+          >
+            {deletingId === a.id ? '...' : 'Sil'}
+          </button>
+        </div>
+      ),
+    },
+  ];
+}
 
 export default function AdminAuctionsPage() {
   const [data, setData] = useState<PaginatedResponse<Auction> | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchAuctions = useCallback(async () => {
     setLoading(true);
@@ -65,6 +77,16 @@ export default function AdminAuctionsPage() {
   }, [page, statusFilter]);
 
   useEffect(() => { fetchAuctions(); }, [fetchAuctions]);
+
+  async function handleDelete(id: string, title: string) {
+    if (!confirm(`"${title}" açık artırmasını silmek istediğinize emin misiniz?`)) return;
+    setDeleting(id);
+    try {
+      await apiClient.delete(`/auctions/${id}`);
+      await fetchAuctions();
+    } catch (err) { showApiError(err); }
+    finally { setDeleting(null); }
+  }
 
   return (
     <div className="space-y-6">
@@ -88,7 +110,7 @@ export default function AdminAuctionsPage() {
       {loading ? <TableSkeleton rows={8} cols={6} /> : data && (
         <>
           <DataTable
-            columns={columns}
+            columns={getColumns(handleDelete, deleting)}
             data={data.data}
             keyExtractor={(a) => a.id}
           />

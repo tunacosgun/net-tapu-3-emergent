@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -67,6 +68,13 @@ export class AuctionController {
       throw new UnauthorizedException('Authenticated user ID is required');
     }
     return this.auctionService.getMyParticipation(id, userId);
+  }
+
+  @Delete(':id')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.auctionService.remove(id);
   }
 
   @Patch(':id/status')

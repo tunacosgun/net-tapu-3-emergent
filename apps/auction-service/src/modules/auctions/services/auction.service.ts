@@ -120,6 +120,24 @@ export class AuctionService {
     };
   }
 
+  async remove(id: string): Promise<void> {
+    const auction = await this.auctionRepo.findOne({ where: { id } });
+    if (!auction) {
+      throw new NotFoundException(`Auction ${id} not found`);
+    }
+
+    // Only draft/scheduled/cancelled/ended/settled auctions can be deleted
+    const deletable = [AuctionStatus.DRAFT, AuctionStatus.SCHEDULED, AuctionStatus.CANCELLED, AuctionStatus.ENDED, AuctionStatus.SETTLED];
+    if (!deletable.includes(auction.status as AuctionStatus)) {
+      throw new BadRequestException(
+        `Cannot delete auction in '${auction.status}' status. Allowed: ${deletable.join(', ')}`,
+      );
+    }
+
+    await this.auctionRepo.remove(auction);
+    this.logger.log(`Auction ${id} deleted`);
+  }
+
   async updateStatus(id: string, dto: UpdateAuctionStatusDto): Promise<Auction> {
     const auction = await this.auctionRepo.findOne({ where: { id } });
     if (!auction) {
