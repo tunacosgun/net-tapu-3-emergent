@@ -105,21 +105,37 @@ export default function AuctionDetailPage() {
   const [showRealNames, setShowRealNames] = useState(false);
   const [nameMap, setNameMap] = useState<Record<string, string>>({});
 
-  const CONSENT_TEXT = `NetTapu E-İhale Katılım Sözleşmesi
+  const [contractHtml, setContractHtml] = useState<string | null>(null);
+  const [contractLoading, setContractLoading] = useState(false);
 
-1. İhaleye katılarak, belirlenen teminat (depozito) tutarını ödediğimi ve bu tutarın ihale süresince bloke edileceğini kabul ediyorum.
+  const CONSENT_TEXT = `NetTapu E-İhale Katılım Sözleşmesi\n\n1. İhaleye katılarak, belirlenen teminat (depozito) tutarını ödediğimi ve bu tutarın ihale süresince bloke edileceğini kabul ediyorum.\n\n2. İhaleyi kazanmam durumunda, belirlenen süre içinde kalan ödemeyi tamamlamakla yükümlü olduğumu biliyorum.\n\n3. İhaleyi kazanamamam durumunda, yatırdığım teminat tutarının tarafıma iade edileceğini biliyorum.\n\n4. Verdiğim tekliflerin bağlayıcı olduğunu ve geri alınamayacağını kabul ediyorum.\n\n5. İhale sürecinde hile, manipülasyon veya sistemin kötüye kullanılması durumunda hesabımın askıya alınabileceğini ve teminatımın iade edilmeyebileceğini kabul ediyorum.\n\n6. Kişisel verilerimin 6698 sayılı KVKK kapsamında işleneceğini biliyorum ve onaylıyorum.\n\n7. İhale koşullarını, cayma hakkı politikasını ve tüm satış şartlarını okuduğumu ve kabul ettiğimi beyan ederim.`;
 
-2. İhaleyi kazanmam durumunda, belirlenen süre içinde kalan ödemeyi tamamlamakla yükümlü olduğumu biliyorum.
-
-3. İhaleyi kazanamamam durumunda, yatırdığım teminat tutarının tarafıma iade edileceğini biliyorum.
-
-4. Verdiğim tekliflerin bağlayıcı olduğunu ve geri alınamayacağını kabul ediyorum.
-
-5. İhale sürecinde hile, manipülasyon veya sistemin kötüye kullanılması durumunda hesabımın askıya alınabileceğini ve teminatımın iade edilmeyebileceğini kabul ediyorum.
-
-6. Kişisel verilerimin 6698 sayılı KVKK kapsamında işleneceğini biliyorum ve onaylıyorum.
-
-7. İhale koşullarını, cayma hakkı politikasını ve tüm satış şartlarını okuduğumu ve kabul ettiğimi beyan ederim.`;
+  // Fetch contract from CMS for consent dialog
+  async function fetchContractContent() {
+    if (contractHtml) return;
+    setContractLoading(true);
+    try {
+      const { data } = await apiClient.get<{ data: Array<{ content: string }> }>('/content/pages', {
+        params: { pageType: 'auction_contract', status: 'published' },
+      });
+      const page = data.data[0];
+      if (page?.content) {
+        try {
+          const blocks = JSON.parse(page.content);
+          if (Array.isArray(blocks)) {
+            const html = blocks
+              .map((b: Record<string, unknown>) => {
+                const c = b.data && typeof b.data === 'object' ? (b.data as Record<string, unknown>).content : b.content;
+                return typeof c === 'string' ? c : '';
+              })
+              .join('');
+            setContractHtml(html);
+          }
+        } catch { /* fallback to CONSENT_TEXT */ }
+      }
+    } catch { /* fallback to CONSENT_TEXT */ }
+    finally { setContractLoading(false); }
+  }
 
   // 0) If redirected from deposit page
   useEffect(() => {
@@ -504,7 +520,7 @@ export default function AuctionDetailPage() {
                 <h3 className="font-semibold text-amber-800 dark:text-amber-200">İhale Katılım Sözleşmesi</h3>
               </div>
               <p className="text-sm text-amber-700 dark:text-amber-300">Teklif verebilmek için ihale katılım sözleşmesini okumanız ve onaylamanız gerekmektedir.</p>
-              <Button onClick={() => setShowConsentDialog(true)} className="bg-amber-600 hover:bg-amber-700 text-white">Sözleşmeyi Oku ve Onayla</Button>
+              <Button onClick={() => { setShowConsentDialog(true); fetchContractContent(); }} className="bg-amber-600 hover:bg-amber-700 text-white">Sözleşmeyi Oku ve Onayla</Button>
             </Card>
           )}
 
@@ -517,7 +533,13 @@ export default function AuctionDetailPage() {
                   <button onClick={() => setShowConsentDialog(false)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xl">✕</button>
                 </div>
                 <div className="flex-1 overflow-y-auto px-6 py-4">
-                  <pre className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)] font-sans">{CONSENT_TEXT}</pre>
+                  {contractLoading ? (
+                    <div className="flex items-center justify-center py-8"><LoadingState centered={false} /></div>
+                  ) : contractHtml ? (
+                    <div className="prose prose-sm max-w-none prose-headings:text-[var(--foreground)] prose-headings:font-bold prose-h2:text-lg prose-h2:mt-4 prose-h2:mb-2 prose-p:text-[var(--muted-foreground)] prose-p:leading-relaxed prose-ul:text-[var(--muted-foreground)] prose-li:marker:text-brand-400 prose-strong:text-[var(--foreground)]" dangerouslySetInnerHTML={{ __html: contractHtml }} />
+                  ) : (
+                    <pre className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)] font-sans">{CONSENT_TEXT}</pre>
+                  )}
                 </div>
                 <div className="px-6 py-4 border-t border-[var(--border)] space-y-4">
                   <label className="flex items-start gap-3 cursor-pointer">
@@ -611,10 +633,13 @@ export default function AuctionDetailPage() {
           )}
 
           {/* Auction rules link */}
-          <div className="text-center">
-            <button className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
+          <div className="text-center space-x-4">
+            <Link href="/auction-rules" className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
               Açık artırma kurallarını oku →
-            </button>
+            </Link>
+            <Link href="/auction-contract" className="text-sm text-[var(--muted-foreground)] hover:text-brand-500 transition-colors underline underline-offset-4">
+              İhale katılım sözleşmesi →
+            </Link>
           </div>
         </div>
 

@@ -18,6 +18,8 @@ export class CreatePageDto {
     'withdrawal_info',
     'post_sale',
     'press',
+    'auction_rules',
+    'auction_contract',
     'custom',
   ])
   pageType!: string;

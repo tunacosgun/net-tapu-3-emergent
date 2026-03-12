@@ -15,6 +15,8 @@ export class ListPagesQueryDto {
     'withdrawal_info',
     'post_sale',
     'press',
+    'auction_rules',
+    'auction_contract',
     'custom',
   ])
   @IsOptional()
