@@ -3,12 +3,25 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import apiClient from '@/lib/api-client';
 import { formatPrice, formatDate } from '@/lib/format';
 import { TurkeyMap } from '@/components/turkey-map';
 import { VideoPopup } from '@/components/video-popup';
 import { ParcelCard } from '@/components/parcel-card';
 import type { Parcel, Auction, PaginatedResponse, Reference } from '@/types';
+
+const ParcelMapLazy = dynamic(() => import('@/components/parcel-map-inner'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[450px] items-center justify-center rounded-xl bg-[var(--muted)]">
+      <div className="flex items-center gap-3">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+        <span className="text-sm text-[var(--muted-foreground)]">Harita yükleniyor...</span>
+      </div>
+    </div>
+  ),
+});
 
 export default function HomePage() {
   const router = useRouter();
@@ -347,6 +360,57 @@ export default function HomePage() {
                 router.push(`/parcels?city=${encodeURIComponent(province)}`);
               }}
             />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Interactive Map Section ─── */}
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <div className="text-center mb-8">
+          <span className="text-xs font-bold uppercase tracking-widest text-brand-500">Keşfet</span>
+          <h2 className="mt-1 text-3xl font-extrabold tracking-tight">Haritada Arsaları Keşfedin</h2>
+          <p className="mt-3 text-[var(--muted-foreground)] max-w-md mx-auto">
+            Tüm arsaları harita üzerinde görüntüleyin, yakınlaştırın ve detaylara ulaşın.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-[var(--border)] bg-white shadow-xl overflow-hidden">
+          {/* Map */}
+          <div className="h-[450px] sm:h-[500px]">
+            <ParcelMapLazy
+              parcels={[...featuredParcels, ...latestParcels].filter(
+                (p, i, arr) => arr.findIndex((x) => x.id === p.id) === i,
+              )}
+              height="100%"
+              onParcelClick={(parcel) => router.push(`/parcels/${parcel.id}`)}
+            />
+          </div>
+          {/* Quick Filters */}
+          <div className="border-t border-[var(--border)] bg-[var(--muted)] px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                  <span className="text-[var(--muted-foreground)]">Satışta</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                  <span className="text-[var(--muted-foreground)]">Kaparo Alındı</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                  <span className="text-[var(--muted-foreground)]">Satıldı</span>
+                </div>
+              </div>
+              <Link
+                href="/parcels?view=map"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 transition-colors"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                </svg>
+                Tüm Haritayı Gör
+              </Link>
+            </div>
           </div>
         </div>
       </section>
