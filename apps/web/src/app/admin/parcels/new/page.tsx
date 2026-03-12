@@ -245,6 +245,7 @@ export default function AdminNewParcelPage() {
           <FormField
             label="Alan (m²)"
             type="number"
+            step="any"
             error={errors.areaM2?.message}
             {...register('areaM2')}
           />

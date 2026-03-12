@@ -244,8 +244,9 @@ export default function AdminEditParcelPage() {
 
         <div className="grid grid-cols-3 gap-4">
           <FormField
-            label="Alan (m2)"
+            label="Alan (m²)"
             type="number"
+            step="any"
             error={errors.areaM2?.message}
             {...register('areaM2')}
           />
