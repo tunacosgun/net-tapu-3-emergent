@@ -427,18 +427,21 @@ export default function ParcelDetailClient() {
   const status = parcelStatusConfig(parcel.status);
   const whatsappNumber = siteSettings.whatsapp_number || '905000000000';
   const parcelUrl = `https://nettapu-demo.tunasoft.tech/parcels/${parcel.id}`;
-  const adaParselLine = parcel.ada && parcel.parsel ? `\nAda/Parsel: ${parcel.ada} / ${parcel.parsel}` : '';
-  const areaLine = parcel.areaM2 ? `\nAlan: ${Number(parcel.areaM2).toLocaleString('tr-TR')} m2` : '';
-  const priceLine = parcel.price ? `\nFiyat: ${parseFloat(parcel.price).toLocaleString('tr-TR')} TL` : '';
-  const whatsappMessage = encodeURIComponent(
-    `Merhaba, asagidaki ilan hakkinda bilgi almak istiyorum:\n\n` +
-    `Ilan No: ${parcel.listingId}\n` +
-    `${parcel.title}` +
-    adaParselLine +
-    areaLine +
-    priceLine +
-    `\n\n${parcelUrl}`
-  );
+  const wpLines: string[] = [];
+  wpLines.push('Merhaba,');
+  wpLines.push('A\u015Fa\u011F\u0131daki ilan hakk\u0131nda detayl\u0131 bilgi almak istiyorum.');
+  wpLines.push('');
+  wpLines.push('\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500');
+  if (parcel.listingId) wpLines.push('\u0130lan No: ' + parcel.listingId);
+  wpLines.push(parcel.title);
+  if (parcel.city && parcel.district) wpLines.push('Konum: ' + parcel.city + ', ' + parcel.district);
+  if (parcel.ada && parcel.parsel) wpLines.push('Ada / Parsel: ' + parcel.ada + ' / ' + parcel.parsel);
+  if (parcel.areaM2) wpLines.push('Alan: ' + Number(parcel.areaM2).toLocaleString('tr-TR') + ' m\u00B2');
+  if (parcel.price) wpLines.push('Fiyat: ' + parseFloat(parcel.price).toLocaleString('tr-TR') + ' \u20BA');
+  wpLines.push('\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500');
+  wpLines.push('');
+  wpLines.push(parcelUrl);
+  const whatsappMessage = encodeURIComponent(wpLines.join('\n'));
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
   const tkgmUrl = parcel.ada && parcel.parsel ? `https://parselsorgu.tkgm.gov.tr/` : null;
   const pricePerM2 = parcel.price && parcel.areaM2 ? Math.round(parseFloat(parcel.price) / parseFloat(parcel.areaM2)) : null;
