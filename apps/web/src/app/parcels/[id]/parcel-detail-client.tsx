@@ -302,6 +302,10 @@ export default function ParcelDetailClient() {
   const [favToggling, setFavToggling] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [lightboxFullscreen, setLightboxFullscreen] = useState(false);
+  const [showOffer, setShowOffer] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [offerMessage, setOfferMessage] = useState('');
+  const [offerSubmitting, setOfferSubmitting] = useState(false);
   // Watermarked image URLs (burned into pixels via canvas)
   const [wmImages, setWmImages] = useState<Record<number, string>>({});
 
@@ -393,6 +397,27 @@ export default function ParcelDetailClient() {
       alert('PDF oluşturulurken bir hata oluştu.');
     } finally {
       setPdfLoading(false);
+    }
+  };
+
+  const handleOfferSubmit = async () => {
+    if (!offerAmount || offerSubmitting || !parcel) return;
+    setOfferSubmitting(true);
+    try {
+      await apiClient.post('/crm/offers', {
+        parcelId: parcel.id,
+        amount: offerAmount.replace(/\./g, '').replace(',', '.'),
+        message: offerMessage || undefined,
+      });
+      alert('Teklifiniz başarıyla gönderildi!');
+      setShowOffer(false);
+      setOfferAmount('');
+      setOfferMessage('');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Teklif gönderilemedi. Lütfen giriş yapın.';
+      alert(msg);
+    } finally {
+      setOfferSubmitting(false);
     }
   };
 
@@ -619,6 +644,16 @@ export default function ParcelDetailClient() {
               Sizi Arayalım
             </button>
 
+            {parcel.status === 'active' && (
+              <button
+                onClick={() => isAuthenticated ? setShowOffer(true) : alert('Teklif vermek için giriş yapmanız gerekiyor.')}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600 transition-colors shadow-sm"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>
+                Teklif Ver
+              </button>
+            )}
+
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1fb855] transition-colors shadow-sm"
             >
@@ -652,6 +687,70 @@ export default function ParcelDetailClient() {
 
       {showCallMe && (
         <CallMeForm parcelId={parcel.id} parcelTitle={parcel.title} parcelListingId={parcel.listingId} onClose={() => setShowCallMe(false)} />
+      )}
+
+      {/* Offer Modal */}
+      {showOffer && parcel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowOffer(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-[var(--background)] border border-[var(--border)] shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-[var(--foreground)]">Teklif Ver</h3>
+              <button onClick={() => setShowOffer(false)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <p className="text-sm text-[var(--muted-foreground)] mb-1">
+              <span className="font-medium text-[var(--foreground)]">{parcel.title}</span>
+            </p>
+            {parcel.price && (
+              <p className="text-sm text-[var(--muted-foreground)] mb-4">
+                İlan fiyatı: <span className="font-bold text-brand-500">{formatPrice(parcel.price)}</span>
+              </p>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">Teklif Tutarı (TL) *</label>
+                <input
+                  type="text"
+                  value={offerAmount}
+                  onChange={(e) => setOfferAmount(e.target.value.replace(/[^0-9.,]/g, ''))}
+                  placeholder="Örn: 5000000"
+                  className="w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">Mesajınız (opsiyonel)</label>
+                <textarea
+                  value={offerMessage}
+                  onChange={(e) => setOfferMessage(e.target.value)}
+                  placeholder="Teklifinizle ilgili bir not ekleyebilirsiniz..."
+                  rows={3}
+                  className="w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 py-2.5 text-sm resize-none focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+              </div>
+              <button
+                onClick={handleOfferSubmit}
+                disabled={!offerAmount || offerSubmitting}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {offerSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+                    Gönderiliyor...
+                  </span>
+                ) : (
+                  'Teklif Gönder'
+                )}
+              </button>
+            </div>
+
+            <p className="mt-3 text-[10px] text-center text-[var(--muted-foreground)]">
+              Teklifiniz değerlendirilecek ve size en kısa sürede dönüş yapılacaktır.
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

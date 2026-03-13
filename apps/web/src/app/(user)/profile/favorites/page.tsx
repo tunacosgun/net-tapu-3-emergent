@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import apiClient from '@/lib/api-client';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, resolveImageUrl } from '@/lib/format';
 import { Card, Button, Alert, EmptyState, LoadingState, Badge } from '@/components/ui';
 import { parcelStatusConfig } from '@/components/ui/badge';
 import { showApiError } from '@/components/api-error-toast';
@@ -90,17 +89,16 @@ export default function FavoritesPage() {
             }
             const status = parcelStatusConfig(parcel.status);
             const coverImg = parcel.images?.find((i) => i.isCover) || parcel.images?.[0];
-            const imageUrl = coverImg?.watermarkedUrl || coverImg?.originalUrl || coverImg?.url;
+            const imageUrl = coverImg ? resolveImageUrl(coverImg) : null;
             return (
               <Card key={fav.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
                 {/* Image */}
-                <div className="relative h-40 bg-gray-100 dark:bg-gray-800">
+                <div className="relative h-40 bg-gray-100 dark:bg-gray-800 overflow-hidden">
                   {imageUrl ? (
-                    <Image
+                    <img
                       src={imageUrl}
                       alt={parcel.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-4xl text-gray-300">
