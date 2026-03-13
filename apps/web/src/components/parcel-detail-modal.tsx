@@ -73,14 +73,14 @@ export function ParcelDetailModal({ parcelId, onClose }: ParcelDetailModalProps)
   lines.push('Merhaba,');
   lines.push('A\u015Fa\u011F\u0131daki ilan hakk\u0131nda detayl\u0131 bilgi almak istiyorum.');
   lines.push('');
-  lines.push('\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500');
+  lines.push('\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500');
   if (parcel?.listingId) lines.push('\u0130lan No: ' + parcel.listingId);
   if (parcel?.title) lines.push(parcel.title);
   if (parcel?.city && parcel?.district) lines.push('Konum: ' + parcel.city + ', ' + parcel.district);
   if (parcel?.ada && parcel?.parsel) lines.push('Ada / Parsel: ' + parcel.ada + ' / ' + parcel.parsel);
   if (parcel?.areaM2) lines.push('Alan: ' + Number(parcel.areaM2).toLocaleString('tr-TR') + ' m\u00B2');
   if (parcel?.price) lines.push('Fiyat: ' + parseFloat(parcel.price).toLocaleString('tr-TR') + ' \u20BA');
-  lines.push('\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500');
+  lines.push('\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500');
   lines.push('');
   lines.push(parcelUrl);
   const whatsappText = lines.join('\n');
