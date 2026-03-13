@@ -129,7 +129,7 @@ export function CmsPageRenderer({
               return (
                 <blockquote key={idx} className="border-l-4 border-brand-400 bg-brand-50/50 rounded-r-lg py-3 px-4">
                   <p>{(block.data.text as string) || ''}</p>
-                  {block.data.caption && <cite className="text-sm text-[var(--muted-foreground)]">{String(block.data.caption)}</cite>}
+                  {!!block.data.caption && <cite className="text-sm text-[var(--muted-foreground)]">{String(block.data.caption)}</cite>}
                 </blockquote>
               );
             }
@@ -137,7 +137,7 @@ export function CmsPageRenderer({
               return (
                 <figure key={idx}>
                   <img src={block.data.url as string} alt={(block.data.caption as string) || ''} className="rounded-xl shadow-md" />
-                  {block.data.caption && <figcaption className="text-center text-sm text-[var(--muted-foreground)] mt-2">{String(block.data.caption)}</figcaption>}
+                  {!!block.data.caption && <figcaption className="text-center text-sm text-[var(--muted-foreground)] mt-2">{String(block.data.caption)}</figcaption>}
                 </figure>
               );
             }
