@@ -93,7 +93,7 @@ export default function FavoritesPage() {
               ? (coverImg.watermarkedUrl || coverImg.originalUrl || coverImg.url || coverImg.thumbnailUrl || '')
               : null;
             return (
-              <Card key={fav.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
+              <Card key={fav.id} className="!p-0 overflow-hidden hover:shadow-lg transition-shadow group">
                 {/* Image */}
                 <div className="relative h-40 bg-gray-100 dark:bg-gray-800 overflow-hidden">
                   {imageUrl ? (
