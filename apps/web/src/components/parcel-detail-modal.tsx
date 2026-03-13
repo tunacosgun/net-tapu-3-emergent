@@ -8,6 +8,7 @@ import { Card, Badge, Button, LoadingState } from '@/components/ui';
 import { parcelStatusConfig } from '@/components/ui/badge';
 import { ShareButtons } from '@/components/share-buttons';
 import { CallMeForm } from '@/components/call-me-form';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import type { Parcel, ParcelImage } from '@/types';
 
 interface ParcelDetailModalProps {
@@ -65,7 +66,8 @@ export function ParcelDetailModal({ parcelId, onClose }: ParcelDetailModalProps)
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  const whatsappNumber = '905000000000'; // TODO: load from SystemSetting
+  const siteSettings = useSiteSettings();
+  const whatsappNumber = siteSettings.whatsapp_number || '905000000000';
   const parcelUrl = `https://nettapu-demo.tunasoft.tech/parcels/${parcel?.id ?? parcelId}`;
   const adaParselLine = parcel?.ada && parcel?.parsel ? `\n📋 Ada: ${parcel.ada} / Parsel: ${parcel.parsel}` : '';
   const areaLine = parcel?.areaM2 ? `\n📐 ${Number(parcel.areaM2).toLocaleString('tr-TR')} m²` : '';
