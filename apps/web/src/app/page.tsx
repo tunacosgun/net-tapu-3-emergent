@@ -374,15 +374,13 @@ export default function HomePage() {
         </div>
         <div className="rounded-2xl border border-[var(--border)] bg-white shadow-xl overflow-hidden">
           {/* Map */}
-          <div className="h-[450px] sm:h-[500px]">
-            <ParcelMapLazy
-              parcels={[...featuredParcels, ...latestParcels].filter(
-                (p, i, arr) => arr.findIndex((x) => x.id === p.id) === i,
-              )}
-              height="100%"
-              onParcelClick={(parcel) => router.push(`/parcels/${parcel.id}`)}
-            />
-          </div>
+          <ParcelMapLazy
+            parcels={[...featuredParcels, ...latestParcels].filter(
+              (p, i, arr) => arr.findIndex((x) => x.id === p.id) === i,
+            )}
+            height="500px"
+            onParcelClick={(parcel) => router.push(`/parcels/${parcel.id}`)}
+          />
           {/* Quick Filters */}
           <div className="border-t border-[var(--border)] bg-[var(--muted)] px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">

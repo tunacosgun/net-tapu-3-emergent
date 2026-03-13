@@ -305,6 +305,9 @@ export default function ParcelMapInner({
 
       tileLayerRef.current = L.tileLayer(tileUrl, { attribution }).addTo(map);
 
+      // Ensure map renders correctly after container is visible
+      setTimeout(() => { map.invalidateSize(); }, 200);
+
       setReady(true);
     });
 
