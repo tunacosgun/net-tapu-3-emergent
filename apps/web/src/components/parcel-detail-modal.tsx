@@ -66,11 +66,11 @@ export function ParcelDetailModal({ parcelId, onClose }: ParcelDetailModalProps)
   }, []);
 
   const whatsappNumber = '905000000000'; // TODO: load from SystemSetting
-  const parcelUrl = `https://nettapu-demo.tunasoft.tech/parcels/${parcel.id}`;
-  const adaParselLine = parcel.ada && parcel.parsel ? `\n📋 Ada: ${parcel.ada} / Parsel: ${parcel.parsel}` : '';
-  const areaLine = parcel.areaM2 ? `\n📐 ${Number(parcel.areaM2).toLocaleString('tr-TR')} m²` : '';
-  const priceLine = parcel.price ? `\n💰 ${parseFloat(parcel.price).toLocaleString('tr-TR')} ₺` : '';
-  const whatsappText = `Merhaba, aşağıdaki ilan hakkında bilgi almak istiyorum:\n\n🏷️ İlan No: ${parcel.listingId}\n📌 ${parcel.title}${adaParselLine}${areaLine}${priceLine}\n\n🔗 ${parcelUrl}`;
+  const parcelUrl = `https://nettapu-demo.tunasoft.tech/parcels/${parcel?.id ?? parcelId}`;
+  const adaParselLine = parcel?.ada && parcel?.parsel ? `\n📋 Ada: ${parcel.ada} / Parsel: ${parcel.parsel}` : '';
+  const areaLine = parcel?.areaM2 ? `\n📐 ${Number(parcel.areaM2).toLocaleString('tr-TR')} m²` : '';
+  const priceLine = parcel?.price ? `\n💰 ${parseFloat(parcel.price).toLocaleString('tr-TR')} ₺` : '';
+  const whatsappText = `Merhaba, aşağıdaki ilan hakkında bilgi almak istiyorum:\n\n🏷️ İlan No: ${parcel?.listingId ?? ''}\n📌 ${parcel?.title ?? ''}${adaParselLine}${areaLine}${priceLine}\n\n🔗 ${parcelUrl}`;
 
   return (
     <div
