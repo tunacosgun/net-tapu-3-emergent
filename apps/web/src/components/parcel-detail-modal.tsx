@@ -66,6 +66,11 @@ export function ParcelDetailModal({ parcelId, onClose }: ParcelDetailModalProps)
   }, []);
 
   const whatsappNumber = '905000000000'; // TODO: load from SystemSetting
+  const parcelUrl = `https://nettapu-demo.tunasoft.tech/parcels/${parcel.id}`;
+  const adaParselLine = parcel.ada && parcel.parsel ? `\n📋 Ada: ${parcel.ada} / Parsel: ${parcel.parsel}` : '';
+  const areaLine = parcel.areaM2 ? `\n📐 ${Number(parcel.areaM2).toLocaleString('tr-TR')} m²` : '';
+  const priceLine = parcel.price ? `\n💰 ${parseFloat(parcel.price).toLocaleString('tr-TR')} ₺` : '';
+  const whatsappText = `Merhaba, aşağıdaki ilan hakkında bilgi almak istiyorum:\n\n🏷️ İlan No: ${parcel.listingId}\n📌 ${parcel.title}${adaParselLine}${areaLine}${priceLine}\n\n🔗 ${parcelUrl}`;
 
   return (
     <div
@@ -205,9 +210,7 @@ export function ParcelDetailModal({ parcelId, onClose }: ParcelDetailModalProps)
                 📞 Sizi Arayalım
               </Button>
               <a
-                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-                  `Merhaba, ${parcel.listingId} nolu ilan hakkında bilgi almak istiyorum.`,
-                )}`}
+                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappText)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
