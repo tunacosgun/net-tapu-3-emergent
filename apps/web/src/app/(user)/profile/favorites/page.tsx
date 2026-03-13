@@ -89,7 +89,9 @@ export default function FavoritesPage() {
             }
             const status = parcelStatusConfig(parcel.status);
             const coverImg = parcel.images?.find((i) => i.isCover) || parcel.images?.[0];
-            const imageUrl = coverImg ? resolveImageUrl(coverImg) : null;
+            const imageUrl = coverImg
+              ? (coverImg.watermarkedUrl || coverImg.originalUrl || coverImg.url || coverImg.thumbnailUrl || '')
+              : null;
             return (
               <Card key={fav.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
                 {/* Image */}
