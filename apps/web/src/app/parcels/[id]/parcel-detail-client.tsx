@@ -427,17 +427,17 @@ export default function ParcelDetailClient() {
   const status = parcelStatusConfig(parcel.status);
   const whatsappNumber = siteSettings.whatsapp_number || '905000000000';
   const parcelUrl = `https://nettapu-demo.tunasoft.tech/parcels/${parcel.id}`;
-  const adaParselLine = parcel.ada && parcel.parsel ? `\n📋 Ada: ${parcel.ada} / Parsel: ${parcel.parsel}` : '';
-  const areaLine = parcel.areaM2 ? `\n📐 ${Number(parcel.areaM2).toLocaleString('tr-TR')} m²` : '';
-  const priceLine = parcel.price ? `\n💰 ${parseFloat(parcel.price).toLocaleString('tr-TR')} ₺` : '';
+  const adaParselLine = parcel.ada && parcel.parsel ? `\nAda/Parsel: ${parcel.ada} / ${parcel.parsel}` : '';
+  const areaLine = parcel.areaM2 ? `\nAlan: ${Number(parcel.areaM2).toLocaleString('tr-TR')} m2` : '';
+  const priceLine = parcel.price ? `\nFiyat: ${parseFloat(parcel.price).toLocaleString('tr-TR')} TL` : '';
   const whatsappMessage = encodeURIComponent(
-    `Merhaba, aşağıdaki ilan hakkında bilgi almak istiyorum:\n\n` +
-    `🏷️ İlan No: ${parcel.listingId}\n` +
-    `📌 ${parcel.title}` +
+    `Merhaba, asagidaki ilan hakkinda bilgi almak istiyorum:\n\n` +
+    `Ilan No: ${parcel.listingId}\n` +
+    `${parcel.title}` +
     adaParselLine +
     areaLine +
     priceLine +
-    `\n\n🔗 ${parcelUrl}`
+    `\n\n${parcelUrl}`
   );
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
   const tkgmUrl = parcel.ada && parcel.parsel ? `https://parselsorgu.tkgm.gov.tr/` : null;
