@@ -53,15 +53,14 @@ export default function HomePage() {
       })
       .catch(() => {});
 
-    apiClient
-      .get<PaginatedResponse<Auction>>('/auctions', {
-        params: { limit: 3, status: 'live,scheduled' },
-      })
-      .then(({ data }) => {
-        setActiveAuctions(data.data);
-        setStats((s) => ({ ...s, auctions: data.meta.total }));
-      })
-      .catch(() => {});
+    Promise.all([
+      apiClient.get<PaginatedResponse<Auction>>('/auctions', { params: { limit: 3, status: 'live' } }).catch(() => ({ data: { data: [], meta: { total: 0 } } })),
+      apiClient.get<PaginatedResponse<Auction>>('/auctions', { params: { limit: 3, status: 'scheduled' } }).catch(() => ({ data: { data: [], meta: { total: 0 } } })),
+    ]).then(([liveRes, schedRes]) => {
+      const combined = [...liveRes.data.data, ...schedRes.data.data].slice(0, 3);
+      setActiveAuctions(combined);
+      setStats((s) => ({ ...s, auctions: liveRes.data.meta.total + schedRes.data.meta.total }));
+    });
 
     apiClient
       .get<Reference[]>('/content/references')
