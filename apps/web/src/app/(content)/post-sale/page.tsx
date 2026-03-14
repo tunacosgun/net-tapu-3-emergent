@@ -5,6 +5,10 @@ import { CmsPageClient } from '@/components/cms-page-client';
 export const metadata: Metadata = {
   title: 'Satış Sonrası Hizmetler — NetTapu',
   description: 'Tapu devri, teknik destek ve danışmanlık hizmetleri ile satış sonrasında da yanınızdayız.',
+  openGraph: {
+    title: 'Satış Sonrası Hizmetler',
+    description: 'Tapu devri, teknik destek ve danışmanlık hizmetleri ile satış sonrasında da yanınızdayız.',
+  },
 };
 
 function PostSaleFallback() {

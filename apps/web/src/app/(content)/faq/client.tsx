@@ -29,6 +29,27 @@ export function FaqContent() {
     fetchFaqs();
   }, [fetchFaqs]);
 
+  // Inject FAQ JSON-LD structured data for SEO
+  useEffect(() => {
+    if (faqs.length === 0) return;
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'faq-jsonld';
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.question,
+        acceptedAnswer: { '@type': 'Answer', text: f.answer.replace(/<[^>]*>/g, '') },
+      })),
+    });
+    // Remove existing if re-rendered
+    document.getElementById('faq-jsonld')?.remove();
+    document.head.appendChild(script);
+    return () => { document.getElementById('faq-jsonld')?.remove(); };
+  }, [faqs]);
+
   if (loading) return <LoadingState />;
   if (error) return <Alert className="mt-6">{error}</Alert>;
   if (faqs.length === 0) return <EmptyState message="Henüz soru eklenmemiş." />;

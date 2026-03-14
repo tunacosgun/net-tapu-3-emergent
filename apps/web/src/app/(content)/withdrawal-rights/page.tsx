@@ -5,6 +5,10 @@ import { CmsPageClient } from '@/components/cms-page-client';
 export const metadata: Metadata = {
   title: 'Cayma Hakkı — NetTapu',
   description: 'NetTapu platformunda cayma hakkı ve iade koşulları hakkında bilgi.',
+  openGraph: {
+    title: 'Cayma Hakkı',
+    description: 'NetTapu platformunda cayma hakkı ve iade koşulları hakkında bilgi.',
+  },
 };
 
 /* Fallback: Shown when the CMS page is not yet published */

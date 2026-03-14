@@ -4,6 +4,10 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'Nasıl Çalışırız — NetTapu',
   description: 'NetTapu platformunda arsa satın alma ve ihale süreçlerinin nasıl işlediğini öğrenin.',
+  openGraph: {
+    title: 'Nasıl Çalışırız',
+    description: 'NetTapu platformunda arsa satın alma ve ihale süreçlerinin nasıl işlediğini öğrenin.',
+  },
 };
 
 const steps = [

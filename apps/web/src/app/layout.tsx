@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { FullBanGate } from '@/components/full-ban-gate';
 import { fetchSiteSettingsServer } from '@/lib/server-api';
+import { OrganizationJsonLd, WebSiteJsonLd, RealEstateAgentJsonLd } from '@/components/json-ld';
 import './globals.css';
 
 const inter = Inter({
@@ -78,6 +79,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="tr" className={inter.className}>
+      <head>
+        <OrganizationJsonLd />
+        <WebSiteJsonLd />
+        <RealEstateAgentJsonLd />
+      </head>
       <body className="min-h-screen bg-[var(--background)] text-[var(--foreground)] antialiased">
         <ErrorBoundary>
           <AuthProvider>

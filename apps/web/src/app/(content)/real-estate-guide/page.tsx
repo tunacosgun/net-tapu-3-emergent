@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BreadcrumbJsonLd, JsonLd } from '@/components/json-ld';
 
 export const metadata: Metadata = {
   title: 'Gayrimenkul Rehberi — NetTapu',
@@ -136,6 +137,23 @@ const glossary = [
 export default function RealEstateGuidePage() {
   return (
     <div>
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Ana Sayfa', url: 'https://nettapu.com' },
+          { name: 'Gayrimenkul Rehberi', url: 'https://nettapu.com/real-estate-guide' },
+        ]}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: 'Gayrimenkul Rehberi - Arsa, KAKS, TAKS, Imar ve Tapu Bilgileri',
+          description: 'Arsa nedir, imar durumu, KAKS-TAKS hesaplama, tapu cesitleri ve devir islemleri rehberi.',
+          author: { '@type': 'Organization', name: 'NetTapu' },
+          publisher: { '@type': 'Organization', name: 'NetTapu' },
+          mainEntityOfPage: 'https://nettapu.com/real-estate-guide',
+        }}
+      />
       <h1 className="text-2xl font-bold text-gray-900">Gayrimenkul Rehberi</h1>
       <p className="mt-2 text-sm text-gray-500">
         Arsa alim-satim sureclerinde bilmeniz gereken temel kavramlar, hesaplamalar ve islemler.
