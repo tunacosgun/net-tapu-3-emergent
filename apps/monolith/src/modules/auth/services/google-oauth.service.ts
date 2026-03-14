@@ -72,7 +72,16 @@ export class GoogleOAuthService {
       throw new UnauthorizedException('Invalid Google credential');
     }
 
-    const payload = await verifyRes.json();
+    const payload = (await verifyRes.json()) as {
+      aud: string;
+      sub: string;
+      email: string;
+      email_verified: string;
+      name?: string;
+      given_name?: string;
+      family_name?: string;
+      picture?: string;
+    };
 
     // Verify audience matches our client ID
     if (payload.aud !== this.clientId) {
