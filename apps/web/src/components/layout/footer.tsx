@@ -52,7 +52,7 @@ export function Footer() {
   const copyright = s.copyright_text || `\u00A9 ${new Date().getFullYear()} NetTapu. Tüm hakları saklıdır.`;
 
   return (
-    <footer className="border-t border-[var(--border)] bg-[var(--muted)]">
+    <footer className="border-t border-gray-200 bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-12">
         {/* Main footer grid */}
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
