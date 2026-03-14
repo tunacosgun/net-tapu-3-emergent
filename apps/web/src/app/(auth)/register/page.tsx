@@ -34,7 +34,6 @@ export default function RegisterPage() {
         lastName: data.lastName,
         phone: data.phone || undefined,
       });
-      // Persist session in httpOnly cookies via Route Handler
       await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,25 +50,25 @@ export default function RegisterPage() {
         const apiErr = err.response?.data as ApiError | undefined;
         const msg = apiErr?.message;
         setServerError(
-          Array.isArray(msg) ? msg.join(', ') : msg || 'Kayıt başarısız.',
+          Array.isArray(msg) ? msg.join(', ') : msg || 'Kayit basarisiz.',
         );
       } else {
-        setServerError('Kayıt başarısız.');
+        setServerError('Kayit basarisiz.');
       }
     }
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-center">Kayıt Ol</h1>
-      <p className="mt-2 text-center text-sm text-[var(--muted-foreground)]">
-        Zaten hesabınız var mı?{' '}
-        <Link href="/login" className="text-brand-500 hover:underline">
-          Giriş yap
+      <h1 className="text-xl font-bold text-gray-900 text-center">Kayit Ol</h1>
+      <p className="mt-1 text-center text-sm text-gray-500">
+        Zaten hesabiniz var mi?{' '}
+        <Link href="/login" className="text-brand-500 hover:underline font-medium">
+          Giris yap
         </Link>
       </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
         {serverError && <Alert>{serverError}</Alert>}
 
         <div className="grid grid-cols-2 gap-4">
@@ -120,8 +119,8 @@ export default function RegisterPage() {
           {isLimited
             ? `${cooldown}s bekleyin`
             : isSubmitting
-              ? 'Kayıt yapılıyor...'
-              : 'Kayıt Ol'}
+              ? 'Kayit yapiliyor...'
+              : 'Kayit Ol'}
         </Button>
       </form>
     </div>

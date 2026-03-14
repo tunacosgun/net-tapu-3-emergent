@@ -23,8 +23,8 @@ import type { Parcel, PaginatedResponse } from '@/types';
 const ParcelMapLazy = dynamic(() => import('@/components/parcel-map-inner'), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center bg-[var(--muted)] rounded-lg" style={{ height: '450px' }}>
-      <p className="text-sm text-[var(--muted-foreground)]">Harita yükleniyor...</p>
+    <div className="flex items-center justify-center bg-gray-50 rounded-lg" style={{ height: '450px' }}>
+      <p className="text-sm text-gray-400">Harita yükleniyor...</p>
     </div>
   ),
 });
@@ -60,12 +60,8 @@ function ParcelsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(search);
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    viewParam === 'map' ? 'map' : 'list',
-  );
-  const [modalParcelId, setModalParcelId] = useState<string | null>(
-    searchParams.get('parcel'),
-  );
+  const [viewMode, setViewMode] = useState<ViewMode>(viewParam === 'map' ? 'map' : 'list');
+  const [modalParcelId, setModalParcelId] = useState<string | null>(searchParams.get('parcel'));
 
   const fetchParcels = useCallback(async () => {
     setLoading(true);
@@ -77,17 +73,11 @@ function ParcelsContent() {
         sortBy: 'createdAt',
         sortOrder: 'DESC',
       };
-      if (statusFilter) {
-        params.status = statusFilter;
-      }
-      // When no status filter ("Tümü"), omit status param — backend returns all visible parcels
+      if (statusFilter) params.status = statusFilter;
       if (city) params.city = city;
       if (search) params.search = search;
 
-      const { data: res } = await apiClient.get<PaginatedResponse<Parcel>>(
-        '/parcels',
-        { params },
-      );
+      const { data: res } = await apiClient.get<PaginatedResponse<Parcel>>('/parcels', { params });
       setData(res);
     } catch {
       setError('Arsalar yüklenemedi.');
@@ -96,9 +86,7 @@ function ParcelsContent() {
     }
   }, [page, city, search, statusFilter, viewMode]);
 
-  useEffect(() => {
-    fetchParcels();
-  }, [fetchParcels]);
+  useEffect(() => { fetchParcels(); }, [fetchParcels]);
 
   function updateSearchParams(updates: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -128,134 +116,113 @@ function ParcelsContent() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Arsalar</h1>
-        {/* View Toggle */}
-        <div className="flex rounded-lg border border-[var(--border)] overflow-hidden">
-          <button
-            onClick={() => handleViewToggle('list')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              viewMode === 'list'
-                ? 'bg-brand-500 text-white'
-                : 'bg-[var(--background)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]'
-            }`}
-          >
-            ☰ Liste
-          </button>
-          <button
-            onClick={() => handleViewToggle('map')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              viewMode === 'map'
-                ? 'bg-brand-500 text-white'
-                : 'bg-[var(--background)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]'
-            }`}
-          >
-            🗺 Harita
-          </button>
-        </div>
-      </div>
-
-      {/* Search + Filters */}
-      <div className="mt-6 space-y-4">
-        <form onSubmit={handleSearch} className="flex gap-3">
-          <input
-            type="text"
-            placeholder="Ara... (şehir, ilçe, başlık)"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="flex-1 rounded-md border border-[var(--input)] bg-[var(--background)] px-4 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-          />
-          <Button type="submit">Ara</Button>
-        </form>
-
-        {/* Status Filter Chips */}
-        <div className="flex flex-wrap gap-2">
-          {STATUS_FILTERS.map((sf) => (
-            <button
-              key={sf.value}
-              onClick={() => handleStatusFilter(sf.value)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors border ${
-                statusFilter === sf.value
-                  ? 'border-brand-500 bg-brand-50 text-brand-700'
-                  : 'border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] hover:border-brand-300'
-              }`}
-            >
-              {sf.label}
-            </button>
-          ))}
-          {city && (
-            <span className="rounded-full bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700 flex items-center gap-1">
-              📍 {city}
+    <div className="bg-white min-h-screen">
+      {/* Page Header */}
+      <div className="border-b border-gray-200 bg-gray-50">
+        <div className="mx-auto max-w-6xl px-4 py-5">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-gray-900">Arsalar</h1>
+            <div className="flex rounded-md border border-gray-300 overflow-hidden">
               <button
-                onClick={() => updateSearchParams({ city: '' })}
-                className="ml-1 text-blue-400 hover:text-blue-600"
+                onClick={() => handleViewToggle('list')}
+                className={`px-4 py-2 text-sm font-medium ${viewMode === 'list' ? 'bg-brand-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
               >
-                ✕
+                Liste
               </button>
-            </span>
-          )}
+              <button
+                onClick={() => handleViewToggle('map')}
+                className={`px-4 py-2 text-sm font-medium border-l border-gray-300 ${viewMode === 'map' ? 'bg-brand-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                Harita
+              </button>
+            </div>
+          </div>
+
+          {/* Search + Filters */}
+          <form onSubmit={handleSearch} className="mt-4 flex gap-2">
+            <input
+              type="text"
+              placeholder="Şehir, ilçe veya arsa adı ile arayın..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+            />
+            <button type="submit" className="rounded-md bg-brand-500 px-5 py-2 text-sm font-medium text-white hover:bg-brand-600 transition-colors">
+              Ara
+            </button>
+          </form>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {STATUS_FILTERS.map((sf) => (
+              <button
+                key={sf.value}
+                onClick={() => handleStatusFilter(sf.value)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium border transition-colors ${
+                  statusFilter === sf.value
+                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                }`}
+              >
+                {sf.label}
+              </button>
+            ))}
+            {city && (
+              <span className="rounded-md bg-blue-50 border border-blue-200 px-3 py-1.5 text-sm font-medium text-blue-700 flex items-center gap-1">
+                {city}
+                <button onClick={() => updateSearchParams({ city: '' })} className="ml-1 text-blue-400 hover:text-blue-600">&times;</button>
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {loading && <LoadingState />}
+      {/* Content */}
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        {loading && <LoadingState />}
+        {error && <Alert className="mt-4">{error}</Alert>}
 
-      {error && <Alert className="mt-6">{error}</Alert>}
+        {!loading && data && (
+          <>
+            <p className="text-sm text-gray-500 mb-4">{data.meta.total} arsa bulundu</p>
 
-      {!loading && data && (
-        <>
-          {/* Result count */}
-          <p className="mt-4 text-sm text-[var(--muted-foreground)]">
-            {data.meta.total} arsa bulundu
-          </p>
+            {data.data.length === 0 ? (
+              <EmptyState message="Sonuç bulunamadı." />
+            ) : viewMode === 'list' ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {data.data.map((parcel) => (
+                  <ParcelCard
+                    key={parcel.id}
+                    parcel={parcel}
+                    onOpenModal={(id) => {
+                      setModalParcelId(id);
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.set('parcel', id);
+                      router.push(`/parcels?${params.toString()}`, { scroll: false });
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div>
+                <ParcelsMapView parcels={data.data} />
+              </div>
+            )}
 
-          {data.data.length === 0 ? (
-            <EmptyState message="Sonuç bulunamadı." />
-          ) : viewMode === 'list' ? (
-            /* ─── LIST VIEW ─── */
-            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {data.data.map((parcel) => (
-                <ParcelCard
-                  key={parcel.id}
-                  parcel={parcel}
-                  onOpenModal={(id) => {
-                    setModalParcelId(id);
-                    const params = new URLSearchParams(searchParams.toString());
-                    params.set('parcel', id);
-                    router.push(`/parcels?${params.toString()}`, { scroll: false });
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            /* ─── MAP VIEW ─── */
-            <div className="mt-6">
-              <ParcelsMapView parcels={data.data} />
-            </div>
-          )}
+            {viewMode === 'list' && (
+              <Pagination page={page} totalPages={data.meta.totalPages} onPageChange={goToPage} />
+            )}
+          </>
+        )}
+      </div>
 
-          {viewMode === 'list' && (
-            <Pagination
-              page={page}
-              totalPages={data.meta.totalPages}
-              onPageChange={goToPage}
-            />
-          )}
-        </>
-      )}
-
-      {/* Comparison floating bar + modal */}
       <CompareBar />
       <CompareModal />
 
-      {/* Parcel detail modal overlay */}
       {modalParcelId && (
         <ParcelDetailModal
           parcelId={modalParcelId}
           onClose={() => {
             setModalParcelId(null);
-            // Remove parcel param from URL
             const params = new URLSearchParams(searchParams.toString());
             params.delete('parcel');
             router.push(`/parcels?${params.toString()}`, { scroll: false });
@@ -266,215 +233,134 @@ function ParcelsContent() {
   );
 }
 
-/* ═══ Parcel Card Component ═══ */
-function ParcelCard({
-  parcel,
-  onOpenModal,
-}: {
-  parcel: Parcel;
-  onOpenModal?: (id: string) => void;
-}) {
+/* ═══ Parcel Card ═══ */
+function ParcelCard({ parcel, onOpenModal }: { parcel: Parcel; onOpenModal?: (id: string) => void }) {
   const status = parcelStatusConfig(parcel.status);
   const { toggleParcel, isSelected } = useCompareStore();
   const selected = isSelected(parcel.id);
 
   function handleClick(e: React.MouseEvent) {
-    // If modal is desired, prevent navigation
-    if (onOpenModal) {
-      e.preventDefault();
-      onOpenModal(parcel.id);
-    }
+    if (onOpenModal) { e.preventDefault(); onOpenModal(parcel.id); }
   }
 
   function handleCompareToggle(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleParcel(parcel);
+    e.preventDefault(); e.stopPropagation(); toggleParcel(parcel);
   }
 
   return (
     <Link
       href={`/parcels/${parcel.id}`}
       onClick={handleClick}
-      className={`group relative rounded-lg border p-4 transition-colors ${
-        selected
-          ? 'border-brand-500 bg-brand-50/50 ring-1 ring-brand-500'
-          : 'border-[var(--border)] hover:border-brand-500'
+      className={`block rounded-lg border p-4 hover:shadow-md transition-shadow ${
+        selected ? 'border-brand-500 bg-brand-50/30' : 'border-gray-200 bg-white'
       }`}
     >
-      {/* Compare checkbox - top left */}
-      <button
-        onClick={handleCompareToggle}
-        className={`absolute top-3 left-3 h-5 w-5 rounded border flex items-center justify-center text-xs transition-colors ${
-          selected
-            ? 'bg-brand-500 border-brand-500 text-white'
-            : 'border-[var(--border)] bg-[var(--background)] text-transparent hover:border-brand-300'
-        }`}
-        title="Karşılaştırmaya ekle"
-      >
-        ✓
-      </button>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2 min-w-0">
+          <button
+            onClick={handleCompareToggle}
+            className={`mt-0.5 h-4 w-4 shrink-0 rounded border flex items-center justify-center text-[10px] ${
+              selected ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300 text-transparent hover:border-gray-400'
+            }`}
+          >
+            ✓
+          </button>
+          <h2 className="text-sm font-semibold text-gray-900 line-clamp-2 hover:text-brand-600 transition-colors">
+            {parcel.title}
+          </h2>
+        </div>
+        <Badge variant={status.variant} className="shrink-0">{status.label}</Badge>
+      </div>
 
-      {/* Status Badge - top right */}
-      <Badge variant={status.variant} className="absolute top-3 right-3">
-        {status.label}
-      </Badge>
-
-      <h2 className="pl-7 pr-20 font-semibold group-hover:text-brand-500 transition-colors">
-        {parcel.title}
-      </h2>
-
-      <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+      <p className="mt-1.5 text-xs text-gray-500 pl-6">
         {parcel.city}, {parcel.district}
         {parcel.neighborhood ? `, ${parcel.neighborhood}` : ''}
       </p>
 
-      {/* Property details row */}
-      <div className="mt-3 flex items-center justify-between">
-        <span className="text-lg font-bold text-brand-500">
-          {formatPrice(parcel.price)}
-        </span>
-        {parcel.areaM2 && (
-          <span className="text-sm text-[var(--muted-foreground)]">
-            {Number(parcel.areaM2).toLocaleString('tr-TR')} m²
-          </span>
-        )}
+      <div className="mt-3 flex items-center justify-between pl-6">
+        <span className="text-base font-bold text-brand-600">{formatPrice(parcel.price)}</span>
+        {parcel.areaM2 && <span className="text-sm text-gray-500">{Number(parcel.areaM2).toLocaleString('tr-TR')} m²</span>}
       </div>
 
-      {/* Price per m2 */}
       {parcel.pricePerM2 && (
-        <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-          {formatPrice(parcel.pricePerM2)} / m²
-        </p>
+        <p className="mt-0.5 text-xs text-gray-400 pl-6">{formatPrice(parcel.pricePerM2)} / m²</p>
       )}
 
-      {/* Favorite + Viewer counts */}
-      {((parcel.favoriteCount ?? 0) > 0 || (parcel.viewerCount ?? 0) > 0) && (
-        <div className="mt-2 flex gap-3 text-xs text-[var(--muted-foreground)]">
+      {((parcel.favoriteCount ?? 0) > 0 || parcel.ada) && (
+        <div className="mt-2 flex gap-2 flex-wrap pl-6">
           {(parcel.favoriteCount ?? 0) > 0 && (
-            <span className="flex items-center gap-1">
-              <span className="text-red-500">❤</span> {parcel.favoriteCount} kişi favoriye aldı
-            </span>
+            <span className="text-xs text-gray-400">{parcel.favoriteCount} kişi favoriye aldı</span>
           )}
-          {(parcel.viewerCount ?? 0) > 0 && (
-            <span className="flex items-center gap-1">
-              <span className="text-blue-500">👁</span> {parcel.viewerCount} kişi inceliyor
-            </span>
+          {parcel.ada && parcel.parsel && (
+            <span className="text-xs text-gray-400">Ada/Parsel: {parcel.ada}/{parcel.parsel}</span>
           )}
         </div>
       )}
 
-      {/* Tags row */}
-      <div className="mt-2 flex gap-2 flex-wrap">
+      <div className="mt-2 flex gap-1.5 flex-wrap pl-6">
         {parcel.isAuctionEligible && (
-          <span className="rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
-            Açık Artırma
-          </span>
+          <span className="rounded bg-brand-50 px-2 py-0.5 text-xs text-brand-700">Açık Artırma</span>
         )}
         {parcel.isFeatured && (
-          <span className="rounded bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700">
-            Öne Çıkan
-          </span>
-        )}
-        {parcel.ada && parcel.parsel && (
-          <span className="rounded bg-gray-50 px-2 py-0.5 text-xs text-gray-500">
-            Ada/Parsel: {parcel.ada}/{parcel.parsel}
-          </span>
+          <span className="rounded bg-yellow-50 px-2 py-0.5 text-xs text-yellow-700">Öne Çıkan</span>
         )}
       </div>
     </Link>
   );
 }
 
-/* ═══ Map View — Leaflet interactive map + city grouping fallback ═══ */
+/* ═══ Map View ═══ */
 function ParcelsMapView({ parcels }: { parcels: Parcel[] }) {
   const router = useRouter();
-
   const hasGeoData = parcels.some((p) => p.latitude && p.longitude);
 
-  // Group parcels by city for the city list below the map
-  const cityGroups = parcels.reduce(
-    (acc, p) => {
-      acc[p.city] = (acc[p.city] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
+  const cityGroups = parcels.reduce((acc, p) => {
+    acc[p.city] = (acc[p.city] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   return (
-    <div className="space-y-6">
-      {/* Interactive Leaflet Map */}
+    <div className="space-y-4">
       {hasGeoData && (
-        <ParcelMapLazy
-          parcels={parcels}
-          onParcelClick={(parcel) => router.push(`/parcels/${parcel.id}`)}
-          height="450px"
-        />
+        <div className="rounded-lg border border-gray-200 overflow-hidden">
+          <ParcelMapLazy parcels={parcels} onParcelClick={(parcel) => router.push(`/parcels/${parcel.id}`)} height="450px" />
+        </div>
       )}
 
-      {/* Legend */}
-      <div className="flex gap-4 text-sm">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-full bg-green-500" />
-          Satışta
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-full bg-blue-500" />
-          Kaparo Alındı
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-full bg-red-500" />
-          Satıldı
-        </span>
+      <div className="flex gap-4 text-sm text-gray-500">
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-green-500" /> Satışta</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-blue-500" /> Kaparo Alındı</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Satıldı</span>
       </div>
 
-      {/* Parcel list grouped by city */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Object.entries(cityGroups)
-          .sort(([a], [b]) => a.localeCompare(b, 'tr'))
-          .map(([city, count]) => {
-            const cityParcels = parcels.filter((p) => p.city === city);
-            return (
-              <div
-                key={city}
-                className="rounded-lg border border-[var(--border)] p-4"
-              >
-                <h3 className="font-semibold flex items-center justify-between">
-                  <span>📍 {city}</span>
-                  <span className="text-sm text-[var(--muted-foreground)]">
-                    {count} arsa
-                  </span>
-                </h3>
-                <div className="mt-3 space-y-2">
-                  {cityParcels.slice(0, 5).map((p) => {
-                    const st = parcelStatusConfig(p.status);
-                    return (
-                      <Link
-                        key={p.id}
-                        href={`/parcels/${p.id}`}
-                        className="flex items-center justify-between text-sm hover:text-brand-500"
-                      >
-                        <span className="truncate pr-2">{p.title}</span>
-                        <Badge variant={st.variant}>{st.label}</Badge>
-                      </Link>
-                    );
-                  })}
-                  {cityParcels.length > 5 && (
-                    <button
-                      onClick={() =>
-                        router.push(
-                          `/parcels?city=${encodeURIComponent(city)}&view=list`,
-                        )
-                      }
-                      className="text-xs text-brand-500 hover:underline"
-                    >
-                      +{cityParcels.length - 5} daha fazla
-                    </button>
-                  )}
-                </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {Object.entries(cityGroups).sort(([a], [b]) => a.localeCompare(b, 'tr')).map(([city, count]) => {
+          const cityParcels = parcels.filter((p) => p.city === city);
+          return (
+            <div key={city} className="rounded-lg border border-gray-200 p-4">
+              <h3 className="font-semibold text-sm flex items-center justify-between">
+                <span>{city}</span>
+                <span className="text-xs text-gray-400">{count} arsa</span>
+              </h3>
+              <div className="mt-2 space-y-1.5">
+                {cityParcels.slice(0, 5).map((p) => {
+                  const st = parcelStatusConfig(p.status);
+                  return (
+                    <Link key={p.id} href={`/parcels/${p.id}`} className="flex items-center justify-between text-sm text-gray-600 hover:text-brand-600">
+                      <span className="truncate pr-2">{p.title}</span>
+                      <Badge variant={st.variant}>{st.label}</Badge>
+                    </Link>
+                  );
+                })}
+                {cityParcels.length > 5 && (
+                  <button onClick={() => router.push(`/parcels?city=${encodeURIComponent(city)}&view=list`)} className="text-xs text-brand-500 hover:underline">
+                    +{cityParcels.length - 5} daha
+                  </button>
+                )}
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

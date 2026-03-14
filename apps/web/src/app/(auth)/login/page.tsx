@@ -33,14 +33,6 @@ function GoogleIcon() {
   );
 }
 
-function AppleIcon() {
-  return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-    </svg>
-  );
-}
-
 function LoginContent() {
   const [serverError, setServerError] = useState<string | null>(null);
   const { cooldown, isLimited, checkRateLimit } = useRateLimit();
@@ -82,61 +74,48 @@ function LoginContent() {
         const apiErr = err.response?.data as ApiError | undefined;
         const msg = apiErr?.message;
         setServerError(
-          Array.isArray(msg) ? msg.join(', ') : msg || 'Giriş başarısız.',
+          Array.isArray(msg) ? msg.join(', ') : msg || 'Giris basarisiz.',
         );
       } else {
-        setServerError('Giriş başarısız.');
+        setServerError('Giris basarisiz.');
       }
     }
   }
 
   function handleGoogleLogin() {
-    // Use window.location.origin to ensure we go through nginx (which proxies /api/v1 to backend)
     const googleUrl = `${window.location.origin}/api/v1/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
     window.location.href = googleUrl;
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-center">Giriş Yap</h1>
-      <p className="mt-2 text-center text-sm text-[var(--muted-foreground)]">
-        Hesabınız yok mu?{' '}
-        <Link href="/register" className="text-brand-500 hover:underline">
-          Kayıt ol
+      <h1 className="text-xl font-bold text-gray-900 text-center">Giris Yap</h1>
+      <p className="mt-1 text-center text-sm text-gray-500">
+        Hesabiniz yok mu?{' '}
+        <Link href="/register" className="text-brand-500 hover:underline font-medium">
+          Kayit ol
         </Link>
       </p>
 
-      {/* Social Login Buttons */}
-      <div className="mt-8 space-y-3">
+      {/* Social Login */}
+      <div className="mt-6 space-y-2">
         <button
           type="button"
           onClick={handleGoogleLogin}
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:shadow-md active:scale-[0.98]"
+          className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <GoogleIcon />
           Google ile devam et
         </button>
-
-        <button
-          type="button"
-          disabled
-          className="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-4 py-3 text-sm font-medium text-white shadow-sm transition-all hover:bg-gray-900 hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <AppleIcon />
-          Apple ile devam et
-          <span className="text-xs opacity-60">(Yakında)</span>
-        </button>
       </div>
 
       {/* Divider */}
-      <div className="relative my-6">
+      <div className="relative my-5">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-[var(--border)]" />
+          <div className="w-full border-t border-gray-200" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-[var(--background)] px-3 text-[var(--muted-foreground)]">
-            veya e-posta ile
-          </span>
+          <span className="bg-white px-3 text-gray-400">veya e-posta ile</span>
         </div>
       </div>
 
@@ -145,8 +124,8 @@ function LoginContent() {
           <Alert>
             {serverError ||
               (oauthError === 'google_auth_failed'
-                ? 'Google ile giriş başarısız oldu. Lütfen tekrar deneyin.'
-                : 'Giriş başarısız.')}
+                ? 'Google ile giris basarisiz oldu. Lutfen tekrar deneyin.'
+                : 'Giris basarisiz.')}
           </Alert>
         )}
 
@@ -167,15 +146,15 @@ function LoginContent() {
         />
 
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="rounded border-[var(--border)]" />
-            Beni hatırla
+          <label className="flex items-center gap-2 text-sm text-gray-600">
+            <input type="checkbox" className="rounded border-gray-300" />
+            Beni hatirla
           </label>
           <Link
             href="/forgot-password"
             className="text-sm text-brand-500 hover:underline"
           >
-            Şifremi unuttum
+            Sifremi unuttum
           </Link>
         </div>
 
@@ -187,8 +166,8 @@ function LoginContent() {
           {isLimited
             ? `${cooldown}s bekleyin`
             : isSubmitting
-              ? 'Giriş yapılıyor...'
-              : 'Giriş Yap'}
+              ? 'Giris yapiliyor...'
+              : 'Giris Yap'}
         </Button>
       </form>
     </div>
