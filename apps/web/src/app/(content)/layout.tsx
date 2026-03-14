@@ -12,6 +12,7 @@ const navLinks = [
   { href: '/faq', label: 'S.S.S.' },
   { href: '/references', label: 'Referanslar' },
   { href: '/projects', label: 'Projelerimiz' },
+  { href: '/testimonials', label: 'Musteri Yorumlari' },
   { href: '/press', label: 'Basin' },
   { href: '/legal', label: 'Yasal Bilgiler' },
   { href: '/withdrawal-rights', label: 'Cayma Hakki' },

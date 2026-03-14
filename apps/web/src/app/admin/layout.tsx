@@ -50,6 +50,7 @@ const navSections = [
       { href: '/admin/pages', label: 'Sayfalar', icon: '📄' },
       { href: '/admin/faq', label: 'S.S.S.', icon: '❓' },
       { href: '/admin/references', label: 'Referanslar', icon: '🏆' },
+      { href: '/admin/testimonials', label: 'Yorumlar', icon: '💬' },
     ],
   },
   {

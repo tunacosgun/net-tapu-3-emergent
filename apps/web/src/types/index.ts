@@ -256,6 +256,19 @@ export interface Reference {
   createdAt: string;
 }
 
+export interface Testimonial {
+  id: string;
+  name: string;
+  title: string | null;
+  comment: string;
+  rating: number;
+  photoUrl: string | null;
+  videoUrl: string | null;
+  isApproved: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
 export interface ApiError {
   statusCode: number;
   message: string | string[];

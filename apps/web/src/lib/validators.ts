@@ -38,6 +38,12 @@ export const registerSchema = z.object({
     .max(20, 'Telefon en fazla 20 karakter olabilir')
     .optional()
     .or(z.literal('')),
+  acceptTerms: z.literal(true, {
+    errorMap: () => ({ message: 'Kullanim kosullarini kabul etmelisiniz' }),
+  }),
+  acceptKvkk: z.literal(true, {
+    errorMap: () => ({ message: 'KVKK aydinlatma metnini kabul etmelisiniz' }),
+  }),
 });
 export type RegisterFormData = z.infer<typeof registerSchema>;
 

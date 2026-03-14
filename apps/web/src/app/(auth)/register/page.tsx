@@ -111,6 +111,50 @@ export default function RegisterPage() {
           {...reg('phone')}
         />
 
+        {/* Legal consent checkboxes */}
+        <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div>
+            <label className="flex items-start gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                className="mt-0.5 rounded border-gray-300"
+                {...reg('acceptTerms')}
+              />
+              <span>
+                <Link href="/legal" target="_blank" className="text-brand-500 hover:underline font-medium">
+                  Kullanim Kosullari
+                </Link>
+                {' ve '}
+                <Link href="/legal" target="_blank" className="text-brand-500 hover:underline font-medium">
+                  Mesafeli Satis Sozlesmesi
+                </Link>
+                &apos;ni okudum ve kabul ediyorum. *
+              </span>
+            </label>
+            {errors.acceptTerms && (
+              <p className="mt-1 ml-6 text-xs text-red-500">{errors.acceptTerms.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="flex items-start gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                className="mt-0.5 rounded border-gray-300"
+                {...reg('acceptKvkk')}
+              />
+              <span>
+                <Link href="/legal" target="_blank" className="text-brand-500 hover:underline font-medium">
+                  KVKK Aydinlatma Metni
+                </Link>
+                &apos;ni okudum ve kisisel verilerimin islenmesini kabul ediyorum. *
+              </span>
+            </label>
+            {errors.acceptKvkk && (
+              <p className="mt-1 ml-6 text-xs text-red-500">{errors.acceptKvkk.message}</p>
+            )}
+          </div>
+        </div>
+
         <Button
           type="submit"
           disabled={isSubmitting || isLimited}
