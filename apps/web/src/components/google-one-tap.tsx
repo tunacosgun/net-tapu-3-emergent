@@ -26,10 +26,6 @@ export function GoogleOneTap() {
     // Don't show if already logged in or no client ID
     if (user || !clientId || initialized.current) return;
 
-    // Check if dismissed recently (1 hour cooldown)
-    const dismissed = sessionStorage.getItem('google_one_tap_dismissed');
-    if (dismissed) return;
-
     function handleCredentialResponse(response: { credential: string }) {
       // Send credential to backend
       fetch('/api/v1/auth/google/one-tap', {
@@ -80,13 +76,10 @@ export function GoogleOneTap() {
         auto_select: true,
         cancel_on_tap_outside: true,
         itp_support: true,
+        use_fedcm_for_prompt: true,
       });
 
-      window.google.accounts.id.prompt((notification) => {
-        if (notification.isSkippedMoment() || notification.isNotDisplayed()) {
-          sessionStorage.setItem('google_one_tap_dismissed', '1');
-        }
-      });
+      window.google.accounts.id.prompt();
     }
 
     // Load Google Identity Services script
