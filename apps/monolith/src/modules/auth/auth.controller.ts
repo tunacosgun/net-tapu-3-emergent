@@ -273,4 +273,23 @@ export class AuthController {
       res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
     }
   }
+
+  @Post('google/one-tap')
+  @Throttle({ short: { ttl: 60000, limit: 10 } })
+  @HttpCode(HttpStatus.OK)
+  async googleOneTap(
+    @Body('credential') credential: string,
+    @Req() req: Request,
+  ) {
+    const deviceInfo = req.headers['user-agent'] ?? undefined;
+    const ipAddress =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
+      req.ip;
+
+    return this.googleOAuthService.handleOneTapCredential(
+      credential,
+      deviceInfo,
+      ipAddress,
+    );
+  }
 }

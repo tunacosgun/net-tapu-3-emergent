@@ -9,6 +9,7 @@ import { Footer } from '@/components/layout/footer';
 import { FullBanGate } from '@/components/full-ban-gate';
 import { fetchSiteSettingsServer } from '@/lib/server-api';
 import { OrganizationJsonLd, WebSiteJsonLd, RealEstateAgentJsonLd } from '@/components/json-ld';
+import { GoogleOneTap } from '@/components/google-one-tap';
 import './globals.css';
 
 const inter = Inter({
@@ -96,6 +97,7 @@ export default function RootLayout({
                 <Footer />
               </div>
               <ApiErrorToastContainer />
+              <GoogleOneTap />
             </SiteSettingsProvider>
           </AuthProvider>
         </ErrorBoundary>

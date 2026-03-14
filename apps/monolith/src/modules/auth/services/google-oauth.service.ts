@@ -60,6 +60,43 @@ export class GoogleOAuthService {
     return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   }
 
+  /** Verify Google One Tap credential (ID token) and find-or-create user */
+  async handleOneTapCredential(credential: string, deviceInfo?: string, ipAddress?: string) {
+    // Verify the ID token with Google
+    const verifyRes = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`,
+    );
+
+    if (!verifyRes.ok) {
+      this.logger.error('Google One Tap token verification failed');
+      throw new UnauthorizedException('Invalid Google credential');
+    }
+
+    const payload = await verifyRes.json();
+
+    // Verify audience matches our client ID
+    if (payload.aud !== this.clientId) {
+      this.logger.error(`Google One Tap aud mismatch: ${payload.aud}`);
+      throw new UnauthorizedException('Invalid Google credential');
+    }
+
+    if (!payload.email || payload.email_verified !== 'true') {
+      throw new UnauthorizedException('Google account email not verified');
+    }
+
+    const googleUser: GoogleUserInfo = {
+      sub: payload.sub,
+      email: payload.email,
+      email_verified: true,
+      name: payload.name || '',
+      given_name: payload.given_name || '',
+      family_name: payload.family_name || '',
+      picture: payload.picture,
+    };
+
+    return this.findOrCreateAndIssueTokens(googleUser, deviceInfo, ipAddress);
+  }
+
   /** Exchange authorization code for tokens, then find-or-create user */
   async handleCallback(code: string, deviceInfo?: string, ipAddress?: string) {
     // 1. Exchange code for tokens
@@ -98,15 +135,21 @@ export class GoogleOAuthService {
       throw new UnauthorizedException('Google account email not verified');
     }
 
-    // 3. Find or create user
+    return this.findOrCreateAndIssueTokens(googleUser, deviceInfo, ipAddress);
+  }
+
+  /** Shared: find or create user from Google info, then issue JWT tokens */
+  private async findOrCreateAndIssueTokens(
+    googleUser: GoogleUserInfo,
+    deviceInfo?: string,
+    ipAddress?: string,
+  ) {
     let user = await this.userRepo.findOne({ where: { googleId: googleUser.sub } });
 
     if (!user) {
-      // Check if user exists with same email
       user = await this.userRepo.findOne({ where: { email: googleUser.email } });
 
       if (user) {
-        // Link Google to existing account
         user.googleId = googleUser.sub;
         if (!user.avatarUrl && googleUser.picture) {
           user.avatarUrl = googleUser.picture;
@@ -116,11 +159,10 @@ export class GoogleOAuthService {
         }
         await this.userRepo.save(user);
       } else {
-        // Create new user (no password needed for OAuth users)
         const randomPass = crypto.randomBytes(32).toString('hex');
         user = this.userRepo.create({
           email: googleUser.email,
-          passwordHash: randomPass, // not usable for login
+          passwordHash: randomPass,
           firstName: googleUser.given_name || googleUser.name || 'User',
           lastName: googleUser.family_name || '',
           googleId: googleUser.sub,
@@ -129,7 +171,6 @@ export class GoogleOAuthService {
         });
         await this.userRepo.save(user);
 
-        // Assign default 'user' role
         const userRole = await this.roleRepo.findOne({ where: { name: 'user' } });
         if (userRole) {
           await this.userRoleRepo.save(
@@ -138,7 +179,6 @@ export class GoogleOAuthService {
         }
       }
     } else {
-      // Update avatar if changed
       if (googleUser.picture && user.avatarUrl !== googleUser.picture) {
         user.avatarUrl = googleUser.picture;
         await this.userRepo.save(user);
@@ -149,10 +189,8 @@ export class GoogleOAuthService {
       throw new UnauthorizedException('Account is deactivated');
     }
 
-    // 4. Update last login
     await this.userRepo.update(user.id, { lastLoginAt: new Date() });
 
-    // 5. Issue JWT tokens
     const roles = await this.authService.getUserRolesPublic(user.id);
     return this.authService.issueTokensForOAuth(user, roles, deviceInfo, ipAddress);
   }
