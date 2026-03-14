@@ -11,6 +11,7 @@ const navLinks = [
   { href: '/how-it-works', label: 'Nasil Calisir' },
   { href: '/faq', label: 'S.S.S.' },
   { href: '/references', label: 'Referanslar' },
+  { href: '/projects', label: 'Projelerimiz' },
   { href: '/press', label: 'Basin' },
   { href: '/legal', label: 'Yasal Bilgiler' },
   { href: '/withdrawal-rights', label: 'Cayma Hakki' },
