@@ -32,7 +32,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # dumb-init: PID 1 signal forwarding for graceful cluster shutdown
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init fontconfig ttf-dejavu ttf-liberation font-noto
 
 # Preserve monorepo layout so workspace symlinks keep working:
 #   node_modules/@nettapu/shared  →  ../../packages/shared

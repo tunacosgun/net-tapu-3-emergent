@@ -234,7 +234,7 @@ export class ImageProcessingService {
     let textElements = '';
     for (let y = -spacing; y < height + spacing; y += spacing) {
       for (let x = -spacing; x < width + spacing; x += spacing) {
-        textElements += `<text x="${x}" y="${y}" transform="rotate(-30, ${x}, ${y})" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="bold" fill="white" opacity="${opacity}">NetTapu</text>`;
+        textElements += `<text x="${x}" y="${y}" transform="rotate(-30, ${x}, ${y})" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="${fontSize}" font-weight="bold" fill="white" opacity="${opacity}">NetTapu</text>`;
       }
     }
 
