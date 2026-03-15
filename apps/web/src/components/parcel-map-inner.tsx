@@ -384,25 +384,37 @@ export default function ParcelMapInner({
         }
       });
 
-      // Custom icon for approximate (city-center) markers
-      const approxIcon = L.icon({
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
-        className: 'leaflet-marker-approximate',
-      });
+      // Status → color mapping for markers
+      const statusColors: Record<string, string> = {
+        active: '#22c55e',       // green
+        deposit_taken: '#f59e0b', // amber
+        sold: '#ef4444',         // red
+        draft: '#94a3b8',        // gray
+        withdrawn: '#6b7280',    // dark gray
+        reserved: '#8b5cf6',     // purple
+      };
+
+      // Create a colored circle icon via SVG data URI
+      function createColoredIcon(color: string, opacity = 1) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+          <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z" fill="${color}" fill-opacity="${opacity}" stroke="white" stroke-width="2"/>
+          <circle cx="14" cy="14" r="6" fill="white" fill-opacity="0.9"/>
+        </svg>`;
+        const url = 'data:image/svg+xml;base64,' + btoa(svg);
+        return L.icon({
+          iconUrl: url,
+          iconSize: [28, 40],
+          iconAnchor: [14, 40],
+          popupAnchor: [0, -36],
+        });
+      }
 
       // Add markers for all parcels
       finalParcels.forEach(({ parcel, lat, lng, approximate, geocoded }) => {
-        const markerOptions: Record<string, unknown> = {};
-        if (approximate) {
-          markerOptions.icon = approxIcon;
-          markerOptions.opacity = 0.7;
-        }
+        const color = statusColors[parcel.status] || '#3b82f6';
+        const markerOptions: Record<string, unknown> = {
+          icon: createColoredIcon(color, approximate ? 0.6 : 1),
+        };
 
         const marker = L.marker([lat, lng], markerOptions).addTo(map);
 
@@ -504,16 +516,25 @@ export default function ParcelMapInner({
       </button>
 
       {/* Legend */}
-      <div className="absolute bottom-2 left-2 z-[1000] rounded-md bg-white/90 px-3 py-2 text-xs shadow-md">
+      <div className="absolute bottom-2 left-2 z-[1000] rounded-md bg-white/95 px-3 py-2 text-xs shadow-md">
         <div className="flex flex-col gap-1">
+          <div className="font-semibold text-gray-700 mb-0.5">{finalParcels.length} arsa</div>
           <div className="flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-brand-500" />
-            <span>{finalParcels.length} arsa gösteriliyor</span>
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#22c55e' }} />
+            <span>Aktif</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#f59e0b' }} />
+            <span>Kaparo Alındı</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#ef4444' }} />
+            <span>Satıldı</span>
           </div>
           {finalParcels.some((p) => p.approximate) && (
-            <div className="flex items-center gap-1.5 text-[10px] text-amber-600">
-              <span className="inline-block h-2 w-2 rounded-full bg-amber-400 opacity-70" />
-              <span>{finalParcels.filter((p) => p.approximate).length} yaklaşık konum</span>
+            <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mt-0.5">
+              <span className="inline-block h-2 w-2 rounded-full bg-gray-300 opacity-70" />
+              <span>{finalParcels.filter((p) => p.approximate).length} yaklaşık</span>
             </div>
           )}
         </div>

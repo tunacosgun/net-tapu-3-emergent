@@ -8,6 +8,7 @@ import apiClient from '@/lib/api-client';
 import { formatPrice, formatDate } from '@/lib/format';
 import { TurkeyMap } from '@/components/turkey-map';
 import { ParcelCard } from '@/components/parcel-card';
+import { VideoPopup } from '@/components/video-popup';
 import type { Parcel, Auction, PaginatedResponse, Reference } from '@/types';
 
 const ParcelMapLazy = dynamic(() => import('@/components/parcel-map-inner'), {
@@ -26,6 +27,8 @@ export default function HomePage() {
   const [activeAuctions, setActiveAuctions] = useState<Auction[]>([]);
   const [stats, setStats] = useState({ parcels: 0, auctions: 0, cities: 0 });
   const [searchQuery, setSearchQuery] = useState('');
+  const [showVideo, setShowVideo] = useState(false);
+  const [testimonials, setTestimonials] = useState<Reference[]>([]);
 
   useEffect(() => {
     apiClient.get<PaginatedResponse<Parcel>>('/parcels', { params: { isFeatured: true, limit: 6, status: 'active' } })
@@ -38,6 +41,10 @@ export default function HomePage() {
         const cities = new Set(data.data.map((p) => p.city));
         setStats((s) => ({ ...s, cities: Math.max(cities.size, s.cities) }));
       }).catch(() => {});
+
+    apiClient.get<Reference[]>('/content/references')
+      .then(({ data }) => setTestimonials(data.filter((r) => r.referenceType === 'testimonial').slice(0, 6)))
+      .catch(() => {});
 
     Promise.all([
       apiClient.get<PaginatedResponse<Auction>>('/auctions', { params: { limit: 3, status: 'live' } }).catch(() => ({ data: { data: [], meta: { total: 0 } } })),
@@ -252,6 +259,69 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* ─── Video Tanıtım ─── */}
+      <section className="bg-gray-50 border-y border-gray-200">
+        <div className="mx-auto max-w-4xl px-4 py-10 text-center">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">NetTapu Nasıl Çalışır?</h2>
+          <p className="mt-2 text-sm text-gray-500">Platformumuzu tanıtan kısa videomuzu izleyin.</p>
+          <button
+            onClick={() => setShowVideo(true)}
+            className="mt-6 inline-flex items-center gap-3 rounded-xl bg-brand-600 px-8 py-4 text-sm font-semibold text-white shadow-lg hover:bg-brand-700 transition-colors"
+          >
+            <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            Tanıtım Videosunu İzle
+          </button>
+        </div>
+      </section>
+
+      {showVideo && <VideoPopup onClose={() => setShowVideo(false)} />}
+
+      {/* ─── Testimonials (Müşteri Yorumları) ─── */}
+      {testimonials.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 py-10">
+          <div className="text-center mb-8">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Müşterilerimiz Ne Diyor?</h2>
+            <p className="mt-1 text-sm text-gray-500">Memnun müşterilerimizden yorumlar</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {testimonials.map((t) => (
+              <div key={t.id} className="rounded-xl border border-gray-200 bg-white p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-1 mb-3">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg key={star} className="h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                {t.description && (
+                  <p className="text-sm text-gray-600 italic leading-relaxed line-clamp-4">&ldquo;{t.description}&rdquo;</p>
+                )}
+                <div className="mt-4 flex items-center gap-3">
+                  {t.imageUrl ? (
+                    <img src={t.imageUrl} alt={t.title} className="h-10 w-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-600 font-bold text-sm">
+                      {t.title.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{t.title}</p>
+                    {t.websiteUrl && <p className="text-xs text-gray-400">{t.websiteUrl}</p>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 text-center">
+            <Link href="/references" className="text-sm font-medium text-brand-600 hover:text-brand-700">
+              Tüm Referanslarımızı Görün &rarr;
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* ─── CTA ─── */}
       <section className="bg-brand-600">

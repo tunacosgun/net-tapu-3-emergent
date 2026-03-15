@@ -443,7 +443,9 @@ export default function ParcelDetailClient() {
   wpLines.push(parcelUrl);
   const whatsappMessage = encodeURIComponent(wpLines.join('\n'));
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
-  const tkgmUrl = parcel.ada && parcel.parsel ? `https://parselsorgu.tkgm.gov.tr/` : null;
+  const tkgmUrl = parcel.ada && parcel.parsel && parcel.city && parcel.district
+    ? `https://parselsorgu.tkgm.gov.tr/#ara/hızlıara/${encodeURIComponent(parcel.city)}/${encodeURIComponent(parcel.district)}/-/-/${parcel.ada}/${parcel.parsel}`
+    : null;
   const pricePerM2 = parcel.price && parcel.areaM2 ? Math.round(parseFloat(parcel.price) / parseFloat(parcel.areaM2)) : null;
 
   return (
@@ -635,6 +637,12 @@ export default function ParcelDetailClient() {
               url={typeof window !== 'undefined' ? window.location.href : ''}
               title={`${parcel.title} - ${siteName}`}
               description={`${parcel.city}, ${parcel.district} - ${formatPrice(parcel.price)}`}
+              extraInfo={[
+                parcel.city && parcel.district ? `📍 ${parcel.city}, ${parcel.district}` : '',
+                parcel.ada && parcel.parsel ? `Ada: ${parcel.ada} / Parsel: ${parcel.parsel}` : '',
+                parcel.areaM2 ? `Alan: ${Number(parcel.areaM2).toLocaleString('tr-TR')} m²` : '',
+                parcel.price ? `Fiyat: ${formatPrice(parcel.price)}` : '',
+              ].filter(Boolean).join('\n')}
             />
           </div>
         </div>

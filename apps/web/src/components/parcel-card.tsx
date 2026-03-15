@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useCallback } from 'react';
 import { Badge } from '@/components/ui';
 import { parcelStatusConfig } from '@/components/ui/badge';
-import { formatPrice, resolveImageUrl } from '@/lib/format';
+import { formatPrice, resolveImageUrl, timeAgo } from '@/lib/format';
 import { useAuthStore } from '@/stores/auth-store';
 import apiClient from '@/lib/api-client';
 import type { Parcel } from '@/types';
@@ -250,6 +250,21 @@ export function ParcelCard({
               {formatPrice(String(Math.round(parseFloat(parcel.price) / parseFloat(parcel.areaM2))))}
               /m²
             </span>
+          )}
+        </div>
+
+        {/* Date + Ada/Parsel */}
+        <div className="mt-2 flex items-center justify-between text-[10px] text-[var(--muted-foreground)]">
+          {parcel.createdAt && (
+            <span className="flex items-center gap-1">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {timeAgo(parcel.createdAt)}
+            </span>
+          )}
+          {parcel.ada && parcel.parsel && (
+            <span className="font-medium">Ada {parcel.ada} / Parsel {parcel.parsel}</span>
           )}
         </div>
       </div>

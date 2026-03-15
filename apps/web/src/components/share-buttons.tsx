@@ -6,9 +6,10 @@ interface ShareButtonsProps {
   url: string;
   title: string;
   description?: string;
+  extraInfo?: string;
 }
 
-export function ShareButtons({ url, title, description }: ShareButtonsProps) {
+export function ShareButtons({ url, title, description, extraInfo }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
 
   const encodedUrl = encodeURIComponent(url);
@@ -17,7 +18,8 @@ export function ShareButtons({ url, title, description }: ShareButtonsProps) {
 
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
   const twitterUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`;
-  const whatsappShareUrl = `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`;
+  const whatsappText = extraInfo ? `${title}\n${extraInfo}\n${url}` : `${title} ${url}`;
+  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
   const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
 
   async function handleCopyLink() {
