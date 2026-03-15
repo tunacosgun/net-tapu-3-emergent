@@ -24,6 +24,8 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../../auth/auth.service';
 import { ParcelService } from '../services/parcel.service';
 import { ParcelImportService } from '../services/parcel-import.service';
+import { ImageProcessingService } from '../services/image-processing.service';
+import { ParcelImage } from '../entities/parcel-image.entity';
 import { ListParcelsQueryDto } from '../dto/list-parcels-query.dto';
 import { UpdateParcelDto } from '../dto/update-parcel.dto';
 import { UpdateParcelStatusDto } from '../dto/update-parcel-status.dto';
@@ -38,8 +40,11 @@ export class AdminParcelController {
   constructor(
     private readonly parcelService: ParcelService,
     private readonly importService: ParcelImportService,
+    private readonly imageProcessingService: ImageProcessingService,
     @InjectRepository(Parcel)
     private readonly parcelRepo: Repository<Parcel>,
+    @InjectRepository(ParcelImage)
+    private readonly imageRepo: Repository<ParcelImage>,
   ) {}
 
   /** List all parcels (admin view — includes drafts, withdrawn, etc.) */
@@ -152,6 +157,24 @@ export class AdminParcelController {
       totalUpdated: updated,
       percentage: body.percentage,
     };
+  }
+
+  /** Reprocess all images (regenerate watermarks + thumbnails) */
+  @Post('reprocess-images')
+  @HttpCode(HttpStatus.OK)
+  async reprocessImages() {
+    const images = await this.imageRepo.find({ where: { status: 'ready' as any } });
+    let success = 0;
+    let failed = 0;
+    for (const img of images) {
+      try {
+        await this.imageProcessingService.processImage(img.id);
+        success++;
+      } catch {
+        failed++;
+      }
+    }
+    return { message: `${success} image reprocessed, ${failed} failed`, total: images.length, success, failed };
   }
 
   /** Get a single parcel by ID */
