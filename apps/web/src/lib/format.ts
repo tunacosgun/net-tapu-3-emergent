@@ -40,8 +40,10 @@ export function resolveImageUrl(img: {
   watermarkedUrl?: string | null;
   originalUrl?: string;
   url?: string;
-}): string {
-  const url = img.thumbnailUrl || img.watermarkedUrl || img.originalUrl || img.url || '';
+}, prefer: 'thumbnail' | 'watermarked' = 'watermarked'): string {
+  const url = prefer === 'watermarked'
+    ? (img.watermarkedUrl || img.thumbnailUrl || img.originalUrl || img.url || '')
+    : (img.thumbnailUrl || img.watermarkedUrl || img.originalUrl || img.url || '');
   // Already absolute → use as-is
   if (url.startsWith('http')) return url;
   // Relative /uploads/... paths are proxied via Next.js rewrites
