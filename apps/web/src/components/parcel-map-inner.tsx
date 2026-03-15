@@ -425,40 +425,61 @@ export default function ParcelMapInner({
             ? '<span style="display:inline-block;background:#3b82f6;color:#fff;font-size:10px;padding:1px 6px;border-radius:4px;margin-bottom:4px">📍 Adrese göre konum</span><br/>'
             : '';
 
-        // Popup content
+        // Status labels
+        const statusLabels: Record<string, string> = {
+          active: 'Satışta',
+          deposit_taken: 'Kaparo Alındı',
+          sold: 'Satıldı',
+          draft: 'Taslak',
+          withdrawn: 'Geri Çekildi',
+          reserved: 'Rezerve',
+        };
+        const statusLabel = statusLabels[parcel.status] || parcel.status;
+
+        // Thumbnail
+        const thumb = parcel.images?.[0]?.url || parcel.images?.[0]?.thumbnailUrl || '';
+        const thumbHtml = thumb
+          ? `<img src="${thumb}" alt="" style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:6px" />`
+          : '';
+
+        // Popup content — mini card with "İlana Git" button
         const popupHtml = `
-          <div style="min-width:200px">
+          <div style="min-width:220px;max-width:260px;font-family:system-ui,sans-serif">
+            ${thumbHtml}
             ${approxLabel}
-            <h3 style="font-weight:600;font-size:14px;margin:0">${parcel.title}</h3>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></span>
+              <span style="font-size:10px;color:#888">${statusLabel}</span>
+            </div>
+            <h3 style="font-weight:600;font-size:14px;margin:0;line-height:1.3">${parcel.title}</h3>
             <p style="font-size:12px;color:#666;margin:4px 0 0">
-              📍 ${parcel.city}, ${parcel.district}
+              📍 ${parcel.city}${parcel.district ? ', ' + parcel.district : ''}
             </p>
-            ${
-              parcel.price
-                ? `<p style="font-size:14px;font-weight:700;color:#16a34a;margin:4px 0 0">
-                    ${parseFloat(parcel.price).toLocaleString('tr-TR')} ${parcel.currency || 'TRY'}
-                  </p>`
-                : ''
-            }
-            ${
-              parcel.areaM2
-                ? `<p style="font-size:12px;color:#888;margin:2px 0 0">
-                    ${Number(parcel.areaM2).toLocaleString('tr-TR')} m²
-                  </p>`
-                : ''
-            }
+            ${parcel.ada && parcel.parsel ? `<p style="font-size:11px;color:#999;margin:2px 0 0">Ada ${parcel.ada} / Parsel ${parcel.parsel}</p>` : ''}
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px">
+              ${
+                parcel.price
+                  ? `<span style="font-size:15px;font-weight:700;color:#16a34a">
+                      ${parseFloat(parcel.price).toLocaleString('tr-TR')} ${parcel.currency || 'TRY'}
+                    </span>`
+                  : ''
+              }
+              ${
+                parcel.areaM2
+                  ? `<span style="font-size:12px;color:#888">
+                      ${Number(parcel.areaM2).toLocaleString('tr-TR')} m²
+                    </span>`
+                  : ''
+              }
+            </div>
             <a href="/parcels/${parcel.id}"
-               style="display:inline-block;margin-top:8px;font-size:12px;color:#2563eb;text-decoration:none">
-              Detayları Gör →
+               style="display:block;margin-top:10px;padding:8px 0;text-align:center;font-size:13px;font-weight:600;color:#fff;background:#2563eb;border-radius:6px;text-decoration:none;transition:background .15s">
+              İlana Git →
             </a>
           </div>
         `;
 
-        marker.bindPopup(popupHtml);
-
-        if (onParcelClick) {
-          marker.on('click', () => onParcelClick(parcel));
-        }
+        marker.bindPopup(popupHtml, { maxWidth: 280, minWidth: 220 });
       });
 
       // Fit bounds if we have parcels
