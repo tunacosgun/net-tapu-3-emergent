@@ -74,6 +74,7 @@ export const parcelSchema = z.object({
   longitude: z.string().optional().or(z.literal('')),
   isAuctionEligible: z.boolean(),
   isFeatured: z.boolean(),
+  showListingDate: z.boolean().optional(),
   description: z.string().optional().or(z.literal('')),
 });
 export type ParcelFormData = z.infer<typeof parcelSchema>;
