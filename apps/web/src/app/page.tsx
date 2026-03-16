@@ -209,7 +209,6 @@ export default function HomePage() {
           <ParcelMapLazy
             parcels={[...featuredParcels, ...latestParcels].filter((p, i, arr) => arr.findIndex((x) => x.id === p.id) === i)}
             height="400px"
-            onParcelClick={(parcel) => router.push(`/parcels/${parcel.id}`)}
           />
         </div>
       </section>

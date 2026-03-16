@@ -323,7 +323,7 @@ function ParcelsMapView({ parcels }: { parcels: Parcel[] }) {
     <div className="space-y-4">
       {hasGeoData && (
         <div className="rounded-lg border border-gray-200 overflow-hidden">
-          <ParcelMapLazy parcels={parcels} onParcelClick={(parcel) => router.push(`/parcels/${parcel.id}`)} height="450px" />
+          <ParcelMapLazy parcels={parcels} height="450px" />
         </div>
       )}
 
