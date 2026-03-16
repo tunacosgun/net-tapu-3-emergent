@@ -37,6 +37,7 @@ export interface Parcel {
   createdBy: string | null;
   assignedConsultant: string | null;
   listedAt: string | null;
+  showListingDate?: boolean;
   createdAt: string;
   updatedAt: string;
   favoriteCount?: number;

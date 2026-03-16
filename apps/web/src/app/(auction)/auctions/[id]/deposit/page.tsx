@@ -8,6 +8,8 @@ import { Card, Alert, Button, LoadingState } from '@/components/ui';
 import type { Auction, Payment, ApiError } from '@/types';
 import { AxiosError } from 'axios';
 
+type PaymentMethodType = 'credit_card' | 'bank_transfer';
+
 export default function DepositPage() {
   const params = useParams<{ id: string }>();
   const auctionId = params.id;
@@ -19,6 +21,7 @@ export default function DepositPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [threeDsUrl, setThreeDsUrl] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('credit_card');
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +56,7 @@ export default function DepositPage() {
         auctionId,
         amount: auction.requiredDeposit,
         currency: auction.currency || 'TRY',
-        paymentMethod: 'credit_card',
+        paymentMethod,
         idempotencyKey,
         description: `Depozito: ${auction.title}`,
       });
@@ -137,15 +140,58 @@ export default function DepositPage() {
       {error && <Alert>{error}</Alert>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <p className="text-sm text-[var(--muted-foreground)]">
-          Depozito tutarı kredi kartınızdan tahsil edilecektir.
-          Açık artırma sonuçlandığında kazanamazsanız depozito iade edilecektir.
-        </p>
+        {/* Payment Method Selection */}
+        <div>
+          <p className="text-sm font-medium text-[var(--foreground)] mb-3">Ödeme Yöntemi</p>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('credit_card')}
+              className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${paymentMethod === 'credit_card' ? 'border-brand-500 bg-brand-50' : 'border-[var(--border)] hover:border-gray-300'}`}
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
+              <span className="text-sm font-medium">Kredi Kartı</span>
+              <span className="text-[10px] text-[var(--muted-foreground)]">3D Secure ile güvenli</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('bank_transfer')}
+              className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${paymentMethod === 'bank_transfer' ? 'border-brand-500 bg-brand-50' : 'border-[var(--border)] hover:border-gray-300'}`}
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" /></svg>
+              <span className="text-sm font-medium">Havale / EFT</span>
+              <span className="text-[10px] text-[var(--muted-foreground)]">Banka hesabına transfer</span>
+            </button>
+          </div>
+        </div>
+
+        {paymentMethod === 'credit_card' ? (
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Depozito tutarı kredi kartınızdan tahsil edilecektir.
+            Açık artırma sonuçlandığında kazanamazsanız depozito iade edilecektir.
+          </p>
+        ) : (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
+            <p className="text-sm font-medium text-blue-800">Havale / EFT Bilgileri</p>
+            <div className="text-xs text-blue-700 space-y-1">
+              <p><span className="font-medium">Banka:</span> Ziraat Bankası</p>
+              <p><span className="font-medium">IBAN:</span> TR00 0000 0000 0000 0000 0000 00</p>
+              <p><span className="font-medium">Hesap Sahibi:</span> TR Eser Group</p>
+              <p><span className="font-medium">Açıklama:</span> {auction?.title || 'Depozito'} - İhale No</p>
+            </div>
+            <p className="text-[10px] text-blue-600 mt-2">
+              Havale yaptıktan sonra dekontunuzu WhatsApp veya e-posta ile iletmeniz gerekmektedir.
+              Ödemeniz onaylandıktan sonra ihaleye katılabilirsiniz.
+            </p>
+          </div>
+        )}
 
         <Button type="submit" disabled={submitting} className="w-full py-3">
           {submitting
             ? 'İşleniyor...'
-            : `${formatPrice(auction?.requiredDeposit ?? null)} Depozito Yatır`}
+            : paymentMethod === 'credit_card'
+              ? `${formatPrice(auction?.requiredDeposit ?? null)} Depozito Yatır`
+              : 'Havale Bildirimini Gönder'}
         </Button>
       </form>
     </div>

@@ -84,6 +84,7 @@ export default function AdminEditParcelPage() {
             parsel: parcelData.parsel || '',
             isAuctionEligible: parcelData.isAuctionEligible,
             isFeatured: parcelData.isFeatured,
+            showListingDate: parcelData.showListingDate !== false,
             description: parcelData.description || '',
           });
           setLoading(false);
@@ -308,6 +309,7 @@ export default function AdminEditParcelPage() {
             {...register('isAuctionEligible')}
           />
           <FormCheckbox label="Öne Çıkan" {...register('isFeatured')} />
+          <FormCheckbox label="İlan Tarihini Göster" {...register('showListingDate')} />
         </div>
         <FormTextarea
           label="Açıklama"

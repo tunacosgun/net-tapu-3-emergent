@@ -9,6 +9,7 @@ import { Badge, LoadingState } from '@/components/ui';
 import { parcelStatusConfig } from '@/components/ui/badge';
 import { ShareButtons } from '@/components/share-buttons';
 import { CallMeForm } from '@/components/call-me-form';
+import { AppointmentForm } from '@/components/appointment-form';
 import { useViewerTracking } from '@/hooks/use-viewer-tracking';
 import { useAuthStore } from '@/stores/auth-store';
 import { useSiteSettings } from '@/hooks/use-site-settings';
@@ -296,6 +297,7 @@ export default function ParcelDetailClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCallMe, setShowCallMe] = useState(false);
+  const [showAppointment, setShowAppointment] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -567,7 +569,7 @@ export default function ParcelDetailClient() {
             <table className="w-full text-sm">
               <tbody>
                 <DetailRow label="İlan No" value={parcel.listingId || '-'} highlight />
-                {parcel.listedAt && <DetailRow label="İlan Tarihi" value={new Date(parcel.listedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })} />}
+                {parcel.listedAt && parcel.showListingDate !== false && <DetailRow label="İlan Tarihi" value={new Date(parcel.listedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })} />}
                 <DetailRow label="Emlak Tipi" value="Satılık Arsa" highlight={!parcel.listedAt} />
                 {parcel.zoningStatus && <DetailRow label="İmar Durumu" value={parcel.zoningStatus} />}
                 {parcel.areaM2 && <DetailRow label="m²" value={`${Number(parcel.areaM2).toLocaleString('tr-TR')}`} />}
@@ -598,14 +600,24 @@ export default function ParcelDetailClient() {
             </div>
           )}
 
-          {tkgmUrl && (
-            <a href={tkgmUrl} target="_blank" rel="noopener noreferrer"
-              className="mt-3 flex items-center gap-2 text-xs text-brand-600 hover:underline print:hidden"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
-              TKGM Parsel Sorgu
-            </a>
-          )}
+          <div className="mt-3 flex flex-wrap gap-3 print:hidden">
+            {tkgmUrl && (
+              <a href={tkgmUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 text-xs text-brand-600 hover:underline"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                TKGM Parsel Sorgu
+              </a>
+            )}
+            {parcel.city && (
+              <a href={`https://kentrehberi.${parcel.city.toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ç/g,'c').replace(/ğ/g,'g')}.bel.tr`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 text-xs text-blue-600 hover:underline"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" /></svg>
+                E-Kent / Kent Rehberi
+              </a>
+            )}
+          </div>
         </div>
       </div>
 
@@ -666,6 +678,14 @@ export default function ParcelDetailClient() {
               Sizi Arayalım
             </button>
 
+            <button
+              onClick={() => setShowAppointment(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-100 transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+              Online Randevu Al
+            </button>
+
             {parcel.status === 'active' && (
               <button
                 onClick={() => isAuthenticated ? setShowOffer(true) : alert('Teklif vermek için giriş yapmanız gerekiyor.')}
@@ -709,6 +729,10 @@ export default function ParcelDetailClient() {
 
       {showCallMe && (
         <CallMeForm parcelId={parcel.id} parcelTitle={parcel.title} parcelListingId={parcel.listingId} onClose={() => setShowCallMe(false)} />
+      )}
+
+      {showAppointment && (
+        <AppointmentForm parcelId={parcel.id} parcelTitle={parcel.title} onClose={() => setShowAppointment(false)} />
       )}
 
       {/* Offer Modal */}

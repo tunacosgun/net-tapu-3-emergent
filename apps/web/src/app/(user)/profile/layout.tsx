@@ -11,6 +11,7 @@ const profileNavItems = [
   { href: '/profile/offers', label: 'Tekliflerim' },
   { href: '/profile/auctions', label: 'Ihale Gecmisim' },
   { href: '/profile/payments', label: 'Odeme Gecmisim' },
+  { href: '/profile/saved-searches', label: 'Kayıtlı Aramalar' },
   { href: '/profile/notifications', label: 'Bildirim Ayarlari' },
 ];
 
