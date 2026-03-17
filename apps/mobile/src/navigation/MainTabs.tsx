@@ -18,12 +18,11 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
-// SVG-like path icons using unicode + custom rendering
 const TAB_CONFIG = [
-  { name: 'Home', label: 'Ana Sayfa', icon: '⌂', iconFocused: '⌂' },
-  { name: 'Parcels', label: 'İlanlar', icon: '⊞', iconFocused: '⊞' },
-  { name: 'Auctions', label: 'İhaleler', icon: '⚡', iconFocused: '⚡' },
-  { name: 'Profile', label: 'Profil', icon: '◉', iconFocused: '◉' },
+  { name: 'Home', label: 'Ana Sayfa', icon: '🏠' },
+  { name: 'Parcels', label: 'İlanlar', icon: '🗺️' },
+  { name: 'Auctions', label: 'İhaleler', icon: '⚡' },
+  { name: 'Profile', label: 'Profil', icon: '👤' },
 ];
 
 function GlassTabBar({ state, descriptors, navigation }: any) {
@@ -34,27 +33,18 @@ function GlassTabBar({ state, descriptors, navigation }: any) {
   return (
     <View style={[styles.tabBarWrapper, { paddingBottom: bottomPadding + 10 }]}>
       <View style={styles.tabBarContainer}>
-        {/* Glassmorphism Background */}
+        {/* iOS native frosted glass - always light */}
         <BlurView
           style={StyleSheet.absoluteFill}
-          blurType={theme.isDark ? 'thinMaterialDark' : 'systemThinMaterial'}
-          blurAmount={40}
-          reducedTransparencyFallbackColor={theme.isDark ? '#1e293b' : '#f8f9fa'}
+          blurType="xlight"
+          blurAmount={50}
+          reducedTransparencyFallbackColor="#f5f5f5"
         />
-        {/* Glass overlay with inner glow */}
+        {/* Light glass tint */}
         <View
           style={[
             StyleSheet.absoluteFill,
-            {
-              backgroundColor: theme.isDark
-                ? 'rgba(30, 41, 59, 0.35)'
-                : 'rgba(255, 255, 255, 0.3)',
-              borderWidth: 0.5,
-              borderColor: theme.isDark
-                ? 'rgba(255, 255, 255, 0.15)'
-                : 'rgba(255, 255, 255, 0.7)',
-              borderRadius: 32,
-            },
+            styles.glassOverlay,
           ]}
         />
 
@@ -88,41 +78,21 @@ function GlassTabBar({ state, descriptors, navigation }: any) {
                 accessibilityLabel={options.tabBarAccessibilityLabel}
                 onPress={onPress}
                 onLongPress={onLongPress}
-                activeOpacity={0.7}
+                activeOpacity={0.6}
                 style={styles.tabItem}
               >
-                {/* Active indicator pill */}
-                {isFocused && (
-                  <View
-                    style={[
-                      styles.activeIndicator,
-                      { backgroundColor: theme.colors.primary + '18' },
-                    ]}
-                  />
-                )}
-
                 {/* Icon */}
-                <View
+                <Text
                   style={[
-                    styles.iconWrap,
-                    isFocused && [
-                      styles.iconWrapActive,
-                      { backgroundColor: theme.colors.primary + '20' },
-                    ],
+                    styles.tabIcon,
+                    {
+                      opacity: isFocused ? 1 : 0.6,
+                      transform: [{ scale: isFocused ? 1.1 : 1 }],
+                    },
                   ]}
                 >
-                  <TabIconSVG
-                    name={config.name}
-                    focused={isFocused}
-                    color={
-                      isFocused
-                        ? theme.colors.primary
-                        : theme.isDark
-                          ? '#94a3b8'
-                          : '#6b7280'
-                    }
-                  />
-                </View>
+                  {config.icon}
+                </Text>
 
                 {/* Label */}
                 <Text
@@ -131,10 +101,9 @@ function GlassTabBar({ state, descriptors, navigation }: any) {
                     {
                       color: isFocused
                         ? theme.colors.primary
-                        : theme.isDark
-                          ? '#94a3b8'
-                          : '#6b7280',
-                      fontWeight: isFocused ? '700' : '500',
+                        : '#374151',
+                      fontWeight: isFocused ? '600' : '400',
+                      opacity: isFocused ? 1 : 0.7,
                     },
                   ]}
                   numberOfLines={1}
@@ -150,45 +119,7 @@ function GlassTabBar({ state, descriptors, navigation }: any) {
   );
 }
 
-/** Custom icon component with proper vector-like rendering */
-function TabIconSVG({
-  name,
-  focused,
-  color,
-}: {
-  name: string;
-  focused: boolean;
-  color: string;
-}) {
-  const size = 24;
-
-  // Using Text-based icons with proper styling for a clean look
-  const iconMap: Record<string, { char: string; size: number }> = {
-    Home: { char: '🏠', size: 21 },
-    Parcels: { char: '🗺️', size: 20 },
-    Auctions: { char: '⚡', size: 22 },
-    Profile: { char: '👤', size: 20 },
-  };
-
-  const icon = iconMap[name] || { char: '•', size };
-
-  return (
-    <Text
-      style={{
-        fontSize: icon.size,
-        opacity: focused ? 1 : 0.8,
-        textAlign: 'center',
-        lineHeight: size + 2,
-      }}
-    >
-      {icon.char}
-    </Text>
-  );
-}
-
 export default function MainTabs() {
-  const theme = useTheme();
-
   return (
     <Tab.Navigator
       tabBar={(props) => <GlassTabBar {...props} />}
@@ -211,61 +142,52 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 20,
   },
   tabBarContainer: {
     width: '100%',
-    maxWidth: 340,
     height: 64,
     borderRadius: 32,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 16,
+        elevation: 12,
       },
     }),
+  },
+  glassOverlay: {
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 32,
   },
   tabItemsRow: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
-    position: 'relative',
   },
-  activeIndicator: {
-    position: 'absolute',
-    top: 6,
-    bottom: 6,
-    left: 4,
-    right: 4,
-    borderRadius: 20,
-  },
-  iconWrap: {
-    width: 36,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-  },
-  iconWrapActive: {
-    transform: [{ scale: 1.08 }],
+  tabIcon: {
+    fontSize: 22,
+    textAlign: 'center',
+    lineHeight: 26,
   },
   tabLabel: {
     fontSize: 10,
     marginTop: 2,
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
   },
 });
