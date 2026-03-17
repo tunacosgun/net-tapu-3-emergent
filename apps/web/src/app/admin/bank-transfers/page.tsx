@@ -163,7 +163,7 @@ export default function BankTransfersPage() {
                           </Button>
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="secondary"
                             onClick={() => {
                               if (confirm('Bu havaleyi reddetmek istediğinize emin misiniz?')) {
                                 handleAction(t.id, 'reject');
