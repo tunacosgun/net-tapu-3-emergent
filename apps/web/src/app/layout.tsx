@@ -10,6 +10,7 @@ import { FullBanGate } from '@/components/full-ban-gate';
 import { fetchSiteSettingsServer } from '@/lib/server-api';
 import { OrganizationJsonLd, WebSiteJsonLd, RealEstateAgentJsonLd } from '@/components/json-ld';
 import { GoogleOneTap } from '@/components/google-one-tap';
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 import './globals.css';
 
 const inter = Inter({
@@ -96,6 +97,7 @@ export default function RootLayout({
                 </div>
                 <Footer />
               </div>
+              <MobileBottomNav />
               <ApiErrorToastContainer />
               <GoogleOneTap />
             </SiteSettingsProvider>
