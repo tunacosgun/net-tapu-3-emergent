@@ -85,7 +85,7 @@ export default function BankTransfersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Havale / EFT Yönetimi"
-        description={`${transfers.length} havale işlemi${pendingCount > 0 ? ` • ${pendingCount} onay bekliyor` : ''}`}
+        subtitle={`${transfers.length} havale işlemi${pendingCount > 0 ? ` • ${pendingCount} onay bekliyor` : ''}`}
       />
 
       {error && <Alert variant="error">{error}</Alert>}
