@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Platform } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
+import { BlurView } from '@react-native-community/blur';
 import { useTheme } from '../theme';
 
 import HomeScreen from '../screens/home/HomeScreen';
@@ -11,9 +12,11 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 const Tab = createBottomTabNavigator();
 
 /**
- * iOS 26+ automatically applies liquid glass to the native tab bar.
- * By NOT providing a custom tabBar, React Navigation uses the native
- * UITabBar rendering which gets the glass effect for free on iOS 26.
+ * iOS 26 style tab bar — uses BlurView with systemThinMaterial
+ * to replicate the native UITabBar liquid glass appearance.
+ *
+ * Harry Potter reference app uses standard UITabBarController which
+ * gets liquid glass for free. In RN we simulate it with BlurView.
  */
 export default function MainTabs() {
   const theme = useTheme();
@@ -22,33 +25,28 @@ export default function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: '#6b7280',
+        tabBarActiveTintColor: '#8B5E3C',  // systemBrown like HP app
+        tabBarInactiveTintColor: '#8E8E93', // systemGray
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: '600',
-          letterSpacing: 0.2,
+          fontWeight: '500',
         },
-        tabBarStyle: Platform.select({
-          ios: {
-            // Let iOS handle the tab bar appearance — iOS 26 will apply liquid glass
-            position: 'absolute',
-            backgroundColor: 'transparent',
-            borderTopWidth: 0,
-            elevation: 0,
-          },
-          android: {
-            backgroundColor: 'rgba(255,255,255,0.95)',
-            borderTopWidth: 0,
-            elevation: 12,
-            height: 64,
-            paddingBottom: 8,
-            paddingTop: 4,
-          },
-        }),
-        // iOS: transparent background lets the system glass shine through
-        tabBarBackground: () =>
-          Platform.OS === 'ios' ? null : null,
+        tabBarStyle: {
+          position: 'absolute',
+          borderTopWidth: 0,
+          elevation: 0,
+          backgroundColor: 'transparent',
+        },
+        tabBarBackground: () => (
+          <View style={StyleSheet.absoluteFill}>
+            <BlurView
+              style={StyleSheet.absoluteFill}
+              blurType="systemThinMaterial"
+              blurAmount={80}
+              reducedTransparencyFallbackColor="#f8f8f8"
+            />
+          </View>
+        ),
       }}
     >
       <Tab.Screen
@@ -56,8 +54,8 @@ export default function MainTabs() {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Ana Sayfa',
-          tabBarIcon: ({ focused }) => (
-            <TabEmoji emoji="🏠" focused={focused} />
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="house.fill" color={color} size={size} />
           ),
         }}
       />
@@ -66,8 +64,8 @@ export default function MainTabs() {
         component={ParcelsListScreen}
         options={{
           tabBarLabel: 'İlanlar',
-          tabBarIcon: ({ focused }) => (
-            <TabEmoji emoji="🗺️" focused={focused} />
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="map.fill" color={color} size={size} />
           ),
         }}
       />
@@ -76,8 +74,8 @@ export default function MainTabs() {
         component={AuctionsListScreen}
         options={{
           tabBarLabel: 'İhaleler',
-          tabBarIcon: ({ focused }) => (
-            <TabEmoji emoji="⚡" focused={focused} />
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="bolt.fill" color={color} size={size} />
           ),
         }}
       />
@@ -86,8 +84,8 @@ export default function MainTabs() {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profil',
-          tabBarIcon: ({ focused }) => (
-            <TabEmoji emoji="👤" focused={focused} />
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="person.fill" color={color} size={size} />
           ),
         }}
       />
@@ -95,12 +93,22 @@ export default function MainTabs() {
   );
 }
 
+// SF Symbol icon component using emoji fallback
+// React Native doesn't support SF Symbols natively,
+// so we use text-based icons that match the style
 import { Text } from 'react-native';
 
-function TabEmoji({ emoji, focused }: { emoji: string; focused: boolean }) {
+const SF_ICON_MAP: Record<string, string> = {
+  'house.fill': '🏠',
+  'map.fill': '🗺️',
+  'bolt.fill': '⚡',
+  'person.fill': '👤',
+};
+
+function TabIcon({ name, color, size }: { name: string; color: string; size: number }) {
   return (
-    <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>
-      {emoji}
+    <Text style={{ fontSize: size - 4, textAlign: 'center' }}>
+      {SF_ICON_MAP[name] || '•'}
     </Text>
   );
 }
