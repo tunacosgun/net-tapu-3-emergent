@@ -84,6 +84,15 @@ export class PaymentService {
 
     let payment: Payment;
     try {
+      // Generate transfer code for bank transfers
+      let description = dto.description ?? null;
+      if (dto.paymentMethod === 'bank_transfer') {
+        const auctionShort = (dto.auctionId ?? 'XXXX').slice(0, 4).toUpperCase();
+        const userShort = userId.slice(0, 4).toUpperCase();
+        const transferCode = `NT-${auctionShort}-${userShort}`;
+        description = description ? `${description} | Kod: ${transferCode}` : `Kod: ${transferCode}`;
+      }
+
       payment = qr.manager.create(Payment, {
         userId,
         parcelId: dto.parcelId,
@@ -92,7 +101,7 @@ export class PaymentService {
         currency: dto.currency ?? 'TRY',
         status: PaymentStatus.PENDING,
         paymentMethod: dto.paymentMethod,
-        description: dto.description ?? null,
+        description,
         idempotencyKey: dto.idempotencyKey,
       });
       payment = await qr.manager.save(Payment, payment);

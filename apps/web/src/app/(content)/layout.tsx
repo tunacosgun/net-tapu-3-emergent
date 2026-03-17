@@ -5,20 +5,20 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 const navLinks = [
-  { href: '/about', label: 'Hakkimizda' },
+  { href: '/about', label: 'Hakkımızda' },
   { href: '/vision', label: 'Vizyon' },
   { href: '/mission', label: 'Misyon' },
-  { href: '/how-it-works', label: 'Nasil Calisir' },
+  { href: '/how-it-works', label: 'Nasıl Çalışır' },
   { href: '/faq', label: 'S.S.S.' },
   { href: '/references', label: 'Referanslar' },
   { href: '/projects', label: 'Projelerimiz' },
-  { href: '/testimonials', label: 'Musteri Yorumlari' },
-  { href: '/press', label: 'Basin' },
+  { href: '/testimonials', label: 'Müşteri Yorumları' },
+  { href: '/press', label: 'Basın' },
   { href: '/legal', label: 'Yasal Bilgiler' },
-  { href: '/withdrawal-rights', label: 'Cayma Hakki' },
+  { href: '/withdrawal-rights', label: 'Cayma Hakkı' },
   { href: '/real-estate-guide', label: 'Gayrimenkul Rehberi' },
-  { href: '/post-sale', label: 'Satis Sonrasi' },
-  { href: '/contact', label: 'Iletisim' },
+  { href: '/post-sale', label: 'Satış Sonrası' },
+  { href: '/contact', label: 'İletişim' },
 ];
 
 export default function ContentLayout({ children }: { children: React.ReactNode }) {
@@ -98,10 +98,10 @@ export default function ContentLayout({ children }: { children: React.ReactNode 
               </nav>
 
               <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="text-sm font-medium text-gray-900">Sorulariniz mi var?</p>
-                <p className="mt-1 text-xs text-gray-500">Uzman ekibimize ulasin.</p>
+                <p className="text-sm font-medium text-gray-900">Sorularınız mı var?</p>
+                <p className="mt-1 text-xs text-gray-500">Uzman ekibimize ulaşın.</p>
                 <Link href="/contact" className="mt-3 inline-flex items-center gap-1 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600 transition-colors">
-                  Bize Ulasin
+                  Bize Ulaşın
                 </Link>
               </div>
             </div>

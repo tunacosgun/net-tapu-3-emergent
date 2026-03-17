@@ -93,6 +93,82 @@ function LogoUploader({
   );
 }
 
+/* ── Video Upload Component ── */
+function VideoUploader({
+  currentUrl,
+  onUploaded,
+}: {
+  currentUrl: string;
+  onUploaded: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setProgress(0);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const { data } = await apiClient.post<{ url: string }>('/admin/settings/upload-logo', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            setProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
+          }
+        },
+      });
+      onUploaded(data.url);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setUploading(false);
+      setProgress(0);
+      e.target.value = '';
+    }
+  }
+
+  const isVideo = currentUrl && currentUrl.match(/\.(mp4|webm|ogg)(\?|$)/i);
+
+  return (
+    <div className="flex items-start gap-4 rounded-lg border border-[var(--border)] p-4">
+      <div
+        className="flex h-20 w-32 shrink-0 items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--muted)] overflow-hidden cursor-pointer"
+        onClick={() => fileRef.current?.click()}
+      >
+        {isVideo ? (
+          <video src={currentUrl} className="h-full w-full object-cover" muted />
+        ) : (
+          <svg className="h-8 w-8 text-[var(--muted-foreground)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+          </svg>
+        )}
+      </div>
+      <div className="flex-1">
+        <h3 className="text-sm font-semibold">Video Dosyası Yükle</h3>
+        <p className="text-xs text-[var(--muted-foreground)]">MP4, WebM veya OGG formatında video dosyası (maks. 100MB)</p>
+        <input ref={fileRef} type="file" accept="video/mp4,video/webm,video/ogg" onChange={handleFile} className="hidden" />
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className="mt-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-medium hover:bg-[var(--muted)] transition-colors disabled:opacity-50"
+        >
+          {uploading ? `Yükleniyor... ${progress}%` : currentUrl ? 'Değiştir' : 'Video Yükle'}
+        </button>
+        {currentUrl && (
+          <button type="button" onClick={() => onUploaded('')} className="ml-2 text-xs text-red-500 hover:underline">
+            Kaldır
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Setting Groups ── */
 type SettingField = {
   key: string;
@@ -169,6 +245,19 @@ const SETTING_GROUPS: SettingGroup[] = [
 ];
 
 const INTEGRATION_GROUPS: SettingGroup[] = [
+  {
+    title: 'Havale / EFT Bilgileri',
+    icon: '🏦',
+    description: 'Kullanıcılara gösterilecek banka hesap bilgileri',
+    collapsed: false,
+    keys: [
+      { key: 'bank_name', label: 'Banka Adı', type: 'text', placeholder: 'Ziraat Bankası' },
+      { key: 'bank_iban', label: 'IBAN', type: 'text', placeholder: 'TR00 0000 0000 0000 0000 0000 00' },
+      { key: 'bank_account_holder', label: 'Hesap Sahibi', type: 'text', placeholder: 'Şirket Adı' },
+      { key: 'bank_swift_code', label: 'SWIFT Kodu (Opsiyonel)', type: 'text', placeholder: 'TCZBTR2A' },
+      { key: 'bank_branch', label: 'Şube (Opsiyonel)', type: 'text', placeholder: 'Merkez Şube' },
+    ],
+  },
   {
     title: 'Ödeme Sistemi (POS)',
     icon: '💳',
@@ -472,6 +561,63 @@ export default function AdminSettingsPage() {
             onUploaded={updateSetting}
             accept="image/png,image/webp"
           />
+        </div>
+      </Card>
+
+      {/* ── Tanıtım Videosu ── */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-lg">🎬</span>
+          <div>
+            <h2 className="text-lg font-semibold">Tanıtım Videosu</h2>
+            <p className="text-xs text-[var(--muted-foreground)]">Ana sayfada gösterilecek tanıtım videosu (MP4 yükleyin veya YouTube/Vimeo URL girin)</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Video file upload */}
+          <VideoUploader
+            currentUrl={settings.intro_video_url || ''}
+            onUploaded={(url) => updateSetting('intro_video_url', url)}
+          />
+
+          {/* Or enter URL manually */}
+          <div>
+            <label className="block text-sm font-medium mb-1">veya Video URL (YouTube / Vimeo embed linki)</label>
+            <input
+              type="url"
+              value={settings.intro_video_url || ''}
+              onChange={(e) => updateSetting('intro_video_url', e.target.value)}
+              placeholder="https://www.youtube.com/embed/... veya /uploads/video.mp4"
+              className="w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+            <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
+              MP4 yüklerseniz otomatik doldurulur. Veya YouTube embed URL yapıştırabilirsiniz.
+            </p>
+          </div>
+
+          {/* Preview */}
+          {settings.intro_video_url && (
+            <div className="mt-2">
+              <p className="text-xs font-medium mb-1">Önizleme:</p>
+              <div className="relative w-full max-w-md overflow-hidden rounded-lg bg-black" style={{ paddingBottom: '56.25%' }}>
+                {settings.intro_video_url.match(/\.(mp4|webm|ogg)(\?|$)/i) ? (
+                  <video
+                    src={settings.intro_video_url}
+                    controls
+                    className="absolute inset-0 h-full w-full"
+                  />
+                ) : (
+                  <iframe
+                    src={settings.intro_video_url}
+                    title="Video Önizleme"
+                    className="absolute inset-0 h-full w-full"
+                    allowFullScreen
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 

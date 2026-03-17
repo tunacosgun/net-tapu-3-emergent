@@ -125,6 +125,28 @@ export function connectToAuction(auctionId: string) {
   }) => {
     useAuctionStore.getState().addAnnouncement(data.message, data.timestamp);
   });
+
+  // Settlement events
+  socket.on('auction_settlement_pending', (data: any) => {
+    console.log('[WS] Settlement pending:', data);
+  });
+  socket.on('auction_settlement_progress', (data: any) => {
+    console.log('[WS] Settlement progress:', data);
+  });
+  socket.on('auction_settled', (data: any) => {
+    console.log('[WS] Settlement completed:', data);
+  });
+  socket.on('auction_settlement_failed', (data: any) => {
+    console.log('[WS] Settlement failed:', data);
+  });
+
+  // Error handling
+  socket.on('connect_error', (err: Error) => {
+    console.error('[WS] Connection error:', err.message);
+  });
+  socket.on('error', (data: any) => {
+    console.error('[WS] Server error:', data);
+  });
 }
 
 export function placeBid(auctionId: string, amount: string, referencePrice: string): string {

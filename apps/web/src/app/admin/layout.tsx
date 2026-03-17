@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
+import NotificationBell from '@/components/admin/NotificationBell';
 
 const ADMIN_ROLES = ['superadmin', 'admin'];
 
@@ -33,6 +34,7 @@ const navSections = [
     title: 'Finans',
     items: [
       { href: '/admin/deposits', label: 'Depozitolar', icon: '💳' },
+      { href: '/admin/bank-transfers', label: 'Havale / EFT', icon: '🏦' },
       { href: '/admin/reconciliation', label: 'Mutabakat', icon: '📋' },
     ],
   },
@@ -141,9 +143,12 @@ export default function AdminLayout({
           <span className="text-xs text-[var(--muted-foreground)]">
             Admin: {user.email}
           </span>
-          <Link href="/" className="text-xs text-brand-500 hover:underline">
-            Siteye Dön →
-          </Link>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <Link href="/" className="text-xs text-brand-500 hover:underline">
+              Siteye Dön →
+            </Link>
+          </div>
         </div>
         <main className="p-6">{children}</main>
       </div>
