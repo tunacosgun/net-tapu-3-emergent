@@ -81,14 +81,16 @@ function GlassTabBar({ state, descriptors, navigation }: any) {
                 activeOpacity={0.6}
                 style={styles.tabItem}
               >
+                {/* Active pill background */}
+                {isFocused && (
+                  <View style={styles.activePill} />
+                )}
+
                 {/* Icon */}
                 <Text
                   style={[
                     styles.tabIcon,
-                    {
-                      opacity: isFocused ? 1 : 0.6,
-                      transform: [{ scale: isFocused ? 1.1 : 1 }],
-                    },
+                    { opacity: isFocused ? 1 : 0.5 },
                   ]}
                 >
                   {config.icon}
@@ -101,9 +103,9 @@ function GlassTabBar({ state, descriptors, navigation }: any) {
                     {
                       color: isFocused
                         ? theme.colors.primary
-                        : '#374151',
+                        : '#1f2937',
                       fontWeight: isFocused ? '600' : '400',
-                      opacity: isFocused ? 1 : 0.7,
+                      opacity: isFocused ? 1 : 0.5,
                     },
                   ]}
                   numberOfLines={1}
@@ -179,6 +181,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
+    position: 'relative',
+  },
+  activePill: {
+    position: 'absolute',
+    top: 6,
+    bottom: 6,
+    left: 2,
+    right: 2,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
   },
   tabIcon: {
     fontSize: 22,
