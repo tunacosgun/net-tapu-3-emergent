@@ -46,11 +46,20 @@ export default function AuctionsPage() {
   );
 }
 
+const filterTabs = [
+  { key: 'all', label: 'Tümü' },
+  { key: 'live', label: 'Canlı' },
+  { key: 'scheduled', label: 'Planlandı' },
+  { key: 'deposit_open', label: 'Depozito Açık' },
+  { key: 'ended', label: 'Sona Erdi' },
+];
+
 function AuctionsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const rawPage = searchParams.get('page');
   const page = rawPage && /^\d+$/.test(rawPage) ? Number(rawPage) : 1;
+  const statusFilter = searchParams.get('status') || 'all';
 
   const [data, setData] = useState<PaginatedResponse<Auction> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,16 +69,32 @@ function AuctionsContent() {
     setLoading(true);
     setError(null);
     try {
-      const { data: res } = await apiClient.get<PaginatedResponse<Auction>>('/auctions', { params: { page, limit: 12 } });
+      const params: Record<string, any> = { page, limit: 12 };
+      if (statusFilter !== 'all') {
+        // "ended" filter includes ended, settling, settled
+        if (statusFilter === 'ended') {
+          params.status = 'ended,settling,settled';
+        } else {
+          params.status = statusFilter;
+        }
+      }
+      const { data: res } = await apiClient.get<PaginatedResponse<Auction>>('/auctions', { params });
       setData(res);
     } catch {
       setError('Açık artırmalar yüklenemedi.');
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, statusFilter]);
 
   useEffect(() => { fetchAuctions(); }, [fetchAuctions]);
+
+  function setFilter(key: string) {
+    const params = new URLSearchParams();
+    if (key !== 'all') params.set('status', key);
+    params.set('page', '1');
+    router.push(`/auctions?${params.toString()}`);
+  }
 
   function goToPage(p: number) {
     const params = new URLSearchParams(searchParams.toString());
@@ -87,6 +112,23 @@ function AuctionsContent() {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-6">
+        {/* Filter tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+          {filterTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                statusFilter === tab.key
+                  ? 'bg-brand-500 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {loading && <LoadingState />}
         {error && <Alert className="mt-4">{error}</Alert>}
 

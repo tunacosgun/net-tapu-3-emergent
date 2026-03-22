@@ -13,7 +13,7 @@ import {
 } from '@/lib/ws-client';
 import apiClient from '@/lib/api-client';
 import { formatPrice } from '@/lib/format';
-import { Badge, Card, Alert, Button, LoadingState } from '@/components/ui';
+import { Badge, Card, Alert, Button, LoadingState, DetailPageSkeleton } from '@/components/ui';
 import type { Auction, Parcel, ParcelImage } from '@/types';
 
 /* ─── helpers ─── */
@@ -61,10 +61,10 @@ export default function AuctionDetailPage() {
   const showAvatarInAuction = useAuthStore((s) => s.showAvatarInAuction);
 
   const {
-    auctionDetail, auctionLoading, auctionError, hasActiveDeposit, depositLoading,
+    auctionDetail, auctionLoading, auctionError, userDeposit, hasActiveDeposit, depositLoading,
     depositVersion, status, currentPrice, bidCount, participantCount, watcherCount,
     timeRemainingMs, bidFeed, lastRejection, winnerIdMasked, finalPrice,
-    broadcastNameMap, timeExtensionAnimation, announcements,
+    broadcastNameMap, usernameMap, timeExtensionAnimation, announcements,
     setAuctionDetail, setAuctionError, setUserDeposit, setDepositLoading,
     invalidateDeposit, clearTimeExtensionAnimation,
   } = useAuctionStore();
@@ -208,7 +208,14 @@ export default function AuctionDetailPage() {
       const { data } = await apiClient.get<{ eligible: boolean; depositStatus: string | null }>(
         `/auctions/${auctionId}/my-participation`,
       );
-      setUserDeposit(data.eligible ? { status: data.depositStatus ?? 'held' } as any : null);
+      if (data.eligible) {
+        setUserDeposit({ status: data.depositStatus ?? 'held' } as any);
+      } else if (data.depositStatus) {
+        // User has a deposit but not yet approved (e.g. pending bank transfer)
+        setUserDeposit({ status: data.depositStatus } as any);
+      } else {
+        setUserDeposit(null);
+      }
     } catch { setUserDeposit(null); }
   }, [auctionId, userId, setUserDeposit, setDepositLoading]);
 
@@ -335,7 +342,7 @@ export default function AuctionDetailPage() {
   const parcelImages = parcel?.images?.filter((i) => i.status === 'ready') ?? [];
   const coverImage = parcelImages.find((i) => i.isCover) || parcelImages[0];
 
-  if (auctionLoading) return <div className="flex min-h-[400px] items-center justify-center"><LoadingState centered={false} /></div>;
+  if (auctionLoading) return <DetailPageSkeleton />;
   if (auctionError) return <div className="flex min-h-[400px] items-center justify-center"><p className="text-red-600">{auctionError}</p></div>;
 
   return (
@@ -532,7 +539,13 @@ export default function AuctionDetailPage() {
           )}
 
           {/* Deposit gating */}
-          {isLive && !depositLoading && !hasActiveDeposit && (
+          {isLive && !depositLoading && !hasActiveDeposit && userDeposit?.status && ['pending', 'awaiting_confirmation', 'awaiting_3ds'].includes(userDeposit.status) && (
+            <Alert variant="info" className="space-y-2">
+              <p className="font-semibold">Havale / EFT bildirimi alındı</p>
+              <p className="text-xs">Ödemeniz admin tarafından inceleniyor. Onaylandığında teklif verebilirsiniz.</p>
+            </Alert>
+          )}
+          {isLive && !depositLoading && !hasActiveDeposit && (!userDeposit || !['pending', 'awaiting_confirmation', 'awaiting_3ds'].includes(userDeposit?.status ?? '')) && (
             <Alert variant="warning" className="space-y-2">
               <p className="font-semibold">Teklif verebilmek için depozito yatırmanız gerekiyor.</p>
               <p className="text-xs">Gerekli depozito: {formatPrice(auctionDetail?.requiredDeposit ?? null)}</p>
@@ -749,9 +762,11 @@ export default function AuctionDetailPage() {
               const pInfo = getParticipantInfo(bid.user_id_masked);
               const isHighest = index === 0 && !bid.bid_id.startsWith('optimistic-');
               const isMe = !!myMaskedId && bid.user_id_masked === myMaskedId;
-              const displayName = adminName || revealedName || (isMe ? 'Siz' : pInfo.label);
+              const latestUsername = usernameMap[bid.user_id_masked];
+              const displayName = adminName || revealedName || (isMe ? 'Siz' : latestUsername ? `@${latestUsername}` : pInfo.label);
               const isRevealed = !!(adminName || revealedName);
-              const initials = isMe ? '👤' : pInfo.label.replace('Katılımcı ', 'K');
+              const hasUsername = !!latestUsername && !isMe && !adminName && !revealedName;
+              const initials = isMe ? '👤' : hasUsername ? latestUsername.charAt(0).toUpperCase() : pInfo.label.replace('Katılımcı ', 'K');
               return (
                 <div key={bid.bid_id} className={`flex items-center justify-between rounded-md px-3 py-2.5 transition-all ${bid.bid_id.startsWith('optimistic-') ? 'opacity-60 border border-dashed border-[var(--border)]' : isHighest ? 'border-2 border-brand-500 bg-brand-50 dark:bg-brand-950/20 shadow-sm animate-bid-flash' : 'border border-[var(--border)] animate-bid-flash'}`}>
                   <div className="flex items-center gap-2.5">

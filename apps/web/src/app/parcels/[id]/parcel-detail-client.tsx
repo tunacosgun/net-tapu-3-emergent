@@ -15,6 +15,12 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useSiteSettings } from '@/hooks/use-site-settings';
 import { getWatermarkedUrl } from '@/lib/watermark';
 import type { Parcel, ParcelImage } from '@/types';
+import {
+  Heart, Search as SearchIcon, ExternalLink, MapPin, Maximize2,
+  Calendar, Clock, FileText, ChevronLeft, ChevronRight, X,
+  Download, Printer, Share2, Phone, Bell, ImageIcon, Loader2,
+  Landmark, TreePine, Ruler, Tag, Eye, Building2,
+} from 'lucide-react';
 
 /* ─────────────────────── PDF Export ─────────────────────── */
 async function loadFontAsBase64(url: string): Promise<string> {
@@ -445,10 +451,10 @@ export default function ParcelDetailClient() {
   wpLines.push(parcelUrl);
   const whatsappMessage = encodeURIComponent(wpLines.join('\n'));
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
-  const tkgmUrl = parcel.ada && parcel.parsel && parcel.city && parcel.district
-    ? `https://parselsorgu.tkgm.gov.tr/#ara/hızlıara/${encodeURIComponent(parcel.city)}/${encodeURIComponent(parcel.district)}/-/-/${parcel.ada}/${parcel.parsel}`
-    : null;
-  const pricePerM2 = parcel.price && parcel.areaM2 ? Math.round(parseFloat(parcel.price) / parseFloat(parcel.areaM2)) : null;
+  const tkgmBaseUrl = 'https://parselsorgu.tkgm.gov.tr';
+  const pricePerM2 = parcel.pricePerM2
+    ? Math.round(parseFloat(parcel.pricePerM2))
+    : (parcel.price && parcel.areaM2 ? Math.round(parseFloat(parcel.price) / parseFloat(parcel.areaM2)) : null);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-4 print:px-0 print:py-0">
@@ -494,11 +500,11 @@ export default function ParcelDetailClient() {
                 <img
                   src={wmImages[selectedIdx] || resolveImageUrl(images[selectedIdx])}
                   alt={parcel.title}
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-cover"
                 />
                 <Badge variant={status.variant} className="absolute top-3 left-3 text-xs px-2.5 py-1 shadow">{status.label}</Badge>
-                <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded bg-black/60 px-2.5 py-1 text-white text-xs backdrop-blur-sm">
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/60 px-3 py-1.5 text-white text-xs backdrop-blur-sm cursor-pointer">
+                  <SearchIcon className="h-3.5 w-3.5" />
                   Büyük Fotoğraf
                 </div>
               </div>
@@ -521,9 +527,7 @@ export default function ParcelDetailClient() {
           ) : (
             <div className="flex items-center justify-center rounded-lg border border-[var(--border)] bg-gray-50" style={{ height: '380px' }}>
               <div className="text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={0.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                </svg>
+                <ImageIcon className="mx-auto h-12 w-12 text-gray-300" />
                 <p className="mt-2 text-sm text-[var(--muted-foreground)]">Henüz fotoğraf eklenmemiş</p>
               </div>
             </div>
@@ -542,19 +546,19 @@ export default function ParcelDetailClient() {
             <div className="flex items-center gap-2 print:hidden">
               {isAuthenticated && (
                 <button onClick={toggleFavorite} disabled={favToggling} title="Favorilerime Ekle"
-                  className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded border transition-all ${isFavorited ? 'border-red-200 bg-red-50 text-red-500' : 'border-[var(--border)] text-[var(--muted-foreground)] hover:text-red-500'}`}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-150 cursor-pointer ${isFavorited ? 'border-rose-200 bg-rose-50 text-rose-500' : 'border-[var(--border)] text-[var(--muted-foreground)] hover:text-rose-500 hover:border-rose-200'}`}
                 >
-                  <svg className="h-3.5 w-3.5" fill={isFavorited ? 'currentColor' : 'none'} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
-                  Favorilerime Ekle
+                  <Heart className="h-3.5 w-3.5" fill={isFavorited ? 'currentColor' : 'none'} />
+                  {isFavorited ? 'Favorilerde' : 'Favorilere Ekle'}
                 </button>
               )}
               <button onClick={handlePDF} disabled={pdfLoading} title="Yazdır"
                 className="flex items-center gap-1 text-xs px-3 py-1.5 rounded border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors disabled:opacity-50"
               >
                 {pdfLoading ? (
-                  <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18.75 12h.008v.008h-.008V12zm-3 0h.008v.008h-.008V12z" /></svg>
+                  <Printer className="h-3.5 w-3.5" />
                 )}
                 Yazdır
               </button>
@@ -586,8 +590,8 @@ export default function ParcelDetailClient() {
           {((parcel.favoriteCount ?? 0) > 0 || liveViewerCount > 0) && (
             <div className="mt-3 flex gap-2 text-xs print:hidden">
               {(parcel.favoriteCount ?? 0) > 0 && (
-                <span className="flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-red-600 font-medium">
-                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+                <span className="flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-rose-600 font-medium">
+                  <Heart className="h-3 w-3" fill="currentColor" />
                   {parcel.favoriteCount} favori
                 </span>
               )}
@@ -600,24 +604,44 @@ export default function ParcelDetailClient() {
             </div>
           )}
 
-          <div className="mt-3 flex flex-wrap gap-3 print:hidden">
-            {tkgmUrl && (
-              <a href={tkgmUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-brand-600 hover:underline"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
-                TKGM Parsel Sorgu
-              </a>
-            )}
-            {parcel.city && (
-              <a href={`https://kentrehberi.${parcel.city.toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ç/g,'c').replace(/ğ/g,'g')}.bel.tr`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-blue-600 hover:underline"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" /></svg>
-                E-Kent / Kent Rehberi
-              </a>
-            )}
-          </div>
+          {/* ─── TKGM & E-Kent Kutusu ─── */}
+          {(parcel.ada || parcel.city) && (
+            <div className="mt-3 rounded-lg border border-[var(--border)] bg-gray-50 p-3 print:hidden">
+              {parcel.ada && parcel.parsel && (
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="font-semibold text-gray-700">Ada: {parcel.ada} / Parsel: {parcel.parsel}</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`Ada: ${parcel.ada}, Parsel: ${parcel.parsel}`);
+                    }}
+                    className="rounded bg-white border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500 hover:bg-gray-100 transition-colors"
+                    title="Kopyala"
+                  >
+                    Kopyala
+                  </button>
+                </div>
+              )}
+              <div className="mt-2 flex flex-wrap gap-3">
+                <a href={tkgmBaseUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-xs font-medium text-brand-600 hover:bg-brand-50 transition-all duration-150 cursor-pointer"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  TKGM Parsel Sorgu
+                </a>
+                {parcel.city && (
+                  <a href={`https://kentrehberi.${parcel.city.toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ç/g,'c').replace(/ğ/g,'g')}.bel.tr`} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-all duration-150 cursor-pointer"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    E-Kent / Kent Rehberi
+                  </a>
+                )}
+              </div>
+              {parcel.ada && parcel.parsel && (
+                <p className="mt-1.5 text-[10px] text-gray-400">TKGM sitesinde İdari sekmesinden il/ilçe/mahalle seçip yukarıdaki ada ve parsel numaralarını girin.</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -674,7 +698,7 @@ export default function ParcelDetailClient() {
               onClick={() => setShowCallMe(true)}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 transition-colors shadow-sm"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+              <Phone className="h-4 w-4" />
               Sizi Arayalım
             </button>
 
@@ -682,7 +706,7 @@ export default function ParcelDetailClient() {
               onClick={() => setShowAppointment(true)}
               className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-100 transition-colors"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+              <Calendar className="h-4 w-4" />
               Online Randevu Al
             </button>
 
@@ -691,7 +715,7 @@ export default function ParcelDetailClient() {
                 onClick={() => isAuthenticated ? setShowOffer(true) : alert('Teklif vermek için giriş yapmanız gerekiyor.')}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600 transition-colors shadow-sm"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>
+                <Tag className="h-4 w-4" />
                 Teklif Ver
               </button>
             )}
@@ -707,7 +731,7 @@ export default function ParcelDetailClient() {
               <a href={`tel:${siteSettings.contact_phone}`}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+                <Phone className="h-4 w-4" />
                 {siteSettings.contact_phone}
               </a>
             )}
@@ -718,7 +742,7 @@ export default function ParcelDetailClient() {
                 <button onClick={async () => { try { await apiClient.post(`/parcels/${parcel.id}/price-alert`, {}); alert('Fiyat düşüş bildirimi aktif edildi!'); } catch { alert('Giriş yapmanız gerekiyor.'); } }}
                   className="flex w-full items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium hover:bg-[var(--muted)] transition-colors"
                 >
-                  <svg className="h-3.5 w-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+                  <Bell className="h-3.5 w-3.5 text-amber-500" />
                   Fiyat Düşünce Haber Ver
                 </button>
               </>
@@ -741,8 +765,8 @@ export default function ParcelDetailClient() {
           <div className="w-full max-w-md rounded-2xl bg-[var(--background)] border border-[var(--border)] shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-[var(--foreground)]">Teklif Ver</h3>
-              <button onClick={() => setShowOffer(false)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              <button onClick={() => setShowOffer(false)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-pointer transition-colors duration-150">
+                <X className="h-5 w-5" />
               </button>
             </div>
 
@@ -783,7 +807,7 @@ export default function ParcelDetailClient() {
               >
                 {offerSubmitting ? (
                   <span className="flex items-center gap-2">
-                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Gönderiliyor...
                   </span>
                 ) : (
@@ -861,17 +885,15 @@ function LightboxOverlay({
             }}
             className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-            </svg>
+            <Maximize2 className="h-4 w-4" />
             Tam ekran
           </button>
           <button
             onClick={onClose}
-            className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all"
+            className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
           >
             Kapat
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            <X className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -879,8 +901,8 @@ function LightboxOverlay({
       {/* Image area */}
       <div className="relative flex flex-1 items-center justify-center min-h-0 z-10 px-4">
         {images.length > 1 && (
-          <button className="absolute left-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white/70 hover:bg-black/70 hover:text-white z-10 transition-all" onClick={goPrev}>
-            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+          <button className="absolute left-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white/70 hover:bg-black/70 hover:text-white z-10 transition-all cursor-pointer" onClick={goPrev}>
+            <ChevronLeft className="h-7 w-7" />
           </button>
         )}
 
@@ -897,8 +919,8 @@ function LightboxOverlay({
         />
 
         {images.length > 1 && (
-          <button className="absolute right-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white/70 hover:bg-black/70 hover:text-white z-10 transition-all" onClick={goNext}>
-            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+          <button className="absolute right-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white/70 hover:bg-black/70 hover:text-white z-10 transition-all cursor-pointer" onClick={goNext}>
+            <ChevronRight className="h-7 w-7" />
           </button>
         )}
       </div>

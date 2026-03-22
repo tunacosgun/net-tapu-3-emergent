@@ -10,7 +10,7 @@ export function burnWatermark(
   watermarkText: string,
   options?: { opacity?: number; fontSize?: number; gap?: number },
 ): Promise<string> {
-  const { opacity = 0.12, fontSize = 32, gap = 120 } = options || {};
+  const { opacity = 0.06, fontSize = 28, gap = 200 } = options || {};
 
   return new Promise((resolve) => {
     // Fetch the image as blob to avoid CORS canvas tainting
