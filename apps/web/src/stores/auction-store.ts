@@ -14,6 +14,7 @@ const MAX_BID_FEED = 50;
 export interface BidFeedItem {
   bid_id: string;
   user_id_masked: string;
+  username?: string;
   amount: string;
   server_timestamp: string;
 }
@@ -54,6 +55,9 @@ interface AuctionState {
   lastRejection: BidRejectedMessage | null;
   winnerIdMasked: string | null;
   finalPrice: string | null;
+
+  // Username map: user_id_masked → latest username
+  usernameMap: Record<string, string>;
 
   // Broadcast name map (admin revealed names for everyone)
   broadcastNameMap: Record<string, string> | null;
@@ -118,6 +122,7 @@ const initialState = {
   lastRejection: null as BidRejectedMessage | null,
   winnerIdMasked: null,
   finalPrice: null,
+  usernameMap: {} as Record<string, string>,
   broadcastNameMap: null as Record<string, string> | null,
   optimisticBid: null as OptimisticBid | null,
   timeExtensionAnimation: null as { addedMinutes: number; timestamp: number } | null,
@@ -189,11 +194,16 @@ export const useAuctionStore = create<AuctionState>((set) => ({
       const item: BidFeedItem = {
         bid_id: msg.bid_id,
         user_id_masked: msg.user_id_masked,
+        username: msg.username,
         amount: msg.amount,
         server_timestamp: msg.server_timestamp,
       };
       const feed = [item, ...state.bidFeed].slice(0, MAX_BID_FEED);
+      const usernameMap = msg.username
+        ? { ...state.usernameMap, [msg.user_id_masked]: msg.username }
+        : state.usernameMap;
       return {
+        usernameMap,
         currentPrice: msg.amount,
         bidCount: msg.new_bid_count,
         bidFeed: feed,
