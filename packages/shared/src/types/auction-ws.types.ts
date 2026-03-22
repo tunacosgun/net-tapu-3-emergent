@@ -29,6 +29,7 @@ export interface BidAcceptedMessage {
   type: 'BID_ACCEPTED';
   bid_id: string;
   user_id_masked: string;  // privacy: partial ID only
+  username?: string;        // bidder's display username
   amount: string;
   server_timestamp: string;
   new_bid_count: number;
