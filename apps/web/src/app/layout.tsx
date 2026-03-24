@@ -10,6 +10,7 @@ import { FullBanGate } from '@/components/full-ban-gate';
 import { fetchSiteSettingsServer } from '@/lib/server-api';
 import { OrganizationJsonLd, WebSiteJsonLd, RealEstateAgentJsonLd } from '@/components/json-ld';
 import { GoogleOneTap } from '@/components/google-one-tap';
+import { ScrollToTop } from '@/components/ui/scroll-to-top';
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 import './globals.css';
 
@@ -99,6 +100,7 @@ export default function RootLayout({
               </div>
               <MobileBottomNav />
               <ApiErrorToastContainer />
+              <ScrollToTop />
               <GoogleOneTap />
             </SiteSettingsProvider>
           </AuthProvider>

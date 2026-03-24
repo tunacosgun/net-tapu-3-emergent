@@ -784,9 +784,13 @@ export default function ParcelDetailClient() {
                 <label className="mb-1.5 block text-sm font-medium text-[var(--foreground)]">Teklif Tutarı (TL) *</label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   value={offerAmount}
-                  onChange={(e) => setOfferAmount(e.target.value.replace(/[^0-9.,]/g, ''))}
-                  placeholder="Örn: 5000000"
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, '');
+                    setOfferAmount(raw ? Number(raw).toLocaleString('tr-TR') : '');
+                  }}
+                  placeholder="Örn: 5.000.000"
                   className="w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
               </div>
