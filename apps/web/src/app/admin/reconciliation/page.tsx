@@ -132,7 +132,9 @@ export default function AdminReconciliationPage() {
                         <td className="py-2 pr-4 text-xs font-mono">{truncateId(p.id)}</td>
                         <td className="py-2 pr-4">{formatPrice(p.amount)} {p.currency}</td>
                         <td className="py-2 pr-4">
-                          <Badge className="bg-yellow-100 text-yellow-700">{p.status}</Badge>
+                          <Badge className="bg-yellow-100 text-yellow-700">
+                            {p.status === 'pending' ? 'Beklemede' : p.status === 'awaiting_3ds' ? '3DS Bekliyor' : p.status === 'provisioned' ? 'Onaylandı' : p.status === 'completed' ? 'Tamamlandı' : p.status === 'refunded' ? 'İade Edildi' : p.status}
+                          </Badge>
                         </td>
                         <td className="py-2 pr-4 text-xs">{p.staleSinceMinutes} dk</td>
                         <td className="py-2 text-xs font-mono">{truncateId(p.userId)}</td>
@@ -165,7 +167,9 @@ export default function AdminReconciliationPage() {
                         <td className="py-2 pr-4 text-xs font-mono">{truncateId(r.id)}</td>
                         <td className="py-2 pr-4">{formatPrice(r.amount)} {r.currency}</td>
                         <td className="py-2 pr-4">
-                          <Badge className="bg-red-100 text-red-700">{r.status}</Badge>
+                          <Badge className="bg-red-100 text-red-700">
+                            {r.status === 'pending' ? 'Beklemede' : r.status === 'processing' ? 'İşleniyor' : r.status === 'completed' ? 'Tamamlandı' : r.status === 'failed' ? 'Başarısız' : r.status}
+                          </Badge>
                         </td>
                         <td className="py-2 pr-4 text-xs">{r.staleSinceMinutes} dk</td>
                         <td className="py-2 text-xs">{r.reason}</td>

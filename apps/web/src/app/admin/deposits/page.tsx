@@ -26,8 +26,27 @@ interface DepositsResponse {
 
 const columns: Column<Deposit>[] = [
   { header: 'ID', accessor: (d) => <span className="text-xs font-mono">{truncateId(d.id)}</span> },
-  { header: 'Kullanıcı', accessor: (d) => <span className="text-xs font-mono">{truncateId(d.userId)}</span> },
-  { header: 'Açık Artırma', accessor: (d) => <span className="text-xs font-mono">{truncateId(d.auctionId)}</span> },
+  {
+    header: 'Kullanıcı',
+    accessor: (d) => (
+      <div>
+        <span className="text-sm">
+          {(d as any).user ? `${(d as any).user.firstName || ''} ${(d as any).user.lastName || ''}`.trim() || (d as any).user.email : truncateId(d.userId)}
+        </span>
+        {(d as any).user?.email && (
+          <span className="block text-xs text-[var(--muted-foreground)]">{(d as any).user.email}</span>
+        )}
+      </div>
+    ),
+  },
+  {
+    header: 'Açık Artırma',
+    accessor: (d) => (
+      <span className="text-sm">
+        {(d as any).auction?.title || truncateId(d.auctionId)}
+      </span>
+    ),
+  },
   { header: 'Tutar', accessor: (d) => <span className="font-mono">{formatPrice(d.amount)}</span> },
   {
     header: 'Durum',

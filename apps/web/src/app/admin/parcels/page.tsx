@@ -7,6 +7,7 @@ import { showApiError } from '@/components/api-error-toast';
 import { TableSkeleton } from '@/components/skeleton';
 import { formatPrice, formatDate } from '@/lib/format';
 import { PageHeader, DataTable, Badge, Pagination, Button, Alert, type Column } from '@/components/ui';
+import { Map } from 'lucide-react';
 import type { Parcel, PaginatedResponse } from '@/types';
 
 const statusLabels: Record<string, string> = {
@@ -20,8 +21,8 @@ const statusLabels: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
-  sold: 'bg-blue-100 text-blue-700',
-  deposit_taken: 'bg-blue-100 text-blue-700',
+  sold: 'bg-red-100 text-red-700',
+  deposit_taken: 'bg-yellow-100 text-yellow-700',
   reserved: 'bg-purple-100 text-purple-700',
   withdrawn: 'bg-gray-100 text-gray-400',
   draft: 'bg-gray-100 text-gray-500',
@@ -92,6 +93,8 @@ export default function AdminParcelsPage() {
     if (field === 'price') setEditValue(parcel.price || '');
     else if (field === 'status') setEditValue(parcel.status);
     else if (field === 'title') setEditValue(parcel.title);
+    else if (field === 'ada') setEditValue(parcel.ada || '');
+    else if (field === 'parsel') setEditValue(parcel.parsel || '');
   }
 
   async function saveEdit() {
@@ -158,26 +161,42 @@ export default function AdminParcelsPage() {
       ),
     },
     {
-      header: 'Başlık',
-      accessor: (p) =>
-        editingCell?.id === p.id && editingCell.field === 'title' ? (
-          <input
-            ref={editRef}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={saveEdit}
-            className="w-full rounded border border-brand-500 px-2 py-1 text-sm focus:outline-none"
-          />
-        ) : (
-          <span
-            className="font-medium cursor-pointer hover:text-brand-500"
-            onDoubleClick={() => startEdit(p, 'title')}
-            title="Düzenlemek için çift tıklayın"
-          >
-            {p.title}
-          </span>
-        ),
+      header: 'İlan',
+      accessor: (p) => (
+        <div className="flex items-center gap-3">
+          {p.images && p.images.length > 0 ? (
+            <img
+              src={typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url}
+              alt=""
+              className="h-10 w-14 rounded object-cover shrink-0 bg-gray-100"
+            />
+          ) : (
+            <div className="h-10 w-14 rounded bg-gray-100 flex items-center justify-center shrink-0">
+              <Map className="h-4 w-4 text-gray-400" />
+            </div>
+          )}
+          <div className="min-w-0">
+            {editingCell?.id === p.id && editingCell.field === 'title' ? (
+              <input
+                ref={editRef}
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={saveEdit}
+                className="w-full rounded border border-brand-500 px-2 py-1 text-sm focus:outline-none"
+              />
+            ) : (
+              <span
+                className="font-medium cursor-pointer hover:text-brand-500 line-clamp-2 text-sm"
+                onDoubleClick={() => startEdit(p, 'title')}
+                title={p.title}
+              >
+                {p.title}
+              </span>
+            )}
+          </div>
+        </div>
+      ),
     },
     {
       header: 'Şehir',
@@ -219,6 +238,52 @@ export default function AdminParcelsPage() {
       ),
     },
     {
+      header: 'Ada',
+      className: 'w-20',
+      accessor: (p) =>
+        editingCell?.id === p.id && editingCell.field === 'ada' ? (
+          <input
+            ref={editRef}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={saveEdit}
+            className="w-16 rounded border border-brand-500 px-2 py-1 text-sm focus:outline-none"
+          />
+        ) : (
+          <span
+            className="cursor-pointer hover:text-brand-500 text-sm"
+            onDoubleClick={() => startEdit(p, 'ada')}
+            title="Düzenlemek için çift tıklayın"
+          >
+            {p.ada || '—'}
+          </span>
+        ),
+    },
+    {
+      header: 'Parsel',
+      className: 'w-20',
+      accessor: (p) =>
+        editingCell?.id === p.id && editingCell.field === 'parsel' ? (
+          <input
+            ref={editRef}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={saveEdit}
+            className="w-16 rounded border border-brand-500 px-2 py-1 text-sm focus:outline-none"
+          />
+        ) : (
+          <span
+            className="cursor-pointer hover:text-brand-500 text-sm"
+            onDoubleClick={() => startEdit(p, 'parsel')}
+            title="Düzenlemek için çift tıklayın"
+          >
+            {p.parsel || '—'}
+          </span>
+        ),
+    },
+    {
       header: 'Durum',
       accessor: (p) =>
         editingCell?.id === p.id && editingCell.field === 'status' ? (
@@ -228,7 +293,7 @@ export default function AdminParcelsPage() {
               const newStatus = e.target.value;
               setEditValue(newStatus);
               apiClient
-                .patch(`/parcels/${p.id}`, { status: newStatus })
+                .patch(`/parcels/${p.id}/status`, { status: newStatus })
                 .then(() => {
                   setData((prev) => {
                     if (!prev) return prev;

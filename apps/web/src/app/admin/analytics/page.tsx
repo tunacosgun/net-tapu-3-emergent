@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import apiClient from '@/lib/api-client';
 import { formatPrice } from '@/lib/format';
 import { StatCard, LoadingState, Card, PageHeader } from '@/components/ui';
+import { Plus, Phone, HandCoins, ClipboardList } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface AnalyticsOverview {
   parcels: {
@@ -47,7 +49,21 @@ export default function AdminAnalyticsPage() {
     // Try the analytics endpoint; fallback to constructing from individual endpoints
     apiClient
       .get<AnalyticsOverview>('/admin/analytics/overview', { params: { period } })
-      .then(({ data }) => setData(data))
+      .then(({ data: d }) => {
+        // Normalize: ensure all nested objects exist with safe defaults
+        const p = d.parcels || {};
+        const a = d.auctions || {};
+        const u = d.users || {};
+        const f = d.finance || {};
+        const c = d.crm || {};
+        setData({
+          parcels: { total: p.total ?? 0, active: p.active ?? 0, sold: p.sold ?? 0, deposit_taken: p.deposit_taken ?? 0, draft: p.draft ?? 0 },
+          auctions: { total: a.total ?? 0, live: a.live ?? 0, scheduled: a.scheduled ?? 0, ended: a.ended ?? 0, settled: a.settled ?? 0 },
+          users: { total: u.total ?? 0, newThisMonth: u.newThisMonth ?? 0, verified: u.verified ?? 0 },
+          finance: { totalRevenue: f.totalRevenue ?? '0', totalDeposits: f.totalDeposits ?? '0', totalRefunds: f.totalRefunds ?? '0' },
+          crm: { contactRequests: c.contactRequests ?? 0, pendingOffers: c.pendingOffers ?? 0, appointments: c.appointments ?? 0 },
+        });
+      })
       .catch(async () => {
         // Fallback: aggregate from existing endpoints
         try {
@@ -172,10 +188,10 @@ export default function AdminAnalyticsPage() {
           <section>
             <h2 className="text-lg font-semibold">Hızlı İşlemler</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <QuickActionCard href="/admin/parcels/new" label="Yeni Arsa Ekle" icon="➕" />
-              <QuickActionCard href="/admin/contacts" label="İletişim Talepleri" icon="📞" />
-              <QuickActionCard href="/admin/offers" label="Bekleyen Teklifler" icon="💰" />
-              <QuickActionCard href="/admin/reconciliation" label="Mutabakat" icon="📋" />
+              <QuickActionCard href="/admin/parcels/new" label="Yeni Arsa Ekle" icon={Plus} />
+              <QuickActionCard href="/admin/contacts" label="İletişim Talepleri" icon={Phone} />
+              <QuickActionCard href="/admin/offers" label="Bekleyen Teklifler" icon={HandCoins} />
+              <QuickActionCard href="/admin/reconciliation" label="Mutabakat" icon={ClipboardList} />
             </div>
           </section>
         </>
@@ -187,18 +203,18 @@ export default function AdminAnalyticsPage() {
 function QuickActionCard({
   href,
   label,
-  icon,
+  icon: Icon,
 }: {
   href: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
 }) {
   return (
     <a
       href={href}
       className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-4 hover:border-brand-500 hover:shadow-sm transition-all"
     >
-      <span className="text-2xl">{icon}</span>
+      <Icon className="h-5 w-5 text-brand-500 shrink-0" />
       <span className="font-medium text-sm">{label}</span>
       <span className="ml-auto text-[var(--muted-foreground)]">→</span>
     </a>

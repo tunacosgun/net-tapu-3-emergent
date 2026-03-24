@@ -90,7 +90,7 @@ export default function AdminTestimonialsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Bu yorumu silmek istediginize emin misiniz?')) return;
+    if (!confirm('Bu yorumu silmek istediğinize emin misiniz?')) return;
     try {
       await apiClient.delete(`/admin/testimonials/${id}`);
       fetchData();
@@ -111,7 +111,8 @@ export default function AdminTestimonialsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Musteri Yorumlari" subtitle="Musteri memnuniyet yorumlarini yonetin" />
+      <PageHeader title="Müşteri Yorumları" subtitle="Müşteri memnuniyet yorumlarını yönetin" />
+
 
       <div className="flex justify-end">
         <Button onClick={() => { resetForm(); setShowForm(true); }}>+ Yeni Yorum</Button>
@@ -121,10 +122,10 @@ export default function AdminTestimonialsPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-gray-900">{editing ? 'Yorum Duzenle' : 'Yeni Yorum'}</h3>
+            <h3 className="text-lg font-bold text-gray-900">{editing ? 'Yorum Düzenle' : 'Yeni Yorum'}</h3>
             <form onSubmit={handleSave} className="mt-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Musteri Adi *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Adı *</label>
                 <input
                   type="text"
                   value={name}
@@ -140,7 +141,7 @@ export default function AdminTestimonialsPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  placeholder="Orn: Istanbul, Yatirimci"
+                  placeholder="Örn: İstanbul, Yatırımcı"
                 />
               </div>
               <div>
@@ -162,7 +163,7 @@ export default function AdminTestimonialsPage() {
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                   >
                     {[5, 4, 3, 2, 1].map((r) => (
-                      <option key={r} value={r}>{r} Yildiz</option>
+                      <option key={r} value={r}>{r} Yıldız</option>
                     ))}
                   </select>
                 </div>
@@ -179,9 +180,9 @@ export default function AdminTestimonialsPage() {
               </div>
               <div className="flex gap-3 pt-2">
                 <Button type="submit" disabled={saving}>
-                  {saving ? 'Kaydediliyor...' : editing ? 'Guncelle' : 'Kaydet'}
+                  {saving ? 'Kaydediliyor...' : editing ? 'Güncelle' : 'Kaydet'}
                 </Button>
-                <Button variant="secondary" type="button" onClick={resetForm}>Iptal</Button>
+                <Button variant="secondary" type="button" onClick={resetForm}>İptal</Button>
               </div>
             </form>
           </div>
@@ -225,10 +226,10 @@ export default function AdminTestimonialsPage() {
                   </button>
                 )}
                 {t.isApproved && (
-                  <span className="rounded bg-green-50 px-2 py-1 text-xs text-green-700">Onaylanmis</span>
+                  <span className="rounded bg-green-50 px-2 py-1 text-xs text-green-700">Onaylanmış</span>
                 )}
                 <button onClick={() => startEdit(t)} className="rounded bg-brand-50 px-2 py-1 text-xs text-brand-700 hover:bg-brand-100">
-                  Duzenle
+                  Düzenle
                 </button>
                 <button onClick={() => handleDelete(t.id)} className="rounded bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100">
                   Sil
@@ -241,7 +242,7 @@ export default function AdminTestimonialsPage() {
 
       {items.length === 0 && (
         <div className="text-center py-12 text-gray-400">
-          <p className="text-lg">Henuz musteri yorumu eklenmemis</p>
+          <p className="text-lg">Henüz müşteri yorumu eklenmemiş</p>
         </div>
       )}
     </div>
