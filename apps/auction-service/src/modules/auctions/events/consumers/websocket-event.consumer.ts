@@ -38,6 +38,7 @@ export class WebSocketEventConsumer implements OutboxConsumer, OnModuleInit {
           type: 'BID_ACCEPTED',
           bid_id: p.bid_id,
           user_id_masked: p.user_id_masked,
+          username: p.username,
           amount: p.amount,
           server_timestamp: p.server_timestamp,
           new_bid_count: p.new_bid_count,

@@ -15,8 +15,11 @@ import {
   HttpStatus,
   UnauthorizedException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AuctionService } from '../services/auction.service';
 import { ConsentService } from '../services/consent.service';
+import { Bid } from '../entities/bid.entity';
 import { CreateAuctionDto } from '../dto/create-auction.dto';
 import { UpdateAuctionStatusDto } from '../dto/update-auction-status.dto';
 import { ListAuctionsQueryDto } from '../dto/list-auctions-query.dto';
@@ -29,6 +32,8 @@ export class AuctionController {
   constructor(
     private readonly auctionService: AuctionService,
     private readonly consentService: ConsentService,
+    @InjectRepository(Bid)
+    private readonly bidRepo: Repository<Bid>,
   ) {}
 
   @Post()
@@ -53,8 +58,29 @@ export class AuctionController {
   }
 
   @Get(':id')
-  async findById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.auctionService.findById(id);
+  async findById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('include_bids') includeBids?: string,
+  ) {
+    const auction = await this.auctionService.findById(id);
+    if (includeBids === 'true' || includeBids === '1') {
+      const bids = await this.bidRepo.find({
+        where: { auctionId: id },
+        order: { serverTs: 'DESC' },
+        take: 50,
+        select: ['id', 'auctionId', 'userId', 'amount', 'serverTs'],
+      });
+      return {
+        ...auction,
+        recentBids: bids.map((b) => ({
+          id: b.id,
+          user_id: b.userId.slice(0, 8) + '****',
+          amount: b.amount,
+          server_ts: b.serverTs.toISOString(),
+        })),
+      };
+    }
+    return auction;
   }
 
   @Get(':id/my-participation')
@@ -84,6 +110,32 @@ export class AuctionController {
     @Body() dto: UpdateAuctionStatusDto,
   ) {
     return this.auctionService.updateStatus(id, dto);
+  }
+
+  // ── Bid History (public, read-only) ────────────────────────────
+
+  @Get(':id/bid-history')
+  async listBids(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('limit') limit?: string,
+  ) {
+    const take = Math.min(parseInt(limit || '50', 10) || 50, 100);
+    const bids = await this.bidRepo.find({
+      where: { auctionId: id },
+      order: { serverTs: 'DESC' },
+      take,
+      select: ['id', 'auctionId', 'userId', 'amount', 'serverTs'],
+    });
+    return {
+      data: bids.map((b) => ({
+        id: b.id,
+        auction_id: b.auctionId,
+        user_id: b.userId.slice(0, 8) + '****',
+        amount: b.amount,
+        server_ts: b.serverTs.toISOString(),
+      })),
+      total: bids.length,
+    };
   }
 
   // ── Auction Consent Endpoints ──────────────────────────────────

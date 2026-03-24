@@ -1,72 +1,82 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
 import NotificationBell from '@/components/admin/NotificationBell';
+import {
+  LayoutDashboard, BarChart3, Users, ShieldBan, Map, Gavel,
+  CreditCard, Landmark, ClipboardList, Phone, CalendarDays,
+  HandCoins, FileText, HelpCircle, Trophy, MessageSquare,
+  Target, Handshake, Settings, Bell,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 const ADMIN_ROLES = ['superadmin', 'admin'];
 
-const navSections = [
+const navSections: Array<{
+  title: string | null;
+  items: Array<{ href: string; label: string; icon: LucideIcon }>;
+}> = [
   {
     title: null,
     items: [
-      { href: '/admin', label: 'Genel Bakış', icon: '🏠' },
-      { href: '/admin/analytics', label: 'Analitik', icon: '📊' },
+      { href: '/admin', label: 'Genel Bakış', icon: LayoutDashboard },
+      { href: '/admin/analytics', label: 'Analitik', icon: BarChart3 },
     ],
   },
   {
     title: 'Kullanıcılar',
     items: [
-      { href: '/admin/users', label: 'Kullanıcılar', icon: '👥' },
-      { href: '/admin/bans', label: 'Yasaklamalar', icon: '🚫' },
+      { href: '/admin/users', label: 'Kullanıcılar', icon: Users },
+      { href: '/admin/bans', label: 'Yasaklamalar', icon: ShieldBan },
     ],
   },
   {
     title: 'Gayrimenkul',
     items: [
-      { href: '/admin/parcels', label: 'Arsalar', icon: '📦' },
-      { href: '/admin/auctions', label: 'Açık Artırmalar', icon: '🔨' },
+      { href: '/admin/parcels', label: 'Arsalar', icon: Map },
+      { href: '/admin/auctions', label: 'Açık Artırmalar', icon: Gavel },
     ],
   },
   {
     title: 'Finans',
     items: [
-      { href: '/admin/deposits', label: 'Depozitolar', icon: '💳' },
-      { href: '/admin/bank-transfers', label: 'Havale / EFT', icon: '🏦' },
-      { href: '/admin/reconciliation', label: 'Mutabakat', icon: '📋' },
+      { href: '/admin/deposits', label: 'Depozitolar', icon: CreditCard },
+      { href: '/admin/bank-transfers', label: 'Havale / EFT', icon: Landmark },
+      { href: '/admin/reconciliation', label: 'Mutabakat', icon: ClipboardList },
     ],
   },
   {
     title: 'CRM',
     items: [
-      { href: '/admin/contacts', label: 'İletişim Talepleri', icon: '📞' },
-      { href: '/admin/appointments', label: 'Randevular', icon: '📅' },
-      { href: '/admin/offers', label: 'Teklifler', icon: '💰' },
+      { href: '/admin/contacts', label: 'İletişim Talepleri', icon: Phone },
+      { href: '/admin/appointments', label: 'Randevular', icon: CalendarDays },
+      { href: '/admin/offers', label: 'Teklifler', icon: HandCoins },
     ],
   },
   {
     title: 'İçerik',
     items: [
-      { href: '/admin/pages', label: 'Sayfalar', icon: '📄' },
-      { href: '/admin/faq', label: 'S.S.S.', icon: '❓' },
-      { href: '/admin/references', label: 'Referanslar', icon: '🏆' },
-      { href: '/admin/testimonials', label: 'Yorumlar', icon: '💬' },
+      { href: '/admin/pages', label: 'Sayfalar', icon: FileText },
+      { href: '/admin/faq', label: 'S.S.S.', icon: HelpCircle },
+      { href: '/admin/references', label: 'Referanslar', icon: Trophy },
+      { href: '/admin/testimonials', label: 'Yorumlar', icon: MessageSquare },
     ],
   },
   {
     title: 'Pazarlama',
     items: [
-      { href: '/admin/campaigns', label: 'Kampanyalar', icon: '🎯' },
-      { href: '/admin/dealers', label: 'Bayiler / Danışmanlar', icon: '🤝' },
+      { href: '/admin/campaigns', label: 'Kampanyalar', icon: Target },
+      { href: '/admin/dealers', label: 'Bayiler / Danışmanlar', icon: Handshake },
     ],
   },
   {
     title: 'Sistem',
     items: [
-      { href: '/admin/settings', label: 'Ayarlar', icon: '⚙️' },
-      { href: '/admin/notifications', label: 'Bildirimler', icon: '🔔' },
+      { href: '/admin/settings', label: 'Ayarlar', icon: Settings },
+      { href: '/admin/notifications', label: 'Bildirimler', icon: Bell },
     ],
   },
 ];
@@ -78,6 +88,7 @@ export default function AdminLayout({
 }) {
   const { user, isLoading, isAuthenticated } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (isLoading) return;
@@ -121,16 +132,27 @@ export default function AdminLayout({
                 </p>
               )}
               <div className="mt-1 space-y-0.5">
-                {section.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-[var(--background)] transition-colors"
-                  >
-                    <span className="text-base">{item.icon}</span>
-                    {item.label}
-                  </Link>
-                ))}
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    item.href === '/admin'
+                      ? pathname === '/admin'
+                      : pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm cursor-pointer transition-colors duration-150 ${
+                        isActive
+                          ? 'bg-brand-50 text-brand-700 font-medium dark:bg-brand-950/20 dark:text-brand-400'
+                          : 'text-[var(--foreground)] hover:bg-[var(--background)]'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -145,7 +167,7 @@ export default function AdminLayout({
           </span>
           <div className="flex items-center gap-4">
             <NotificationBell />
-            <Link href="/" className="text-xs text-brand-500 hover:underline">
+            <Link href="/" className="text-xs text-brand-500 hover:underline cursor-pointer transition-colors duration-150">
               Siteye Dön →
             </Link>
           </div>

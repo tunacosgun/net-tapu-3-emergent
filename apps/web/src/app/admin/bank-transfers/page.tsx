@@ -41,26 +41,34 @@ export default function BankTransfersPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   async function fetchTransfers() {
+    setError(null);
     try {
-      const { data } = await apiClient.get('/admin/payments', {
+      const { data } = await apiClient.get('/payments/admin/list', {
         params: { paymentMethod: 'bank_transfer', limit: 100, sortBy: 'createdAt', sortOrder: 'DESC' },
       });
       setTransfers(data.data || data);
-    } catch {
-      setError('Havale listesi alınamadı.');
+    } catch (err: any) {
+      // Only show error if it's not an auth issue (auth interceptor handles retries)
+      if (err?.response?.status !== 401) {
+        setError('Havale listesi alınamadı.');
+      }
     }
     setLoading(false);
   }
 
-  useEffect(() => { fetchTransfers(); }, []);
+  useEffect(() => {
+    // Small delay to ensure auth token is ready after page navigation
+    const timer = setTimeout(fetchTransfers, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   async function handleAction(id: string, action: 'verify' | 'reject') {
     setActionLoading(id);
     try {
       if (action === 'verify') {
-        await apiClient.patch(`/admin/payments/${id}/capture`);
+        await apiClient.patch(`/payments/${id}/verify-transfer`);
       } else {
-        await apiClient.patch(`/admin/payments/${id}/cancel`);
+        await apiClient.patch(`/payments/${id}/cancel`);
       }
       await fetchTransfers();
     } catch (err: any) {

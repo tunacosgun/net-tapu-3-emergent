@@ -6,10 +6,10 @@ import { LoadingState, Alert, EmptyState } from '@/components/ui';
 import type { Reference } from '@/types';
 
 const refTypeLabels: Record<string, string> = {
-  partner: 'Is Ortagi',
+  partner: 'İş Ortağı',
   completed_project: 'Tamamlanan Proje',
   project: 'Tamamlanan Proje',
-  testimonial: 'Musteri Yorumu',
+  testimonial: 'Müşteri Yorumu',
   media: 'Medya',
   certification: 'Sertifika',
 };
@@ -27,7 +27,7 @@ export function ReferencesContent() {
       const { data } = await apiClient.get<Reference[]>('/content/references');
       setReferences(data);
     } catch {
-      setError('Referanslar yuklenirken bir hata olustu.');
+      setError('Referanslar yüklenirken bir hata oluştu.');
     } finally {
       setLoading(false);
     }
@@ -47,9 +47,9 @@ export function ReferencesContent() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">Referanslarimiz</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Referanslarımız</h1>
       <p className="mt-2 text-sm text-gray-500">
-        Is ortaklarimiz ve basarili projelerimiz
+        İş ortaklarımız ve başarılı projelerimiz
       </p>
 
       {/* Type filter tabs */}
@@ -63,7 +63,7 @@ export function ReferencesContent() {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            Tumu ({references.length})
+            Tümü ({references.length})
           </button>
           {types.map((type) => (
             <button
@@ -122,7 +122,7 @@ export function ReferencesContent() {
           ))}
         </div>
       ) : (
-        <EmptyState message="Henuz referans eklenmemis." />
+        <EmptyState message="Henüz referans eklenmemiş." />
       )}
 
       {/* Stats */}

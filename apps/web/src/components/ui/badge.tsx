@@ -9,7 +9,7 @@ const variantClasses = {
   // Parcel status variants
   active: 'bg-green-100 text-green-700',
   sold: 'bg-red-100 text-red-700',
-  deposit_taken: 'bg-blue-100 text-blue-700',
+  deposit_taken: 'bg-yellow-100 text-yellow-700',
   draft: 'bg-gray-100 text-gray-500',
   withdrawn: 'bg-gray-100 text-gray-400',
   reserved: 'bg-purple-100 text-purple-700',
@@ -59,7 +59,7 @@ export function parcelStatusColor(status: string): string {
     case 'sold':
       return '#ef4444'; // red
     case 'deposit_taken':
-      return '#3b82f6'; // blue
+      return '#eab308'; // yellow
     case 'reserved':
       return '#a855f7'; // purple
     case 'draft':

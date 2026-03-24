@@ -482,6 +482,87 @@ export class PaymentService {
     }
   }
 
+  // ── Verify Bank Transfer ────────────────────────────────────
+  // Admin approves a pending bank transfer → mark as completed directly
+  async verifyBankTransfer(paymentId: string): Promise<Payment> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+
+    try {
+      const locked = await qr.manager
+        .createQueryBuilder(Payment, 'p')
+        .setLock('pessimistic_write')
+        .where('p.id = :id', { id: paymentId })
+        .getOne();
+
+      if (!locked) {
+        throw new NotFoundException(`Payment ${paymentId} not found`);
+      }
+      if (locked.paymentMethod !== 'bank_transfer') {
+        throw new BadRequestException('Bu işlem sadece havale/EFT ödemeleri için geçerlidir');
+      }
+      if (locked.status !== PaymentStatus.PENDING) {
+        throw new BadRequestException(`Ödeme durumu '${locked.status}' olduğu için onaylanamaz`);
+      }
+
+      // Two-step transition: pending → provisioned → completed (enforced by DB trigger)
+      locked.status = PaymentStatus.PROVISIONED;
+      await qr.manager.save(Payment, locked);
+
+      locked.status = PaymentStatus.COMPLETED;
+      await qr.manager.save(Payment, locked);
+
+      // If this payment is for an auction deposit, create deposit + participant
+      if (locked.auctionId) {
+        // Upsert deposit
+        const existingDeposit = await qr.manager.query(
+          `SELECT id FROM payments.deposits WHERE auction_id = $1 AND user_id = $2 LIMIT 1`,
+          [locked.auctionId, locked.userId],
+        );
+        let depositId: string;
+        if (existingDeposit.length > 0) {
+          depositId = existingDeposit[0].id;
+          await qr.manager.query(
+            `UPDATE payments.deposits SET status = 'collected' WHERE id = $1`,
+            [depositId],
+          );
+        } else {
+          const insertResult = await qr.manager.query(
+            `INSERT INTO payments.deposits (user_id, auction_id, amount, currency, status, payment_method, idempotency_key)
+             VALUES ($1, $2, $3, $4, 'collected', 'bank_transfer', $5)
+             RETURNING id`,
+            [locked.userId, locked.auctionId, locked.amount, locked.currency, locked.idempotencyKey],
+          );
+          depositId = insertResult[0].id;
+        }
+
+        // Upsert auction participant (eligible = true)
+        await qr.manager.query(
+          `INSERT INTO auctions.auction_participants (auction_id, user_id, deposit_id, eligible, registered_at)
+           VALUES ($1, $2, $3, TRUE, NOW())
+           ON CONFLICT (auction_id, user_id) DO UPDATE SET
+             deposit_id = EXCLUDED.deposit_id,
+             eligible = TRUE,
+             revoked_at = NULL,
+             revoke_reason = NULL`,
+          [locked.auctionId, locked.userId, depositId],
+        );
+
+        this.logger.log(`Bank transfer: deposit + participant created for auction=${locked.auctionId} user=${locked.userId}`);
+      }
+
+      await qr.commitTransaction();
+      this.logger.log(`Bank transfer ${paymentId} verified: pending → provisioned → completed`);
+      return locked;
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
   // ── Capture ────────────────────────────────────────────────
   // Lock-first: acquire FOR UPDATE before POS call to prevent
   // double-capture and capture/cancel races (C3+C4).
@@ -679,6 +760,35 @@ export class PaymentService {
     }
 
     qb.orderBy('p.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, meta: { total, page, limit } };
+  }
+
+  async findAllAdmin(
+    query: ListPaymentsQueryDto & { paymentMethod?: string; sortBy?: string; sortOrder?: string },
+  ): Promise<{ data: Payment[]; meta: { total: number; page: number; limit: number } }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    const qb = this.paymentRepo
+      .createQueryBuilder('p');
+
+    if (query.status) {
+      qb.andWhere('p.status = :status', { status: query.status });
+    }
+    if (query.auctionId) {
+      qb.andWhere('p.auction_id = :auctionId', { auctionId: query.auctionId });
+    }
+    if (query.paymentMethod) {
+      qb.andWhere('p.payment_method = :pm', { pm: query.paymentMethod });
+    }
+
+    const sortCol = query.sortBy === 'createdAt' ? 'p.created_at' : 'p.created_at';
+    const sortDir = query.sortOrder === 'ASC' ? 'ASC' : 'DESC';
+    qb.orderBy(sortCol, sortDir)
       .skip((page - 1) * limit)
       .take(limit);
 

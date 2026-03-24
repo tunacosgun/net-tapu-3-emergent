@@ -8,9 +8,11 @@ import { showApiError } from '@/components/api-error-toast';
 import { useAuthStore } from '@/stores/auth-store';
 import { Card, Button, Alert, LoadingState } from '@/components/ui';
 import { FormField } from '@/components/form-field';
+import { Camera, CheckCircle, AlertTriangle, Heart, HandCoins, Gavel, ChevronRight, ShieldCheck, Clock } from 'lucide-react';
 
 interface UserProfile {
   id: string;
+  username: string | null;
   email: string;
   firstName: string | null;
   lastName: string | null;
@@ -40,7 +42,7 @@ export default function ProfilePage() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<{ firstName: string; lastName: string; phone: string }>();
+  } = useForm<{ username: string; firstName: string; lastName: string; phone: string }>();
 
   useEffect(() => {
     apiClient
@@ -48,6 +50,7 @@ export default function ProfilePage() {
       .then(({ data }) => {
         setProfile(data);
         reset({
+          username: data.username || '',
           firstName: data.firstName || '',
           lastName: data.lastName || '',
           phone: data.phone || '',
@@ -57,7 +60,7 @@ export default function ProfilePage() {
       .finally(() => setLoading(false));
   }, [reset]);
 
-  async function onSubmit(data: { firstName: string; lastName: string; phone: string }) {
+  async function onSubmit(data: { username: string; firstName: string; lastName: string; phone: string }) {
     setSaving(true);
     setSuccess(false);
     try {
@@ -136,8 +139,8 @@ export default function ProfilePage() {
             disabled={uploadingAvatar}
             className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 group-hover:bg-black/50 transition-colors cursor-pointer"
           >
-            <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium">
-              {uploadingAvatar ? '...' : '📷'}
+            <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity">
+              {uploadingAvatar ? '...' : <Camera className="h-4 w-4" />}
             </span>
           </button>
           <input
@@ -230,6 +233,22 @@ export default function ProfilePage() {
 
         {editing ? (
           <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
+            <div>
+              <FormField
+                label="Kullanıcı Adı"
+                {...register('username', {
+                  required: 'Kullanıcı adı zorunludur',
+                  minLength: { value: 3, message: 'En az 3 karakter olmalıdır' },
+                  maxLength: { value: 30, message: 'En fazla 30 karakter olabilir' },
+                  pattern: { value: /^[a-zA-Z0-9_]+$/, message: 'Yalnızca harf, rakam ve alt çizgi (_) kullanılabilir' },
+                })}
+                placeholder="kullanici_adi"
+                error={errors.username?.message}
+              />
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                İhalelerde diğer kullanıcılar bu adı görecek. Yalnızca harf, rakam ve alt çizgi (_) kullanabilirsiniz.
+              </p>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 label="Ad"
@@ -258,6 +277,7 @@ export default function ProfilePage() {
                 onClick={() => {
                   setEditing(false);
                   reset({
+                    username: profile.username || '',
                     firstName: profile.firstName || '',
                     lastName: profile.lastName || '',
                     phone: profile.phone || '',
@@ -270,12 +290,13 @@ export default function ProfilePage() {
           </form>
         ) : (
           <div className="mt-4 divide-y divide-[var(--border)]">
+            <InfoRow label="Kullanıcı Adı" value={profile.username ? `@${profile.username}` : 'Belirtilmemiş'} />
             <InfoRow label="E-posta" value={profile.email} />
             <InfoRow label="Ad Soyad" value={fullName || 'Belirtilmemiş'} />
             <InfoRow label="Telefon" value={profile.phone || 'Belirtilmemiş'} />
             <InfoRow
               label="Hesap Durumu"
-              value={profile.isVerified ? '✅ Doğrulanmış' : '⏳ Doğrulanmamış'}
+              value={profile.isVerified ? 'Doğrulanmış' : 'Doğrulanmamış'}
             />
             <InfoRow
               label="Üyelik Tarihi"
@@ -297,9 +318,9 @@ export default function ProfilePage() {
 
       {/* Quick Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <QuickStatCard icon="❤️" label="Favori İlanlar" href="/profile/favorites" description="Takip ettiğiniz arsalar" />
-        <QuickStatCard icon="💰" label="Tekliflerim" href="/profile/offers" description="Verdiğiniz teklifler" />
-        <QuickStatCard icon="🔨" label="İhale Geçmişim" href="/profile/auctions" description="Katıldığınız ihaleler" />
+        <QuickStatCard icon={<Heart className="h-6 w-6 text-rose-500" />} label="Favori İlanlar" href="/profile/favorites" description="Takip ettiğiniz arsalar" />
+        <QuickStatCard icon={<HandCoins className="h-6 w-6 text-amber-500" />} label="Tekliflerim" href="/profile/offers" description="Verdiğiniz teklifler" />
+        <QuickStatCard icon={<Gavel className="h-6 w-6 text-brand-500" />} label="İhale Geçmişim" href="/profile/auctions" description="Katıldığınız ihaleler" />
       </div>
 
       {/* Privacy Settings */}
@@ -373,7 +394,7 @@ function QuickStatCard({
   href,
   description,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   href: string;
   description: string;
@@ -381,13 +402,11 @@ function QuickStatCard({
   return (
     <a
       href={href}
-      className="group flex flex-col gap-2 rounded-xl border border-[var(--border)] p-5 hover:border-brand-500 hover:shadow-md transition-all"
+      className="group flex flex-col gap-2 rounded-xl border border-[var(--border)] p-5 hover:border-brand-500 hover:shadow-md transition-all duration-200 cursor-pointer"
     >
       <div className="flex items-center justify-between">
-        <span className="text-2xl">{icon}</span>
-        <svg className="h-5 w-5 text-[var(--muted-foreground)] group-hover:text-brand-500 transition-colors" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </svg>
+        {icon}
+        <ChevronRight className="h-5 w-5 text-[var(--muted-foreground)] group-hover:text-brand-500 transition-colors duration-150" />
       </div>
       <span className="font-semibold">{label}</span>
       <span className="text-xs text-[var(--muted-foreground)]">{description}</span>

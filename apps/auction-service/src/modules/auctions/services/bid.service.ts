@@ -373,11 +373,22 @@ export class BidService {
       await qr.manager.save(Auction, auction!);
 
       // ── PHASE 12b: Write outbox events (SAME transaction) ────
+      // Fetch username for bid display
+      let username: string | undefined;
+      try {
+        const userRow = await qr.manager.query(
+          `SELECT username FROM auth.users WHERE id = $1`,
+          [userId],
+        );
+        username = userRow?.[0]?.username || undefined;
+      } catch { /* non-critical */ }
+
       const bidEvent: BidAcceptedEvent = {
         auction_id: dto.auctionId,
         bid_id: savedBid.id,
         user_id: userId,
         user_id_masked: userId.slice(0, 8) + '***',
+        username,
         amount: dto.amount,
         new_price: dto.amount,
         new_bid_count: auction!.bidCount,

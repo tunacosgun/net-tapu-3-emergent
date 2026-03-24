@@ -43,6 +43,13 @@ export class PaymentController {
     return this.paymentService.findByUser(user.sub, query);
   }
 
+  @Get('admin/list')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async adminList(@Query() query: ListPaymentsQueryDto & { paymentMethod?: string; sortBy?: string; sortOrder?: string }) {
+    return this.paymentService.findAllAdmin(query);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async findById(
@@ -62,6 +69,14 @@ export class PaymentController {
   @HttpCode(HttpStatus.OK)
   async capture(@Param('id', ParseUUIDPipe) id: string) {
     return this.paymentService.capture(id);
+  }
+
+  @Patch(':id/verify-transfer')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @HttpCode(HttpStatus.OK)
+  async verifyTransfer(@Param('id', ParseUUIDPipe) id: string) {
+    return this.paymentService.verifyBankTransfer(id);
   }
 
   @Patch(':id/cancel')

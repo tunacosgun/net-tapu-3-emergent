@@ -3,10 +3,10 @@ import { TestimonialsContent } from './client';
 import { BreadcrumbJsonLd } from '@/components/json-ld';
 
 export const metadata: Metadata = {
-  title: 'Musteri Yorumlari — NetTapu',
+  title: 'Müşteri Yorumları — NetTapu',
   description: 'NetTapu musterilerinin deneyimleri ve memnuniyet yorumlari.',
   openGraph: {
-    title: 'Musteri Yorumlari',
+    title: 'Müşteri Yorumları',
     description: 'NetTapu musterilerinin deneyimleri ve memnuniyet yorumlari.',
   },
 };
@@ -17,7 +17,7 @@ export default function TestimonialsPage() {
       <BreadcrumbJsonLd
         items={[
           { name: 'Ana Sayfa', url: 'https://nettapu.com' },
-          { name: 'Musteri Yorumlari', url: 'https://nettapu.com/testimonials' },
+          { name: 'Müşteri Yorumları', url: 'https://nettapu.com/testimonials' },
         ]}
       />
       <TestimonialsContent />

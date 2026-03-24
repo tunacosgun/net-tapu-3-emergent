@@ -10,6 +10,14 @@ import { AxiosError } from 'axios';
 
 type PaymentMethodType = 'credit_card' | 'bank_transfer';
 
+interface BankInfo {
+  bankName: string;
+  iban: string;
+  accountHolder: string;
+  swiftCode?: string;
+  branch?: string;
+}
+
 export default function DepositPage() {
   const params = useParams<{ id: string }>();
   const auctionId = params.id;
@@ -22,24 +30,40 @@ export default function DepositPage() {
   const [success, setSuccess] = useState(false);
   const [threeDsUrl, setThreeDsUrl] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('credit_card');
+  const [bankInfo, setBankInfo] = useState<BankInfo>({
+    bankName: '',
+    iban: '',
+    accountHolder: '',
+  });
 
   useEffect(() => {
     let cancelled = false;
-    async function fetchAuction() {
+    async function fetchData() {
       try {
-        const { data } = await apiClient.get<Auction>(`/auctions/${auctionId}`);
+        const [auctionRes, settingsRes] = await Promise.all([
+          apiClient.get<Auction>(`/auctions/${auctionId}`),
+          apiClient.get('/content/site-settings').catch(() => ({ data: {} })),
+        ]);
         if (!cancelled) {
-          setAuction(data);
+          setAuction(auctionRes.data);
+          const s = settingsRes.data as Record<string, string>;
+          setBankInfo({
+            bankName: s.bank_name || 'Banka bilgisi girilmemiş',
+            iban: s.bank_iban || '-',
+            accountHolder: s.bank_account_holder || '-',
+            swiftCode: s.bank_swift_code,
+            branch: s.bank_branch,
+          });
           setLoading(false);
         }
       } catch {
         if (!cancelled) {
-          setError('Açık artırma bilgisi alınamadı.');
+          setError('Bilgiler alınamadı.');
           setLoading(false);
         }
       }
     }
-    fetchAuction();
+    fetchData();
     return () => { cancelled = true; };
   }, [auctionId]);
 
@@ -174,9 +198,11 @@ export default function DepositPage() {
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
             <p className="text-sm font-medium text-blue-800">Havale / EFT Bilgileri</p>
             <div className="text-xs text-blue-700 space-y-1">
-              <p><span className="font-medium">Banka:</span> Ziraat Bankası</p>
-              <p><span className="font-medium">IBAN:</span> TR00 0000 0000 0000 0000 0000 00</p>
-              <p><span className="font-medium">Hesap Sahibi:</span> TR Eser Group</p>
+              <p><span className="font-medium">Banka:</span> {bankInfo.bankName}</p>
+              <p><span className="font-medium">IBAN:</span> {bankInfo.iban}</p>
+              <p><span className="font-medium">Hesap Sahibi:</span> {bankInfo.accountHolder}</p>
+              {bankInfo.branch && <p><span className="font-medium">Şube:</span> {bankInfo.branch}</p>}
+              {bankInfo.swiftCode && <p><span className="font-medium">SWIFT:</span> {bankInfo.swiftCode}</p>}
               <p><span className="font-medium">Açıklama:</span> {auction?.title || 'Depozito'} - İhale No</p>
             </div>
             <p className="text-[10px] text-blue-600 mt-2">

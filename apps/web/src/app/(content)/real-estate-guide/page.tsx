@@ -5,10 +5,10 @@ import { BreadcrumbJsonLd, JsonLd } from '@/components/json-ld';
 export const metadata: Metadata = {
   title: 'Gayrimenkul Rehberi — NetTapu',
   description:
-    'Arsa nedir, imar durumu, KAKS-TAKS, tapu islemleri ve daha fazlasi. Gayrimenkul yatirimina baslamadan once bilmeniz gereken her sey.',
+    'Arsa nedir, imar durumu, KAKS-TAKS, tapu işlemleri ve daha fazlası. Gayrimenkul yatırımına başlamadan önce bilmeniz gereken her şey.',
   openGraph: {
     title: 'Gayrimenkul Rehberi',
-    description: 'Arsa alim-satim sureclerinde bilmeniz gereken temel kavramlar ve islemler.',
+    description: 'Arsa alım-satım süreçlerinde bilmeniz gereken temel kavramlar ve işlemler.',
   },
 };
 
@@ -16,12 +16,12 @@ const sections = [
   {
     id: 'arsa-nedir',
     title: 'Arsa Nedir?',
-    content: `Arsa, uzerinde yapi yapilabilecek sekilde imar plani ile belirlenmis, altyapisi tamamlanmis veya tamamlanmasi planlanan arazi parcasidir. Arazi ise imar plani disinda kalan, tarimsal veya dogal durumda bulunan toprak parcasidir. Bir arazinin arsa olabilmesi icin belediye imar planinda "yapi yapilabilir" olarak gosterilmesi gerekir.`,
+    content: `Arsa, üzerinde yapı yapılabilecek şekilde imar planı ile belirlenmiş, altyapısı tamamlanmış veya tamamlanması planlanan arazi parçasıdır. Arazi ise imar planı dışında kalan, tarımsal veya doğal durumda bulunan toprak parçasıdır. Bir arazinin arsa olabilmesi için belediye imar planında "yapı yapılabilir" olarak gösterilmesi gerekir.`,
   },
   {
     id: 'imar-durumu',
-    title: 'Imar Durumu Nedir?',
-    content: `Imar durumu, bir arsanin uzerine ne tur yapi yapilabilecegini, yapinin boyutlarini ve kullanimini belirleyen resmi belgedir. Belediyeden alinan bu belge; arsanin konut, ticaret veya sanayi alaninda olup olmadigini, kac kat cikilabildigi, yapinin oturma alanini ve cephe kosullarini icerir. Arsa almadan once mutlaka imar durumu sorgulamasi yapilmalidir.`,
+    title: 'İmar Durumu Nedir?',
+    content: `İmar durumu, bir arsanın üzerine ne tür yapı yapılabileceğini, yapının boyutlarını ve kullanımını belirleyen resmi belgedir. Belediyeden alınan bu belge; arsanın konut, ticaret veya sanayi alanında olup olmadığını, kaç kat çıkılabildiğini, yapının oturma alanını ve cephe koşullarını içerir. Arsa almadan önce mutlaka imar durumu sorgulaması yapılmalıdır.`,
   },
   {
     id: 'kaks-taks',
@@ -52,86 +52,86 @@ const sections = [
   {
     id: 'ada-parsel',
     title: 'Ada ve Parsel Nedir?',
-    content: `Turkiye\'de her arazi parcasi kadastro sisteminde "ada" ve "parsel" numaralariyla tanimlanir. Ada, etrafindaki yollar ve sinirlarla cevrili arazi grubunu ifade eder. Parsel ise bir ada icindeki bagimsiz mulkiyet birimidir. Tapu ve kadastro islemlerinde arsalar "il/ilce/mahalle/ada/parsel" seklinde tanimlanir. TKGM Parsel Sorgu sistemiyle herhangi bir parselin bilgilerine erisebilirsiniz.`,
+    content: `Türkiye'de her arazi parçası kadastro sisteminde "ada" ve "parsel" numaralarıyla tanımlanır. Ada, etrafındaki yollar ve sınırlarla çevrili arazi grubunu ifade eder. Parsel ise bir ada içindeki bağımsız mülkiyet birimidir. Tapu ve kadastro işlemlerinde arsalar "il/ilçe/mahalle/ada/parsel" şeklinde tanımlanır. TKGM Parsel Sorgu sistemiyle herhangi bir parselin bilgilerine erişebilirsiniz.`,
   },
   {
     id: 'tapu-cesitleri',
-    title: 'Tapu Cesitleri',
-    content: 'Turkiye\'de arsa ve arazi alim-satiminda karsilasilan baslica tapu turleri:',
+    title: 'Tapu Çeşitleri',
+    content: 'Türkiye\'de arsa ve arazi alım-satımında karşılaşılan başlıca tapu türleri:',
     list: [
-      { term: 'Kat Mulkiyeti Tapusu', desc: 'Bina tamamlanmis ve iskan alinmis bagimsiz bolumlere verilir.' },
-      { term: 'Kat Irtifaki Tapusu', desc: 'Insaat halindeki veya projesi onayli binalarin bagimsiz bolumleri icin duzenlenir.' },
-      { term: 'Hisseli Tapu', desc: 'Birden fazla kisinin ortaklasma olarak sahip oldugu arazi icin verilir. Belirli bir alan degil, yuzdelik pay gosterir.' },
-      { term: 'Mustakil Tapu', desc: 'Tek kisiye ait, sinir ve olculeri belli arsa icin duzenlenir. En guvenli tapu turudur.' },
+      { term: 'Kat Mülkiyeti Tapusu', desc: 'Bina tamamlanmış ve iskan alınmış bağımsız bölümlere verilir.' },
+      { term: 'Kat İrtifakı Tapusu', desc: 'İnşaat halindeki veya projesi onaylı binaların bağımsız bölümleri için düzenlenir.' },
+      { term: 'Hisseli Tapu', desc: 'Birden fazla kişinin ortaklaşa olarak sahip olduğu arazi için verilir. Belirli bir alan değil, yüzdelik pay gösterir.' },
+      { term: 'Müstakil Tapu', desc: 'Tek kişiye ait, sınır ve ölçüleri belli arsa için düzenlenir. En güvenli tapu türüdür.' },
     ],
   },
   {
     id: 'tapu-islemleri',
-    title: 'Tapu Devir Islemleri',
-    content: 'Arsa satin alindiginda tapu devir islemleri su asamalardan olusur:',
+    title: 'Tapu Devir İşlemleri',
+    content: 'Arsa satın alındığında tapu devir işlemleri şu aşamalardan oluşur:',
     steps: [
-      'Taraflar arasinda anlasma ve satis bedelinin belirlenmesi',
-      'Tapu mudurlugune randevu alinmasi',
-      'Gerekli belgelerin hazirlanmasi (kimlik, vergi no, tapu fotokopisi, belediye rayic degeri)',
-      'Tapu harci odemesi (alicindan %2, saticidan %2 — toplam %4)',
-      'Tapu mudurlugunde devir isleminin tamamlanmasi',
-      'Yeni tapu senedinin teslim alinmasi',
+      'Taraflar arasında anlaşma ve satış bedelinin belirlenmesi',
+      'Tapu müdürlüğünde randevu alınması',
+      'Gerekli belgelerin hazırlanması (kimlik, vergi no, tapu fotokopisi, belediye rayiç değeri)',
+      'Tapu harcı ödemesi (alıcıdan %2, satıcıdan %2 — toplam %4)',
+      'Tapu müdürlüğünde devir işleminin tamamlanması',
+      'Yeni tapu senedinin teslim alınması',
     ],
   },
   {
     id: 'serh-ipotek',
-    title: 'Serh ve Ipotek Kontrolu',
-    content: `Arsa almadan once tapu uzerinde "serh" veya "ipotek" olup olmadigini mutlaka kontrol edin. Serh, arsanin satis veya kullanimini kisitlayan resmi kayittir (ornegin haciz, ihtiyati tedbir, su havzasi koruma alani). Ipotek ise arsanin bir borca karsilik teminat gosterildigini belirtir. Bu bilgiler e-Devlet uzerinden veya tapu mudurlugunden sorgulanabilir.`,
+    title: 'Şerh ve İpotek Kontrolü',
+    content: `Arsa almadan önce tapu üzerinde "şerh" veya "ipotek" olup olmadığını mutlaka kontrol edin. Şerh, arsanın satış veya kullanımını kısıtlayan resmi kayıttır (örneğin haciz, ihtiyati tedbir, su havzası koruma alanı). İpotek ise arsanın bir borca karşılık teminat gösterildiğini belirtir. Bu bilgiler e-Devlet üzerinden veya tapu müdürlüğünden sorgulanabilir.`,
   },
   {
     id: 'ihale-sureci',
-    title: 'Ihale ile Arsa Alimi',
-    content: `NetTapu uzerinden canli ihaleye katilarak arsa satin alabilirsiniz. Ihale sureci su sekilde isler:`,
+    title: 'İhale ile Arsa Alımı',
+    content: `NetTapu üzerinden canlı ihaleye katılarak arsa satın alabilirsiniz. İhale süreci şu şekilde işler:`,
     steps: [
-      'Ihaleye katilmak istediginiz arsayi secin',
-      'Teminat bedelini (kaparoyu) odeyin',
-      'Ihale baslangic saatinde canli ihale odasina girin',
-      'Teklifinizi verin ve diger katilimcilarla rekabet edin',
-      'Ihaleyi kazanirsiniz — kalan odemeyi belirtilen surede tamamlayin',
-      'Tapu devir islemi baslatilir',
+      'İhaleye katılmak istediğiniz arsayı seçin',
+      'Teminat bedelini (kaparoyu) ödeyin',
+      'İhale başlangıç saatinde canlı ihale odasına girin',
+      'Teklifinizi verin ve diğer katılımcılarla rekabet edin',
+      'İhaleyi kazanırsınız — kalan ödemeyi belirtilen sürede tamamlayın',
+      'Tapu devir işlemi başlatılır',
     ],
   },
   {
     id: 'yatirim-ipuclari',
-    title: 'Arsa Yatiriminda Dikkat Edilmesi Gerekenler',
+    title: 'Arsa Yatırımında Dikkat Edilmesi Gerekenler',
     content: '',
     list: [
-      { term: 'Konum', desc: 'Ulasim aglarina yakinlik, cevredeki gelisim projeleri ve altyapi durumunu arastirin.' },
-      { term: 'Imar Plani', desc: 'Arsanin imari olup olmadigini, ne amacla kullanilabilecegini mutlaka kontrol edin.' },
-      { term: 'Altyapi', desc: 'Yol, su, elektrik, dogalgaz ve kanalizasyon baglantisi olup olmadigini ogrenim.' },
-      { term: 'Rayic Deger', desc: 'Belediye rayic degeri ve piyasa degerini karsilastirarak uygun fiyat analizi yapin.' },
-      { term: 'Gelecek Potansiyeli', desc: 'Yakin cevrde planlanan otoyol, metro, havalimani gibi projeler degeri artirabilir.' },
-      { term: 'Hukuki Durum', desc: 'Serh, ipotek, orman alani, sit alani gibi kisitlamalari kontrol edin.' },
+      { term: 'Konum', desc: 'Ulaşım ağlarına yakınlık, çevredeki gelişim projeleri ve altyapı durumunu araştırın.' },
+      { term: 'İmar Planı', desc: 'Arsanın imarı olup olmadığını, ne amaçla kullanılabileceğini mutlaka kontrol edin.' },
+      { term: 'Altyapı', desc: 'Yol, su, elektrik, doğalgaz ve kanalizasyon bağlantısı olup olmadığını öğrenin.' },
+      { term: 'Rayiç Değer', desc: 'Belediye rayiç değeri ve piyasa değerini karşılaştırarak uygun fiyat analizi yapın.' },
+      { term: 'Gelecek Potansiyeli', desc: 'Yakın çevrede planlanan otoyol, metro, havalimanı gibi projeler değeri artırabilir.' },
+      { term: 'Hukuki Durum', desc: 'Şerh, ipotek, orman alanı, sit alanı gibi kısıtlamaları kontrol edin.' },
     ],
   },
 ];
 
 const glossary = [
-  { term: 'Ada', desc: 'Kadastro planinda sinirlandirilmis arazi blogu' },
-  { term: 'Parsel', desc: 'Ada icindeki bagimsiz arazi birimi' },
-  { term: 'KAKS (Emsal)', desc: 'Toplam insaat alaninin arsa alanina orani' },
-  { term: 'TAKS', desc: 'Taban oturma alaninin arsa alanina orani' },
-  { term: 'Imar Durumu', desc: 'Arsanin yapilasma kosullarini gosteren belge' },
-  { term: 'Hmax', desc: 'Yapinin ulasabilecegi maksimum yukseklik' },
-  { term: 'Gabari', desc: 'Yapinin cephesinde izin verilen maksimum yukseklik' },
-  { term: 'Cephe', desc: 'Arsanin yola bakan kismi / genisligi' },
-  { term: 'Derinlik', desc: 'Arsanin yoldan iceri dogru uzunlugu' },
-  { term: 'Iskan (Yapi Kullanma Izni)', desc: 'Binanin yasanilabilir oldugunu gosteren resmi belge' },
-  { term: 'Kat Irtifaki', desc: 'Insaat halindeki yapilarda bagimsiz bolum hakki' },
-  { term: 'Kat Mulkiyeti', desc: 'Tamamlanmis binalarda bagimsiz bolum mulkiyeti' },
-  { term: 'Hisseli Tapu', desc: 'Birden fazla kisinin ortaklasa sahip oldugu tapu turu' },
-  { term: 'Ipotek', desc: 'Arsanin borca karsilik teminat olarak gosterilmesi' },
-  { term: 'Serh', desc: 'Tapu uzerine konulan kisitlama veya uyari kaydi' },
-  { term: 'Kadastro', desc: 'Tasinmazlarin sinir ve sahiplik bilgilerinin belirlenmesi' },
-  { term: 'Rayic Deger', desc: 'Belediyenin arsa/arazi icin belirledigi deger' },
-  { term: 'Emlak Vergisi', desc: 'Tasinmaz sahiplerinin yillik odedigi vergi' },
-  { term: 'Tapu Harci', desc: 'Alim-satim islemlerinde odenen devlet harci (toplam %4)' },
-  { term: 'Cap Belgesi', desc: 'Arsanin sinirlari ve olculerini gosteren belge' },
+  { term: 'Ada', desc: 'Kadastro planında sınırlandırılmış arazi bloğu' },
+  { term: 'Parsel', desc: 'Ada içindeki bağımsız arazi birimi' },
+  { term: 'KAKS (Emsal)', desc: 'Toplam inşaat alanının arsa alanına oranı' },
+  { term: 'TAKS', desc: 'Taban oturma alanının arsa alanına oranı' },
+  { term: 'İmar Durumu', desc: 'Arsanın yapılaşma koşullarını gösteren belge' },
+  { term: 'Hmax', desc: 'Yapının ulaşabileceği maksimum yükseklik' },
+  { term: 'Gabari', desc: 'Yapının cephesinde izin verilen maksimum yükseklik' },
+  { term: 'Cephe', desc: 'Arsanın yola bakan kısmı / genişliği' },
+  { term: 'Derinlik', desc: 'Arsanın yoldan içeri doğru uzunluğu' },
+  { term: 'İskan (Yapı Kullanma İzni)', desc: 'Binanın yaşanılabilir olduğunu gösteren resmi belge' },
+  { term: 'Kat İrtifakı', desc: 'İnşaat halindeki yapılarda bağımsız bölüm hakkı' },
+  { term: 'Kat Mülkiyeti', desc: 'Tamamlanmış binalarda bağımsız bölüm mülkiyeti' },
+  { term: 'Hisseli Tapu', desc: 'Birden fazla kişinin ortaklaşa sahip olduğu tapu türü' },
+  { term: 'İpotek', desc: 'Arsanın borca karşılık teminat olarak gösterilmesi' },
+  { term: 'Şerh', desc: 'Tapu üzerine konulan kısıtlama veya uyarı kaydı' },
+  { term: 'Kadastro', desc: 'Taşınmazların sınır ve sahiplik bilgilerinin belirlenmesi' },
+  { term: 'Rayiç Değer', desc: 'Belediyenin arsa/arazi için belirlediği değer' },
+  { term: 'Emlak Vergisi', desc: 'Taşınmaz sahiplerinin yıllık ödediği vergi' },
+  { term: 'Tapu Harcı', desc: 'Alım-satım işlemlerinde ödenen devlet harcı (toplam %4)' },
+  { term: 'Çap Belgesi', desc: 'Arsanın sınırları ve ölçülerini gösteren belge' },
 ];
 
 export default function RealEstateGuidePage() {
@@ -147,8 +147,8 @@ export default function RealEstateGuidePage() {
         data={{
           '@context': 'https://schema.org',
           '@type': 'Article',
-          headline: 'Gayrimenkul Rehberi - Arsa, KAKS, TAKS, Imar ve Tapu Bilgileri',
-          description: 'Arsa nedir, imar durumu, KAKS-TAKS hesaplama, tapu cesitleri ve devir islemleri rehberi.',
+          headline: 'Gayrimenkul Rehberi - Arsa, KAKS, TAKS, İmar ve Tapu Bilgileri',
+          description: 'Arsa nedir, imar durumu, KAKS-TAKS hesaplama, tapu çeşitleri ve devir işlemleri rehberi.',
           author: { '@type': 'Organization', name: 'NetTapu' },
           publisher: { '@type': 'Organization', name: 'NetTapu' },
           mainEntityOfPage: 'https://nettapu.com/real-estate-guide',
@@ -156,12 +156,12 @@ export default function RealEstateGuidePage() {
       />
       <h1 className="text-2xl font-bold text-gray-900">Gayrimenkul Rehberi</h1>
       <p className="mt-2 text-sm text-gray-500">
-        Arsa alim-satim sureclerinde bilmeniz gereken temel kavramlar, hesaplamalar ve islemler.
+        Arsa alım-satım süreçlerinde bilmeniz gereken temel kavramlar, hesaplamalar ve işlemler.
       </p>
 
       {/* Table of contents */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-3">Icindekiler</h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">İçindekiler</h2>
         <nav className="grid gap-1 sm:grid-cols-2">
           {sections.map((s, i) => (
             <a
@@ -182,7 +182,7 @@ export default function RealEstateGuidePage() {
             <span className="flex h-5 w-5 items-center justify-center rounded bg-brand-50 text-[10px] font-bold text-brand-600">
               S
             </span>
-            Gayrimenkul Sozlugu
+            Gayrimenkul Sözlüğü
           </a>
         </nav>
       </div>
@@ -257,7 +257,7 @@ export default function RealEstateGuidePage() {
       {/* Glossary */}
       <section id="sozluk" className="mt-12 scroll-mt-24">
         <h2 className="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2">
-          Gayrimenkul Sozlugu
+          Gayrimenkul Sözlüğü
         </h2>
         <div className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2">
           {glossary.map((item) => (
@@ -271,20 +271,20 @@ export default function RealEstateGuidePage() {
 
       {/* CTA */}
       <div className="mt-10 rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-        <h2 className="text-lg font-bold text-gray-900">Yatirima Baslayin</h2>
-        <p className="mt-1 text-sm text-gray-500">Arsalari inceleyin, ihaleye katilim veya uzman danismanlarimizla gorusun.</p>
+        <h2 className="text-lg font-bold text-gray-900">Yatırıma Başlayın</h2>
+        <p className="mt-1 text-sm text-gray-500">Arsaları inceleyin, ihaleye katılın veya uzman danışmanlarımızla görüşün.</p>
         <div className="mt-4 flex flex-col sm:flex-row justify-center gap-3">
           <Link
             href="/parcels"
             className="rounded-lg bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors"
           >
-            Arsalari Incele
+            Arsaları İncele
           </Link>
           <Link
             href="/contact"
             className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-white transition-colors"
           >
-            Iletisim
+            İletişim
           </Link>
         </div>
       </div>

@@ -4,7 +4,9 @@
   "private": true,
   "description": "Real Estate & Land Sales Platform with Live Online Auction System",
   "workspaces": [
-    "apps/*",
+    "apps/monolith",
+    "apps/auction-service",
+    "apps/web",
     "packages/*"
   ],
   "scripts": {

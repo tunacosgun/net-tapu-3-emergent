@@ -19,11 +19,12 @@
     },
     {
       "name": "web",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/Users/tunahan/.nvm/versions/node/v20.20.0/bin/node",
+      "runtimeArgs": ["/Users/tunahan/.nvm/versions/node/v20.20.0/bin/npx", "next", "dev", "-p", "3002"],
       "port": 3002,
       "cwd": "apps/web",
-      "autoPort": false
+      "autoPort": false,
+      "env": { "PATH": "/Users/tunahan/.nvm/versions/node/v20.20.0/bin:/usr/bin:/bin:/usr/sbin:/sbin" }
     },
     {
       "name": "disleksi",

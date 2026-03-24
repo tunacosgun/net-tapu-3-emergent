@@ -9,7 +9,7 @@ interface VideoPopupProps {
 
 export function VideoPopup({
   onClose,
-  videoUrl = 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Placeholder — replace with real intro video
+  videoUrl,
 }: VideoPopupProps) {
   // Close on Escape
   useEffect(() => {
@@ -28,6 +28,10 @@ export function VideoPopup({
     };
   }, []);
 
+  if (!videoUrl) return null;
+
+  const isDirectVideo = /\.(mp4|webm|ogg)(\?|$)/i.test(videoUrl);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
@@ -44,15 +48,24 @@ export function VideoPopup({
           ✕ Kapat
         </button>
 
-        {/* Video iframe */}
+        {/* Video */}
         <div className="relative w-full overflow-hidden rounded-xl bg-black" style={{ paddingBottom: '56.25%' }}>
-          <iframe
-            src={videoUrl}
-            title="NetTapu Tanıtım Videosu"
-            className="absolute inset-0 h-full w-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+          {isDirectVideo ? (
+            <video
+              src={videoUrl}
+              controls
+              autoPlay
+              className="absolute inset-0 h-full w-full"
+            />
+          ) : (
+            <iframe
+              src={videoUrl}
+              title="NetTapu Tanıtım Videosu"
+              className="absolute inset-0 h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          )}
         </div>
       </div>
     </div>

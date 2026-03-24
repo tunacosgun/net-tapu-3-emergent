@@ -58,7 +58,7 @@ export function TestimonialsContent() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">Musteri Yorumlari</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Müşteri Yorumları</h1>
       <p className="mt-2 text-sm text-gray-500">
         Musterilerimizin NetTapu deneyimleri ve memnuniyet degerlendirmeleri.
       </p>

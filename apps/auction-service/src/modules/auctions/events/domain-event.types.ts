@@ -5,6 +5,7 @@ export interface BidAcceptedEvent {
   bid_id: string;
   user_id: string;
   user_id_masked: string;
+  username?: string;
   amount: string;
   new_price: string;
   new_bid_count: number;

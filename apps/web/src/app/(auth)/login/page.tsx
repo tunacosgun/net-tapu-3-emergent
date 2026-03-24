@@ -74,10 +74,10 @@ function LoginContent() {
         const apiErr = err.response?.data as ApiError | undefined;
         const msg = apiErr?.message;
         setServerError(
-          Array.isArray(msg) ? msg.join(', ') : msg || 'Giris basarisiz.',
+          Array.isArray(msg) ? msg.join(', ') : msg || 'Giriş başarısız.',
         );
       } else {
-        setServerError('Giris basarisiz.');
+        setServerError('Giriş başarısız.');
       }
     }
   }
@@ -88,44 +88,45 @@ function LoginContent() {
   }
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-gray-900 text-center">Giris Yap</h1>
-      <p className="mt-1 text-center text-sm text-gray-500">
-        Hesabiniz yok mu?{' '}
-        <Link href="/register" className="text-brand-500 hover:underline font-medium">
-          Kayit ol
-        </Link>
-      </p>
-
-      {/* Social Login */}
-      <div className="mt-6 space-y-2">
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          <GoogleIcon />
-          Google ile devam et
-        </button>
+    <div className="w-full">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-green-50 mb-4">
+          <span className="text-2xl font-black text-green-600 tracking-tighter">NT</span>
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900">Hesabınıza Giriş Yapın</h1>
+        <p className="mt-2 text-sm text-gray-500">
+          E-posta ve şifrenizle devam edin
+        </p>
       </div>
 
+      {/* Google Login */}
+      <button
+        type="button"
+        onClick={handleGoogleLogin}
+        className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-4 py-3.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
+      >
+        <GoogleIcon />
+        Google ile devam et
+      </button>
+
       {/* Divider */}
-      <div className="relative my-5">
+      <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-200" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-3 text-gray-400">veya e-posta ile</span>
+        <div className="relative flex justify-center text-xs uppercase tracking-wider">
+          <span className="bg-white px-4 text-gray-400 font-medium">veya e-posta ile</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {(serverError || oauthError) && (
           <Alert>
             {serverError ||
               (oauthError === 'google_auth_failed'
-                ? 'Google ile giris basarisiz oldu. Lutfen tekrar deneyin.'
-                : 'Giris basarisiz.')}
+                ? 'Google ile giriş başarısız oldu. Lütfen tekrar deneyin.'
+                : 'Giriş başarısız.')}
           </Alert>
         )}
 
@@ -133,43 +134,53 @@ function LoginContent() {
           label="E-posta"
           type="email"
           autoComplete="email"
+          placeholder="ornek@email.com"
           error={errors.email?.message}
           {...register('email')}
         />
 
         <FormField
-          label="Parola"
+          label="Şifre"
           type="password"
           autoComplete="current-password"
+          placeholder="••••••••"
           error={errors.password?.message}
           {...register('password')}
         />
 
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
-            <input type="checkbox" className="rounded border-gray-300" />
-            Beni hatirla
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+            Beni hatırla
           </label>
           <Link
             href="/forgot-password"
-            className="text-sm text-brand-500 hover:underline"
+            className="text-sm text-green-600 hover:text-green-700 font-semibold transition-colors"
           >
-            Sifremi unuttum
+            Şifremi unuttum
           </Link>
         </div>
 
         <Button
           type="submit"
           disabled={isSubmitting || isLimited}
-          className="w-full"
+          className="w-full !py-3.5 !rounded-xl !text-base !font-bold shadow-lg shadow-green-600/20 hover:shadow-green-600/30 transition-all duration-200"
         >
           {isLimited
             ? `${cooldown}s bekleyin`
             : isSubmitting
-              ? 'Giris yapiliyor...'
-              : 'Giris Yap'}
+              ? 'Giriş yapılıyor...'
+              : 'Giriş Yap'}
         </Button>
       </form>
+
+      {/* Footer */}
+      <p className="mt-8 text-center text-sm text-gray-500">
+        Hesabınız yok mu?{' '}
+        <Link href="/register" className="text-green-600 hover:text-green-700 font-bold transition-colors">
+          Üye Ol
+        </Link>
+      </p>
     </div>
   );
 }

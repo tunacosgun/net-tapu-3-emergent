@@ -100,6 +100,7 @@ export function useRegister() {
 
   return useCallback(
     async (payload: {
+      username: string;
       email: string;
       password: string;
       firstName: string;

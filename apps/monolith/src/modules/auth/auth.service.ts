@@ -52,22 +52,32 @@ export class AuthService {
   }
 
   async register(dto: {
+    username: string;
     email: string;
     password: string;
     firstName: string;
     lastName: string;
     phone?: string;
   }) {
-    const existing = await this.userRepo.findOne({
+    const existingEmail = await this.userRepo.findOne({
       where: { email: dto.email },
     });
-    if (existing) {
-      throw new ConflictException('Email already registered');
+    if (existingEmail) {
+      throw new ConflictException('Bu e-posta adresi zaten kayıtlı');
+    }
+
+    const normalizedUsername = dto.username.toLowerCase().trim();
+    const existingUsername = await this.userRepo.findOne({
+      where: { username: normalizedUsername },
+    });
+    if (existingUsername) {
+      throw new ConflictException('Bu kullanıcı adı zaten alınmış');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
 
     const user = this.userRepo.create({
+      username: normalizedUsername,
       email: dto.email,
       passwordHash,
       firstName: dto.firstName,
@@ -198,6 +208,7 @@ export class AuthService {
 
     return {
       id: user.id,
+      username: user.username,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -215,6 +226,7 @@ export class AuthService {
   async updateProfile(
     userId: string,
     dto: {
+      username?: string;
       firstName?: string;
       lastName?: string;
       phone?: string;
@@ -228,6 +240,16 @@ export class AuthService {
     }
 
     const updateData: Partial<User> = {};
+    if (dto.username !== undefined) {
+      const normalized = dto.username.toLowerCase().trim();
+      if (normalized !== user.username) {
+        const existing = await this.userRepo.findOne({ where: { username: normalized } });
+        if (existing) {
+          throw new BadRequestException('Bu kullanıcı adı zaten kullanılıyor');
+        }
+        updateData.username = normalized;
+      }
+    }
     if (dto.firstName !== undefined) updateData.firstName = dto.firstName;
     if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
     if (dto.phone !== undefined) updateData.phone = dto.phone;
