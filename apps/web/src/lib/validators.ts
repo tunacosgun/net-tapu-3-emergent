@@ -16,6 +16,11 @@ export const loginSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>;
 
 export const registerSchema = z.object({
+  username: z
+    .string()
+    .min(3, 'Kullanıcı adı en az 3 karakter olmalı')
+    .max(30, 'Kullanıcı adı en fazla 30 karakter olabilir')
+    .regex(/^[a-zA-Z0-9._]+$/, 'Sadece harf, rakam, nokta ve alt çizgi kullanılabilir'),
   firstName: z
     .string()
     .min(1, 'Ad gerekli')
@@ -76,6 +81,8 @@ export const parcelSchema = z.object({
   isFeatured: z.boolean(),
   showListingDate: z.boolean().optional(),
   description: z.string().optional().or(z.literal('')),
+  deedType: z.string().optional().or(z.literal('')),
+  vatRate: z.string().optional().or(z.literal('')),
 });
 export type ParcelFormData = z.infer<typeof parcelSchema>;
 
