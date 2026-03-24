@@ -471,6 +471,18 @@ export default function AdminNewAuctionPage() {
           </div>
         )}
 
+        {/* Form validation errors */}
+        {Object.keys(errors).length > 0 && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:bg-red-950/20 dark:border-red-800">
+            <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-1">Form hataları:</p>
+            <ul className="text-xs text-red-500 space-y-0.5">
+              {Object.entries(errors).map(([key, err]) => (
+                <li key={key}>• {key}: {(err as any)?.message || 'Geçersiz değer'}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="flex gap-3 pt-2">
           <Button type="submit" disabled={isSubmitting || isLimited}>
             {isLimited
