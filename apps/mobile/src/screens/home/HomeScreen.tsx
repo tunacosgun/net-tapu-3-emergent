@@ -1,688 +1,746 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Dimensions, Image, Animated, Platform,
+  RefreshControl, Dimensions, Image, Animated, Platform, StatusBar,
+  FlatList,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import apiClient from '../../api/client';
 import { useTheme } from '../../theme';
 import { useAuthStore } from '../../stores/auth-store';
 import { formatPrice, resolveImageUrl } from '../../lib/format';
-import { StatusBadge, SkeletonParcelCard, SkeletonAuctionCard } from '../../components/ui';
-import { ParcelCard } from '../../components/parcel/ParcelCard';
+import { SkeletonParcelCard, SkeletonAuctionCard } from '../../components/ui';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
 import type { Parcel, Auction, PaginatedResponse } from '../../types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 const { width: SCREEN_W } = Dimensions.get('window');
+const GRID_GAP = 12;
+const GRID_PADDING = 20;
+const CARD_W = (SCREEN_W - GRID_PADDING * 2 - GRID_GAP) / 2;
 
-/* ── shadcn-inspired design tokens ── */
-const token = {
-  light: {
-    bg: '#fafafa',
-    card: '#ffffff',
-    cardBorder: '#e4e4e7',
-    muted: '#f4f4f5',
-    mutedFg: '#71717a',
-    fg: '#09090b',
-    fgSecondary: '#3f3f46',
-    primary: '#18181b',
-    primaryFg: '#fafafa',
-    accent: '#059669',
-    accentMuted: '#ecfdf5',
-    destructive: '#ef4444',
-    ring: 'rgba(0,0,0,0.05)',
-    separator: '#e4e4e7',
-    shadow: '#71717a',
-  },
-  dark: {
-    bg: '#09090b',
-    card: '#18181b',
-    cardBorder: '#27272a',
-    muted: '#27272a',
-    mutedFg: '#a1a1aa',
-    fg: '#fafafa',
-    fgSecondary: '#d4d4d8',
-    primary: '#fafafa',
-    primaryFg: '#18181b',
-    accent: '#34d399',
-    accentMuted: 'rgba(52,211,153,0.1)',
-    destructive: '#f87171',
-    ring: 'rgba(255,255,255,0.05)',
-    separator: '#27272a',
-    shadow: '#000',
-  },
+/* ────────────────────────────────────────────
+ *  Design Tokens
+ * ──────────────────────────────────────────── */
+const BRAND = '#059669';
+const BRAND_DARK = '#047857';
+
+const palette = {
+  bg: '#f8f9fb',
+  card: '#ffffff',
+  border: '#e8ecf1',
+  fg: '#0f172a',
+  fgSecondary: '#475569',
+  muted: '#94a3b8',
+  accent: BRAND,
+  accentSoft: '#ecfdf5',
+  red: '#ef4444',
+  redSoft: '#fef2f2',
+  shadow: '#000',
 };
 
+const CATEGORIES = [
+  { id: 'arsa', label: 'Arsa', icon: 'grid', color: '#059669', bg: '#f1f5f9' },
+  { id: 'tarla', label: 'Tarla', icon: 'leaf', color: '#65a30d', bg: '#f1f5f9' },
+  { id: 'ticari', label: 'Ticari', icon: 'business', color: '#0284c7', bg: '#f1f5f9' },
+  { id: 'ihale', label: 'İhaleler', icon: 'flash', color: '#ea580c', bg: '#f1f5f9' },
+  { id: 'harita', label: 'Harita', icon: 'map', color: '#7c3aed', bg: '#f1f5f9' },
+];
+
+/* ────────────────────────────────────────────
+ *  Animated Press Hook (called outside .map)
+ * ──────────────────────────────────────────── */
+function useAnimatedPress(scaleDown = 0.97) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onPressIn = useCallback(() => {
+    Animated.spring(scale, { toValue: scaleDown, useNativeDriver: true, friction: 8, tension: 120 }).start();
+  }, [scale, scaleDown]);
+  const onPressOut = useCallback(() => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 80 }).start();
+  }, [scale]);
+  return { scale, onPressIn, onPressOut };
+}
+
+/* ════════════════════════════════════════════
+ *  HOME SCREEN
+ * ════════════════════════════════════════════ */
 export default function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const { isDark } = useTheme();
-  const t = isDark ? token.dark : token.light;
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
+
   const [profile, setProfile] = useState<{ firstName?: string; lastName?: string } | null>(null);
   const [featured, setFeatured] = useState<Parcel[]>([]);
   const [latest, setLatest] = useState<Parcel[]>([]);
   const [auctions, setAuctions] = useState<Auction[]>([]);
-  const [stats, setStats] = useState({ parcels: 0, auctions: 0, cities: 0 });
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const heroAnim = useRef(new Animated.Value(0)).current;
-  const bodyAnim = useRef(new Animated.Value(0)).current;
-  const bodySlide = useRef(new Animated.Value(20)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const [featuredRes, latestRes, auctionRes, profileRes] = await Promise.all([
-          apiClient.get<PaginatedResponse<Parcel>>('/parcels', { params: { isFeatured: true, limit: 6, status: 'active' } }),
-          apiClient.get<PaginatedResponse<Parcel>>('/parcels', { params: { limit: 6, sortBy: 'createdAt', sortOrder: 'DESC', status: 'active' } }),
-          apiClient.get<PaginatedResponse<Auction>>('/auctions', { params: { limit: 5 } }).catch(() => ({ data: { data: [], total: 0 } })),
-          apiClient.get('/auth/me').catch(() => ({ data: null })),
-        ]);
-        if (cancelled) return;
-        setFeatured(featuredRes.data.data);
-        setLatest(latestRes.data.data);
-        const allAuctions = auctionRes.data.data || [];
-        setAuctions(allAuctions.filter((a: Auction) => ['live', 'scheduled', 'deposit_open'].includes(a.status)));
-
-        const totalParcels = (featuredRes.data as any).total || featuredRes.data.data.length;
-        const totalAuctions = (auctionRes.data as any).total || allAuctions.length;
-        const cities = new Set([...featuredRes.data.data, ...latestRes.data.data].map((p: Parcel) => p.city).filter(Boolean));
-        setStats({ parcels: totalParcels, auctions: totalAuctions, cities: cities.size });
-
-        if (profileRes.data) setProfile(profileRes.data);
-      } catch {}
-      if (cancelled) return;
-      setLoading(false);
-      Animated.sequence([
-        Animated.timing(heroAnim, { toValue: 1, duration: 450, useNativeDriver: true }),
-        Animated.parallel([
-          Animated.timing(bodyAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-          Animated.spring(bodySlide, { toValue: 0, tension: 65, friction: 11, useNativeDriver: true }),
-        ]),
-      ]).start();
-    }
-
-    load();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function onRefresh() {
-    setRefreshing(true);
+  const fetchData = useCallback(async () => {
     try {
       const [featuredRes, latestRes, auctionRes, profileRes] = await Promise.all([
-        apiClient.get<PaginatedResponse<Parcel>>('/parcels', { params: { isFeatured: true, limit: 6, status: 'active' } }),
-        apiClient.get<PaginatedResponse<Parcel>>('/parcels', { params: { limit: 6, sortBy: 'createdAt', sortOrder: 'DESC', status: 'active' } }),
-        apiClient.get<PaginatedResponse<Auction>>('/auctions', { params: { limit: 5 } }).catch(() => ({ data: { data: [], total: 0 } })),
+        apiClient.get<PaginatedResponse<Parcel>>('/parcels', { params: { isFeatured: true, limit: 10, status: 'active' } }),
+        apiClient.get<PaginatedResponse<Parcel>>('/parcels', { params: { limit: 10, sortBy: 'createdAt', sortOrder: 'DESC', status: 'active' } }),
+        apiClient.get<PaginatedResponse<Auction>>('/auctions', { params: { limit: 8 } }).catch(() => ({ data: { data: [], total: 0 } })),
         apiClient.get('/auth/me').catch(() => ({ data: null })),
       ]);
       setFeatured(featuredRes.data.data);
       setLatest(latestRes.data.data);
-      const allAuctions = auctionRes.data.data || [];
-      setAuctions(allAuctions.filter((a: Auction) => ['live', 'scheduled', 'deposit_open'].includes(a.status)));
-      const totalParcels = (featuredRes.data as any).total || featuredRes.data.data.length;
-      const totalAuctions = (auctionRes.data as any).total || allAuctions.length;
-      const cities = new Set([...featuredRes.data.data, ...latestRes.data.data].map((p: Parcel) => p.city).filter(Boolean));
-      setStats({ parcels: totalParcels, auctions: totalAuctions, cities: cities.size });
+      const all = auctionRes.data.data || [];
+      setAuctions(all.filter((a: Auction) => ['live', 'scheduled', 'deposit_open'].includes(a.status)));
       if (profileRes.data) setProfile(profileRes.data);
-    } catch {}
-    setRefreshing(false);
-  }
+    } catch { /* silent */ }
+  }, []);
 
-  const userName = profile?.firstName
-    ? `${profile.firstName} ${profile.lastName || ''}`.trim()
-    : user?.email?.split('@')[0] || 'Kullanıcı';
+  useEffect(() => {
+    let cancelled = false;
+    fetchData().then(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [fetchData]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  }, [fetchData]);
 
   const getGreeting = () => {
     const h = new Date().getHours();
-    if (h < 6) return 'İyi geceler';
+    if (h < 6) return 'İyi Geceler';
     if (h < 12) return 'Günaydın';
-    if (h < 18) return 'İyi günler';
-    return 'İyi akşamlar';
+    if (h < 18) return 'İyi Günler';
+    return 'İyi Akşamlar';
   };
 
-  const getAuctionTimeLeft = (auction: Auction) => {
-    const endDate = (auction as any).extendedUntil || (auction as any).scheduledEnd;
-    if (!endDate) return null;
-    const ms = new Date(endDate).getTime() - Date.now();
-    if (ms <= 0) return 'Bitti';
-    const d = Math.floor(ms / 86400000);
-    const hr = Math.floor((ms % 86400000) / 3600000);
-    if (d > 0) return `${d}g ${hr}s`;
-    const m = Math.floor((ms % 3600000) / 60000);
-    if (hr > 0) return `${hr}s ${m}dk`;
-    return `${m}dk`;
-  };
+  const userName = profile?.firstName || user?.email?.split('@')[0] || 'Kullanıcı';
+
+  // Header opacity driven by scroll
+  const headerShadowOpacity = scrollY.interpolate({
+    inputRange: [0, 60],
+    outputRange: [0, 0.12],
+    extrapolate: 'clamp',
+  });
 
   return (
-    <SafeAreaView style={[S.safe, { backgroundColor: t.bg }]} edges={['top']}>
-      <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.accent} />}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={S.scrollContent}
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} translucent />
+
+      {/* ── HEADER ── */}
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top + 8,
+            shadowOpacity: headerShadowOpacity,
+          },
+        ]}
       >
-
-        {/* ── HEADER ── */}
-        <View style={S.header}>
-          <View style={S.headerLeft}>
-            <TouchableOpacity onPress={() => navigation.navigate('Profile' as any)} activeOpacity={0.8}>
-              <LinearGradient
-                colors={['#059669', '#047857']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={S.avatar}
-              >
-                <Text style={S.avatarLetter}>{userName.charAt(0).toUpperCase()}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-            <View style={S.headerText}>
-              <Text style={[S.greeting, { color: t.mutedFg }]}>{getGreeting()}</Text>
-              <Text style={[S.userName, { color: t.fg }]} numberOfLines={1}>{userName}</Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Notifications')}
-            activeOpacity={0.7}
-            style={[S.iconBtn, { backgroundColor: t.muted }]}
-          >
-            <Ionicons name="notifications-outline" size={20} color={t.fgSecondary} />
-            <View style={[S.notifDot, { borderColor: t.bg }]} />
-          </TouchableOpacity>
-        </View>
-
-        {/* ── HERO CARD ── */}
-        <Animated.View style={[S.section, { opacity: heroAnim }]}>
-          <View style={[S.card, { backgroundColor: t.card, borderColor: t.cardBorder, shadowColor: t.shadow }]}>
-            <LinearGradient
-              colors={isDark ? ['#052e16', '#064e3b'] : ['#ecfdf5', '#d1fae5']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={S.heroGradient}
-            >
-              <View style={S.heroBody}>
-                <View style={[S.heroPill, { backgroundColor: isDark ? 'rgba(52,211,153,0.15)' : 'rgba(5,150,105,0.1)' }]}>
-                  <View style={[S.heroPillDot, { backgroundColor: t.accent }]} />
-                  <Text style={[S.heroPillText, { color: t.accent }]}>Türkiye'nin Arsa Platformu</Text>
-                </View>
-                <Text style={[S.heroTitle, { color: isDark ? '#fff' : '#022c22' }]}>
-                  Hayalinizdeki{'\n'}arsayı bulun.
-                </Text>
-                <Text style={[S.heroCaption, { color: t.mutedFg }]}>
-                  {stats.parcels > 0
-                    ? `${stats.parcels} aktif ilan · ${stats.cities > 0 ? `${stats.cities} şehir` : 'Türkiye geneli'}`
-                    : 'Güvenilir emlak yatırımları'}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('Main', { screen: 'Parcels' } as any)}
-                  activeOpacity={0.85}
-                >
-                  <LinearGradient
-                    colors={['#059669', '#047857']}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                    style={S.heroCta}
-                  >
-                    <Text style={S.heroCtaLabel}>İlanları Keşfet</Text>
-                    <View style={S.heroCtaArrow}>
-                      <Ionicons name="arrow-forward" size={14} color="#059669" />
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-              <View style={[S.heroIconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(5,150,105,0.06)' }]}>
-                <Ionicons name="business" size={40} color={isDark ? 'rgba(52,211,153,0.3)' : 'rgba(5,150,105,0.25)'} />
-              </View>
-            </LinearGradient>
-          </View>
-        </Animated.View>
-
-        {/* ── SEARCH ── */}
-        <Animated.View style={[S.section, { opacity: heroAnim }]}>
+        {/* Top Row */}
+        <View style={styles.headerRow}>
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('Main', { screen: 'Parcels' } as any)}
-            style={[S.searchBar, { backgroundColor: t.card, borderColor: t.cardBorder, shadowColor: t.shadow }]}
+            onPress={() => navigation.navigate('Profile' as any)}
+            style={styles.headerLeft}
           >
-            <View style={[S.searchIconWrap, { backgroundColor: t.accentMuted }]}>
-              <Ionicons name="search" size={15} color={t.accent} />
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
             </View>
-            <Text style={[S.searchPlaceholder, { color: t.mutedFg }]}>
-              İl, ilçe veya ada/parsel ara...
-            </Text>
-            <View style={[S.searchFilterBtn, { backgroundColor: t.muted }]}>
-              <Ionicons name="options-outline" size={15} color={t.mutedFg} />
+            <View>
+              <Text style={styles.greeting}>{getGreeting()}</Text>
+              <Text style={styles.userName}>{userName}</Text>
             </View>
           </TouchableOpacity>
-        </Animated.View>
 
-        {/* ── BODY ── */}
-        <Animated.View style={{ opacity: bodyAnim, transform: [{ translateY: bodySlide }] }}>
-
-          {/* ── STATS ROW ── */}
-          <View style={S.statsRow}>
-            {([
-              { label: 'Aktif İlan', value: stats.parcels, icon: 'layers-outline' as const, color: '#059669' },
-              { label: 'Açık İhale', value: stats.auctions, icon: 'flash-outline' as const, color: '#f59e0b' },
-              { label: 'Şehir', value: stats.cities, icon: 'location-outline' as const, color: '#6366f1' },
-            ]).map((s) => (
-              <View key={s.label} style={[S.statCard, { backgroundColor: t.card, borderColor: t.cardBorder, shadowColor: t.shadow }]}>
-                <View style={[S.statIconWrap, { backgroundColor: s.color + '14' }]}>
-                  <Ionicons name={s.icon} size={16} color={s.color} />
-                </View>
-                <Text style={[S.statValue, { color: t.fg }]}>{s.value}</Text>
-                <Text style={[S.statLabel, { color: t.mutedFg }]}>{s.label}</Text>
-              </View>
-            ))}
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notifications')}
+              style={styles.iconBtn}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="notifications-outline" size={22} color="#fff" />
+              <View style={styles.notifDot} />
+            </TouchableOpacity>
           </View>
+        </View>
 
-          {/* ── QUICK ACTIONS 2x2 ── */}
-          <View style={S.actionsGrid}>
-            {([
-              { label: 'İlanlar', icon: 'layers-outline' as const, onPress: () => navigation.navigate('Main', { screen: 'Parcels' } as any), color: '#059669', bg: isDark ? 'rgba(5,150,105,0.1)' : '#ecfdf5' },
-              { label: 'İhaleler', icon: 'flash-outline' as const, onPress: () => navigation.navigate('Main', { screen: 'Auctions' } as any), color: '#f59e0b', bg: isDark ? 'rgba(245,158,11,0.1)' : '#fffbeb' },
-              { label: 'Favoriler', icon: 'heart-outline' as const, onPress: () => navigation.navigate('Favorites'), color: '#ef4444', bg: isDark ? 'rgba(239,68,68,0.1)' : '#fef2f2' },
-              { label: 'Harita', icon: 'map-outline' as const, onPress: () => navigation.navigate('ParcelMap'), color: '#6366f1', bg: isDark ? 'rgba(99,102,241,0.1)' : '#eef2ff' },
-            ]).map((item) => (
-              <TouchableOpacity
-                key={item.label}
-                onPress={item.onPress}
-                activeOpacity={0.7}
-                style={[S.actionCard, { backgroundColor: t.card, borderColor: t.cardBorder, shadowColor: t.shadow }]}
-              >
-                <View style={[S.actionIcon, { backgroundColor: item.bg }]}>
-                  <Ionicons name={item.icon} size={22} color={item.color} />
-                </View>
-                <Text style={[S.actionLabel, { color: t.fgSecondary }]}>{item.label}</Text>
-              </TouchableOpacity>
+        {/* ── FLOATING SEARCH BAR ── */}
+        <View style={styles.searchOuter}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('Main', { screen: 'Parcels' } as any)}
+            style={styles.searchBar}
+          >
+            <Ionicons name="search" size={20} color={palette.muted} />
+            <Text style={styles.searchPlaceholder}>İl, ilçe veya konum ara…</Text>
+            <View style={styles.searchFilterBtn}>
+              <Ionicons name="options-outline" size={16} color={palette.fgSecondary} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+
+      {/* ── SCROLLABLE CONTENT ── */}
+      <Animated.ScrollView
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
+        scrollEventThrottle={16}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BRAND} />}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Spacer for floating search bar */}
+        <View style={{ height: 28 }} />
+
+        {/* ── CATEGORIES ── */}
+        <View style={styles.categoriesWrap}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesInner}>
+            {CATEGORIES.map((cat) => (
+              <CategoryItem
+                key={cat.id}
+                cat={cat}
+                onPress={() => {
+                  if (cat.id === 'harita') navigation.navigate('ParcelMap');
+                  else if (cat.id === 'ihale') navigation.navigate('Main', { screen: 'Auctions' } as any);
+                  else navigation.navigate('Main', { screen: 'Parcels' } as any);
+                }}
+              />
             ))}
-          </View>
+          </ScrollView>
+        </View>
 
-          {/* ── FEATURED ── */}
+        {/* ── VITRIN: Featured Grid ── */}
+        <View style={styles.section}>
+          <SectionHeader
+            title="Vitrin İlanları"
+            onSeeAll={() => navigation.navigate('Main', { screen: 'Parcels' } as any)}
+          />
           {loading ? (
-            <View style={S.skeletonWrap}>
+            <View style={styles.gridRow}>
+              <SkeletonParcelCard />
               <SkeletonParcelCard />
             </View>
           ) : featured.length > 0 ? (
-            <View style={S.sectionBlock}>
-              <SectionHeader
-                title="Öne Çıkan"
-                desc="Editör seçimi premium araziler"
-                fg={t.fg} muted={t.mutedFg}
-                onSeeAll={() => navigation.navigate('Main', { screen: 'Parcels' } as any)}
-              />
-              <View style={S.sectionContent}>
-                <ParcelCard
-                  parcel={featured[0]}
-                  onPress={() => navigation.navigate('ParcelDetail', { id: featured[0].id })}
-                  featured
+            <View style={styles.gridRow}>
+              {featured.slice(0, 6).map((item) => (
+                <GridCard
+                  key={item.id}
+                  parcel={item}
+                  onPress={() => navigation.navigate('ParcelDetail', { id: item.id })}
                 />
-              </View>
-              {featured.length > 1 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={S.horizontalList}
-                  decelerationRate="fast"
-                  snapToInterval={SCREEN_W * 0.72 + 12}
-                  snapToAlignment="start"
-                >
-                  {featured.slice(1).map((item) => (
-                    <View key={item.id} style={S.horizontalCard}>
-                      <ParcelCard parcel={item} onPress={() => navigation.navigate('ParcelDetail', { id: item.id })} />
-                    </View>
-                  ))}
-                </ScrollView>
-              )}
+              ))}
             </View>
-          ) : null}
-
-          {/* ── LIVE AUCTIONS ── */}
-          {loading ? (
-            <View style={S.skeletonWrap}>
-              <SkeletonAuctionCard />
-            </View>
-          ) : auctions.length > 0 ? (
-            <View style={S.sectionBlock}>
-              <SectionHeader
-                title="Canlı İhaleler"
-                desc="Aktif açık artırmalar"
-                fg={t.fg} muted={t.mutedFg}
-                live
-                onSeeAll={() => navigation.navigate('Main', { screen: 'Auctions' } as any)}
-              />
-              {auctions.map((a) => {
-                const timeLeft = getAuctionTimeLeft(a);
-                const imageUri = a.parcel?.images?.[0] ? resolveImageUrl(a.parcel.images[0]) : null;
-                const isLive = a.status === 'live';
-                return (
-                  <TouchableOpacity
-                    key={a.id}
-                    onPress={() => navigation.navigate('LiveAuction', { id: a.id })}
-                    activeOpacity={0.85}
-                    style={[S.auctionCard, {
-                      backgroundColor: t.card,
-                      borderColor: isLive ? (isDark ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.15)') : t.cardBorder,
-                      shadowColor: t.shadow,
-                    }]}
-                  >
-                    <View style={S.auctionImgWrap}>
-                      {imageUri ? (
-                        <Image source={{ uri: imageUri }} style={S.auctionImg} resizeMode="cover" />
-                      ) : (
-                        <View style={[S.auctionImg, S.auctionPlaceholder, { backgroundColor: t.muted }]}>
-                          <Ionicons name="business-outline" size={24} color={t.mutedFg} />
-                        </View>
-                      )}
-                      {isLive && (
-                        <View style={S.liveTag}>
-                          <View style={S.livePulse} />
-                          <Text style={S.liveText}>CANLI</Text>
-                        </View>
-                      )}
-                    </View>
-                    <View style={S.auctionBody}>
-                      <Text style={[S.auctionTitle, { color: t.fg }]} numberOfLines={1}>
-                        {a.parcel?.title || a.title || `İhale #${a.id.slice(0, 8)}`}
-                      </Text>
-                      <View style={S.auctionMeta}>
-                        <StatusBadge status={a.status} size="sm" />
-                        {timeLeft && (
-                          <View style={[S.timeChip, { backgroundColor: t.muted }]}>
-                            <Ionicons name="time-outline" size={11} color={t.mutedFg} />
-                            <Text style={[S.timeText, { color: t.mutedFg }]}>{timeLeft}</Text>
-                          </View>
-                        )}
-                      </View>
-                      <View style={S.auctionPriceRow}>
-                        <View>
-                          <Text style={[S.auctionPriceLabel, { color: t.mutedFg }]}>Güncel Fiyat</Text>
-                          <Text style={[S.auctionPrice, { color: t.accent }]}>
-                            {formatPrice(a.currentPrice || a.startingPrice)}
-                          </Text>
-                        </View>
-                        <View style={[S.bidBadge, { backgroundColor: t.muted }]}>
-                          <Ionicons name="people-outline" size={12} color={t.mutedFg} />
-                          <Text style={[S.bidCount, { color: t.mutedFg }]}>{a.bidCount}</Text>
-                        </View>
-                      </View>
-                    </View>
-                    <View style={S.auctionChevron}>
-                      <Ionicons name="chevron-forward" size={16} color={t.mutedFg} />
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ) : null}
-
-          {/* ── LATEST ── */}
-          {loading ? (
-            <View style={S.skeletonWrap}>
-              <SkeletonParcelCard />
-              <SkeletonParcelCard />
-            </View>
-          ) : latest.length > 0 ? (
-            <View style={S.sectionBlock}>
-              <SectionHeader title="Yeni Eklenenler" desc="Son eklenen arazi ilanları" fg={t.fg} muted={t.mutedFg} />
-              <View style={S.sectionContent}>
-                {latest.map((p) => (
-                  <ParcelCard key={p.id} parcel={p} onPress={() => navigation.navigate('ParcelDetail', { id: p.id })} compact />
-                ))}
-              </View>
-            </View>
-          ) : null}
-
-          {/* ── TRUST STRIP ── */}
-          <View style={[S.trustStrip, { borderTopColor: t.separator }]}>
-            {([
-              { icon: 'shield-checkmark-outline' as const, label: 'Güvenli Ödeme' },
-              { icon: 'document-text-outline' as const, label: 'Resmi Tapu' },
-              { icon: 'headset-outline' as const, label: '7/24 Destek' },
-            ]).map((item) => (
-              <View key={item.label} style={S.trustItem}>
-                <Ionicons name={item.icon} size={18} color={t.mutedFg} />
-                <Text style={[S.trustLabel, { color: t.mutedFg }]}>{item.label}</Text>
-              </View>
-            ))}
-          </View>
-
-        </Animated.View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-/* ── Section Header ── */
-function SectionHeader({ title, desc, fg, muted, live, onSeeAll }: {
-  title: string; desc: string; fg: string; muted: string; live?: boolean;
-  onSeeAll?: () => void;
-}) {
-  return (
-    <View style={S.sectionHeader}>
-      <View style={S.sectionHeaderLeft}>
-        <View style={S.sectionTitleRow}>
-          <Text style={[S.sectionTitle, { color: fg }]}>{title}</Text>
-          {live && (
-            <View style={S.liveBadge}>
-              <View style={S.liveBadgeDot} />
-              <Text style={S.liveBadgeLabel}>CANLI</Text>
-            </View>
+          ) : (
+            <Text style={styles.emptyText}>Henüz vitrin ilanı yok.</Text>
           )}
         </View>
-        <Text style={[S.sectionDesc, { color: muted }]}>{desc}</Text>
-      </View>
-      {onSeeAll && (
-        <TouchableOpacity onPress={onSeeAll} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <View style={S.seeAllBtn}>
-            <Text style={S.seeAllText}>Tümünü Gör</Text>
-            <Ionicons name="chevron-forward" size={13} color="#059669" />
-          </View>
-        </TouchableOpacity>
-      )}
+
+        {/* ── LIVE AUCTIONS ── */}
+        <View style={styles.section}>
+          <SectionHeader
+            title="Günün İhaleleri"
+            live
+            onSeeAll={() => navigation.navigate('Main', { screen: 'Auctions' } as any)}
+          />
+          {loading ? (
+            <View style={{ paddingHorizontal: 20 }}><SkeletonAuctionCard /></View>
+          ) : auctions.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            >
+              {auctions.map((item, idx) => (
+                <AuctionCard
+                  key={item.id}
+                  auction={item}
+                  isLast={idx === auctions.length - 1}
+                  onPress={() => navigation.navigate('LiveAuction', { id: item.id })}
+                />
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={styles.emptyText}>Şu an aktif ihale bulunmuyor.</Text>
+          )}
+        </View>
+
+        {/* ── LATEST LISTINGS ── */}
+        <View style={styles.section}>
+          <SectionHeader
+            title="Yeni Eklenenler"
+            onSeeAll={() => navigation.navigate('Main', { screen: 'Parcels' } as any)}
+          />
+          {loading ? (
+            <View style={{ paddingHorizontal: 20 }}><SkeletonParcelCard /></View>
+          ) : latest.length > 0 ? (
+            <View style={styles.listWrap}>
+              {latest.slice(0, 5).map((item) => (
+                <ListCard
+                  key={item.id}
+                  parcel={item}
+                  onPress={() => navigation.navigate('ParcelDetail', { id: item.id })}
+                />
+              ))}
+            </View>
+          ) : null}
+        </View>
+
+        <View style={{ height: 40 }} />
+      </Animated.ScrollView>
     </View>
   );
 }
 
-/* ─────────── STYLES (shadcn/ui design language) ─────────── */
+/* ════════════════════════════════════════════
+ *  SUB-COMPONENTS (no hooks inside .map!)
+ * ════════════════════════════════════════════ */
 
-const CARD_SHADOW = Platform.select({
-  ios: { shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3 },
-  android: { elevation: 1 },
+/* ── Category Item ── */
+function CategoryItem({ cat, onPress }: { cat: typeof CATEGORIES[number]; onPress: () => void }) {
+  return (
+    <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={styles.catItem}>
+      <View style={[styles.catIcon, { backgroundColor: cat.bg }]}>
+        <Ionicons name={cat.icon as any} size={24} color={cat.color} />
+      </View>
+      <Text style={styles.catLabel}>{cat.label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+/* ── Section Header ── */
+function SectionHeader({ title, live, onSeeAll }: { title: string; live?: boolean; onSeeAll: () => void }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionLeft}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {live && (
+          <View style={styles.liveBadge}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>CANLI</Text>
+          </View>
+        )}
+      </View>
+      <TouchableOpacity onPress={onSeeAll} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <View style={styles.seeAllBtn}>
+          <Text style={styles.seeAllText}>Tümünü Gör</Text>
+          <Ionicons name="chevron-forward" size={14} color={BRAND} />
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+/* ── Grid Card (2-column Sahibinden-style) ── */
+function GridCard({ parcel, onPress }: { parcel: Parcel; onPress: () => void }) {
+  const { scale, onPressIn, onPressOut } = useAnimatedPress();
+  const imageUri = parcel.images?.[0] ? resolveImageUrl(parcel.images[0]) : null;
+  const isSold = parcel.status === 'sold';
+
+  return (
+    <Animated.View style={[styles.gridCardOuter, { transform: [{ scale }] }]}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        onPress={onPress}
+        style={styles.gridCard}
+      >
+        {/* Image */}
+        <View style={styles.gridImgWrap}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.gridImg} resizeMode="cover" />
+          ) : (
+            <View style={[styles.gridImg, { backgroundColor: '#f1f5f9' }]}>
+              <Ionicons name="image-outline" size={28} color="#cbd5e1" />
+            </View>
+          )}
+          {isSold && (
+            <View style={styles.soldBanner}>
+              <Text style={styles.soldBannerText}>SATILDI</Text>
+            </View>
+          )}
+          {/* Favorite btn */}
+          <TouchableOpacity style={styles.favBtn} activeOpacity={0.7}>
+            <Ionicons name="heart-outline" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Body */}
+        <View style={styles.gridBody}>
+          <Text style={styles.gridTitle} numberOfLines={2}>{parcel.title}</Text>
+          <View style={styles.gridLocRow}>
+            <Ionicons name="location-outline" size={12} color={palette.muted} />
+            <Text style={styles.gridLoc} numberOfLines={1}>
+              {parcel.city}{parcel.district ? `, ${parcel.district}` : ''}
+            </Text>
+          </View>
+          {parcel.area && (
+            <View style={styles.gridMeta}>
+              <Text style={styles.gridMetaText}>{parcel.area} m²</Text>
+            </View>
+          )}
+          <Text style={styles.gridPrice}>{formatPrice(parcel.price)}</Text>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+/* ── Auction Card (horizontal scroll) ── */
+function AuctionCard({ auction, isLast, onPress }: { auction: Auction; isLast: boolean; onPress: () => void }) {
+  const { scale, onPressIn, onPressOut } = useAnimatedPress();
+  const imageUri = auction.parcel?.images?.[0] ? resolveImageUrl(auction.parcel.images[0]) : null;
+
+  return (
+    <Animated.View style={[{ transform: [{ scale }] }, { marginRight: isLast ? 20 : 12 }]}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        onPress={onPress}
+        style={styles.auctionCard}
+      >
+        <View style={styles.auctionImgWrap}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.auctionImg} resizeMode="cover" />
+          ) : (
+            <View style={[styles.auctionImg, { backgroundColor: '#f1f5f9' }]} />
+          )}
+          {/* Live badge */}
+          <View style={styles.auctionLiveTag}>
+            <View style={styles.auctionPulse} />
+            <Text style={styles.auctionLiveText}>CANLI İHALE</Text>
+          </View>
+          {/* Gradient overlay */}
+          <View style={styles.auctionGradient} />
+        </View>
+        <View style={styles.auctionBody}>
+          <Text style={styles.auctionTitle} numberOfLines={1}>
+            {auction.parcel?.title || auction.title}
+          </Text>
+          <View style={styles.auctionPriceRow}>
+            <Text style={styles.auctionPriceLabel}>Güncel Fiyat</Text>
+            <Text style={styles.auctionPrice}>
+              {formatPrice(auction.currentPrice || auction.startingPrice)}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+/* ── List Card (compact horizontal) ── */
+function ListCard({ parcel, onPress }: { parcel: Parcel; onPress: () => void }) {
+  const { scale, onPressIn, onPressOut } = useAnimatedPress(0.98);
+  const imageUri = parcel.images?.[0] ? resolveImageUrl(parcel.images[0]) : null;
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        onPress={onPress}
+        style={styles.listCard}
+      >
+        <View style={styles.listImgWrap}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.listImg} resizeMode="cover" />
+          ) : (
+            <View style={[styles.listImg, { backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' }]}>
+              <Ionicons name="image-outline" size={22} color="#cbd5e1" />
+            </View>
+          )}
+        </View>
+        <View style={styles.listBody}>
+          <Text style={styles.listTitle} numberOfLines={2}>{parcel.title}</Text>
+          <View style={styles.listLocRow}>
+            <Ionicons name="location-outline" size={12} color={palette.muted} />
+            <Text style={styles.listLoc} numberOfLines={1}>
+              {parcel.city}{parcel.district ? `, ${parcel.district}` : ''}
+            </Text>
+          </View>
+          <Text style={styles.listPrice}>{formatPrice(parcel.price)}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="#d1d5db" style={{ marginLeft: 4 }} />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+/* ════════════════════════════════════════════
+ *  STYLES
+ * ════════════════════════════════════════════ */
+const SHADOW_SM = Platform.select({
+  ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  android: { elevation: 3 },
 }) as any;
 
-const RADIUS = 16;
-const RADIUS_SM = 12;
-const RADIUS_XS = 8;
-const PX = 20; // horizontal page padding
+const SHADOW_MD = Platform.select({
+  ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16 },
+  android: { elevation: 5 },
+}) as any;
 
-const S = StyleSheet.create({
-  safe: { flex: 1 },
-  scrollContent: { paddingBottom: 120 },
+const SHADOW_LG = Platform.select({
+  ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 24 },
+  android: { elevation: 8 },
+}) as any;
 
-  /* Header */
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: palette.bg },
+
+  /* ── Header ── */
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: PX, paddingTop: 8, paddingBottom: 16,
+    backgroundColor: BRAND,
+    paddingBottom: 32, // extra for floating search
+    zIndex: 10,
+    ...SHADOW_MD,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  headerText: { flex: 1 },
   avatar: {
-    width: 44, height: 44, borderRadius: RADIUS_SM,
-    alignItems: 'center', justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
-  avatarLetter: { fontSize: 17, fontWeight: '700', color: '#fff' },
-  greeting: { fontSize: 12, fontWeight: '500', marginBottom: 1 },
-  userName: { fontSize: 17, fontWeight: '700', letterSpacing: -0.4 },
+  avatarText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  greeting: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  userName: { color: '#fff', fontSize: 20, fontWeight: '800', marginTop: 1 },
+  headerActions: { flexDirection: 'row', gap: 8 },
   iconBtn: {
-    width: 42, height: 42, borderRadius: RADIUS_SM,
-    alignItems: 'center', justifyContent: 'center',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   notifDot: {
-    position: 'absolute', top: 9, right: 9,
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: '#ef4444', borderWidth: 2,
+    position: 'absolute',
+    top: 10,
+    right: 11,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
+    borderWidth: 2,
+    borderColor: BRAND,
   },
 
-  /* Shared section spacing */
-  section: { paddingHorizontal: PX, marginBottom: 16 },
-
-  /* Card base — shadcn style: thin border, low shadow, consistent radius */
-  card: {
-    borderRadius: RADIUS, borderWidth: 1, overflow: 'hidden',
-    ...CARD_SHADOW,
+  /* ── Search Bar ── */
+  searchOuter: {
+    position: 'absolute',
+    bottom: -24,
+    left: 20,
+    right: 20,
+    zIndex: 20,
   },
-
-  /* Hero */
-  heroGradient: {
-    flexDirection: 'row', alignItems: 'center',
-    padding: 24, minHeight: 200,
-  },
-  heroBody: { flex: 1, zIndex: 2 },
-  heroPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 20, marginBottom: 14,
-  },
-  heroPillDot: { width: 5, height: 5, borderRadius: 2.5 },
-  heroPillText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' },
-  heroTitle: { fontSize: 28, fontWeight: '800', letterSpacing: -0.8, lineHeight: 34, marginBottom: 8 },
-  heroCaption: { fontSize: 13, fontWeight: '500', marginBottom: 20, lineHeight: 18 },
-  heroCta: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    alignSelf: 'flex-start', paddingLeft: 18, paddingRight: 6, paddingVertical: 6,
-    borderRadius: RADIUS_SM,
-  },
-  heroCtaLabel: { color: '#fff', fontSize: 14, fontWeight: '700', letterSpacing: -0.2 },
-  heroCtaArrow: {
-    width: 28, height: 28, borderRadius: RADIUS_XS,
-    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
-  },
-  heroIconBox: {
-    width: 76, height: 76, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center', marginLeft: 8,
-  },
-
-  /* Search */
   searchBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    height: 48, borderRadius: RADIUS_SM, paddingHorizontal: 10,
-    borderWidth: 1,
-    ...CARD_SHADOW,
+    height: 48,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    ...SHADOW_LG,
   },
-  searchIconWrap: {
-    width: 30, height: 30, borderRadius: RADIUS_XS,
-    alignItems: 'center', justifyContent: 'center',
+  searchPlaceholder: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+    letterSpacing: -0.2,
   },
-  searchPlaceholder: { fontSize: 14, fontWeight: '400', flex: 1 },
   searchFilterBtn: {
-    width: 34, height: 34, borderRadius: RADIUS_XS,
-    alignItems: 'center', justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  /* Stats */
-  statsRow: {
-    flexDirection: 'row', paddingHorizontal: PX, gap: 10, marginBottom: 16,
-  },
-  statCard: {
-    flex: 1, alignItems: 'center', paddingVertical: 16, paddingHorizontal: 8,
-    borderRadius: RADIUS, borderWidth: 1,
-    ...CARD_SHADOW,
-  },
-  statIconWrap: {
-    width: 32, height: 32, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 8,
-  },
-  statValue: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5, lineHeight: 26 },
-  statLabel: { fontSize: 11, fontWeight: '500', marginTop: 2 },
+  /* ── Scroll ── */
+  scrollContent: { paddingBottom: 140 },
 
-  /* Actions grid */
-  actionsGrid: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    paddingHorizontal: PX, gap: 10, marginBottom: 32,
+  /* ── Categories ── */
+  categoriesWrap: {
+    backgroundColor: '#fff',
+    paddingTop: 12,
+    paddingBottom: 18,
+    marginBottom: 8,
+    ...SHADOW_SM,
   },
-  actionCard: {
-    width: (SCREEN_W - PX * 2 - 10) / 2,
-    alignItems: 'center', paddingVertical: 20,
-    borderRadius: RADIUS, borderWidth: 1,
-    ...CARD_SHADOW,
+  categoriesInner: { paddingHorizontal: 16, gap: 8 },
+  catItem: { alignItems: 'center', width: 72 },
+  catIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
-  actionIcon: {
-    width: 48, height: 48, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 10,
-  },
-  actionLabel: { fontSize: 13, fontWeight: '600' },
+  catLabel: { fontSize: 12, fontWeight: '700', color: palette.fgSecondary, textAlign: 'center', letterSpacing: -0.2 },
 
-  /* Section blocks */
-  sectionBlock: { marginBottom: 32 },
+  /* ── Section ── */
+  section: { marginTop: 16 },
   sectionHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: PX, marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 14,
   },
-  sectionHeaderLeft: { flex: 1 },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
-  sectionDesc: { fontSize: 12, fontWeight: '400', marginTop: 2 },
+  sectionLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionTitle: { fontSize: 20, fontWeight: '800', color: palette.fg, letterSpacing: -0.5 },
   seeAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  seeAllText: { fontSize: 13, fontWeight: '700', color: '#059669' },
+  seeAllText: { color: BRAND, fontSize: 14, fontWeight: '600' },
   liveBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#dc2626', paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS_XS,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.red,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 5,
   },
-  liveBadgeDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,255,255,0.85)' },
-  liveBadgeLabel: { color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
+  liveDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#fff' },
+  liveText: { color: '#fff', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
 
-  sectionContent: { paddingHorizontal: PX },
-  horizontalList: { paddingHorizontal: PX, gap: 12 },
-  horizontalCard: { width: SCREEN_W * 0.72 },
-  skeletonWrap: { paddingHorizontal: PX, marginBottom: 32 },
+  /* ── Grid Cards ── */
+  gridRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: GRID_PADDING,
+    gap: GRID_GAP,
+  },
+  gridCardOuter: { width: CARD_W },
+  gridCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...SHADOW_SM,
+  },
+  gridImgWrap: { width: '100%', height: 120, position: 'relative' },
+  gridImg: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+  soldBanner: {
+    position: 'absolute',
+    top: 10,
+    left: -28,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 32,
+    paddingVertical: 4,
+    transform: [{ rotate: '-45deg' }],
+  },
+  soldBannerText: { color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+  favBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridBody: { padding: 12 },
+  gridTitle: { fontSize: 13, fontWeight: '700', color: palette.fg, lineHeight: 18, marginBottom: 4 },
+  gridLocRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 6 },
+  gridLoc: { fontSize: 11, color: palette.muted, flex: 1 },
+  gridMeta: {
+    backgroundColor: palette.accentSoft,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  gridMetaText: { fontSize: 10, fontWeight: '700', color: BRAND },
+  gridPrice: { fontSize: 18, fontWeight: '800', color: BRAND, letterSpacing: -0.5 },
 
-  /* Auction cards */
+  /* ── Auction Cards ── */
+  horizontalList: { paddingLeft: 20 },
   auctionCard: {
-    flexDirection: 'row', marginHorizontal: PX, borderRadius: RADIUS,
-    overflow: 'hidden', marginBottom: 10, alignItems: 'center',
-    borderWidth: 1,
-    ...CARD_SHADOW,
+    width: SCREEN_W * 0.68,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...SHADOW_MD,
   },
-  auctionImgWrap: { position: 'relative' },
-  auctionImg: { width: 100, height: 100 },
-  auctionPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  liveTag: {
-    position: 'absolute', top: 8, left: 8,
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#dc2626', paddingHorizontal: 7, paddingVertical: 3,
-    borderRadius: 7, gap: 4,
+  auctionImgWrap: { width: '100%', height: 140, position: 'relative' },
+  auctionImg: { width: '100%', height: '100%' },
+  auctionGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 50,
+    backgroundColor: 'transparent',
   },
-  livePulse: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,255,255,0.85)' },
-  liveText: { color: '#fff', fontSize: 8.5, fontWeight: '800', letterSpacing: 0.6 },
-  auctionBody: { flex: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 6 },
-  auctionTitle: { fontSize: 14, fontWeight: '700', letterSpacing: -0.2, lineHeight: 18 },
-  auctionMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  timeChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6,
+  auctionLiveTag: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: palette.red,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    gap: 6,
   },
-  timeText: { fontSize: 11, fontWeight: '500' },
-  auctionPriceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  auctionPriceLabel: { fontSize: 10, fontWeight: '500', marginBottom: 1 },
-  auctionPrice: { fontSize: 17, fontWeight: '800', letterSpacing: -0.4 },
-  bidBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 8, paddingVertical: 5, borderRadius: RADIUS_XS,
-  },
-  bidCount: { fontSize: 11.5, fontWeight: '600' },
-  auctionChevron: { paddingRight: 12 },
+  auctionPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
+  auctionLiveText: { color: '#fff', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  auctionBody: { padding: 14 },
+  auctionTitle: { fontSize: 15, fontWeight: '700', color: palette.fg, marginBottom: 10 },
+  auctionPriceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  auctionPriceLabel: { fontSize: 12, fontWeight: '500', color: palette.muted },
+  auctionPrice: { fontSize: 18, fontWeight: '800', color: palette.red },
 
-  /* Trust strip */
-  trustStrip: {
-    flexDirection: 'row', justifyContent: 'space-around',
-    paddingVertical: 24, marginHorizontal: PX, marginTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
+  /* ── List Cards ── */
+  listWrap: { paddingHorizontal: 20 },
+  listCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 12,
+    alignItems: 'center',
+    ...SHADOW_SM,
   },
-  trustItem: { alignItems: 'center', gap: 6 },
-  trustLabel: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.2 },
+  listImgWrap: { width: 88, height: 88, borderRadius: 12, overflow: 'hidden', marginRight: 14 },
+  listImg: { width: '100%', height: '100%' },
+  listBody: { flex: 1, justifyContent: 'center' },
+  listTitle: { fontSize: 14, fontWeight: '700', color: palette.fg, marginBottom: 4, lineHeight: 20 },
+  listLocRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 6 },
+  listLoc: { fontSize: 12, color: palette.muted },
+  listPrice: { fontSize: 17, fontWeight: '800', color: BRAND },
+
+  /* ── Empty ── */
+  emptyText: { color: palette.muted, paddingHorizontal: 20, fontSize: 14 },
 });

@@ -13,17 +13,17 @@ import { VideoPopup } from '@/components/video-popup';
 import {
   Search, ArrowRight, MapPin, Shield, Lock, Headphones, Scale,
   Play, Star, Users, Gavel, Building2, ChevronRight, TrendingUp,
-  Zap, Timer,
+  Zap, Timer, Sparkles, Activity
 } from 'lucide-react';
 import type { Parcel, Auction, PaginatedResponse, Reference } from '@/types';
 
 const ParcelMapLazy = dynamic(() => import('@/components/parcel-map-inner'), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[400px] items-center justify-center bg-gray-50 rounded-2xl">
-      <div className="flex flex-col items-center gap-2">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-200 border-t-brand-500" />
-        <span className="text-sm text-gray-400">Harita yükleniyor...</span>
+    <div className="flex xl:h-[500px] h-[400px] items-center justify-center bg-[#0a0f1a] rounded-3xl border border-white/5 shadow-2xl">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-500/20 border-t-brand-500" />
+        <span className="text-sm font-medium tracking-wide text-brand-500/70 uppercase">Dünya Haritası Yükleniyor</span>
       </div>
     </div>
   ),
@@ -50,7 +50,6 @@ export default function HomePage() {
         setStats((s) => ({ ...s, parcels: data.meta.total }));
       }).catch(() => {});
 
-    // Fetch total city count from all active parcels
     apiClient.get<PaginatedResponse<Parcel>>('/parcels', { params: { limit: 100, status: 'active' } })
       .then(({ data }) => {
         const cities = new Set(data.data.map((p) => p.city).filter(Boolean));
@@ -58,7 +57,7 @@ export default function HomePage() {
       }).catch(() => {});
 
     apiClient.get<Reference[]>('/content/references')
-      .then(({ data }) => setTestimonials(data.filter((r) => r.referenceType === 'testimonial').slice(0, 6)))
+      .then(({ data }) => setTestimonials(data.filter((r) => r.referenceType === 'testimonial').slice(0, 4)))
       .catch(() => {});
 
     Promise.all([
@@ -80,237 +79,194 @@ export default function HomePage() {
   }
 
   return (
-    <main className="bg-[var(--background)]">
-      {/* ─── Premium Hero Section ─── */}
-      <section className="relative min-h-[95vh] flex items-center justify-center overflow-hidden bg-[#030712]">
-        {/* Animated Background Orbs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-brand-600/20 blur-[140px] mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }} />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/15 blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '12s' }} />
-          <div className="absolute top-[30%] left-[40%] w-[30%] h-[30%] rounded-full bg-indigo-500/10 blur-[100px] mix-blend-screen animate-pulse" style={{ animationDuration: '10s' }} />
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_40%,#000_20%,transparent_100%)]" />
+    <main className="bg-[#030712] text-white selection:bg-brand-500/30 font-sans mt-[-80px] pt-[80px]">
+      {/* ─── ULTRA-PREMIUM HERO ─── */}
+      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+        {/* Dynamic Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-brand-600/10 rounded-full blur-[120px] mix-blend-screen opacity-60 translate-x-1/3 -translate-y-1/4 animate-pulse" style={{ animationDuration: '10s' }} />
+          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen opacity-50 -translate-x-1/3 translate-y-1/3 animate-pulse" style={{ animationDuration: '12s' }} />
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#030712]/50 to-[#030712]" />
         </div>
 
-        <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center text-center mt-12">
-          {/* Glowing Badge */}
-          <div className="animate-fadeInDown mb-8">
-            <div className="relative inline-flex group cursor-pointer">
-              <div className="absolute transition-all duration-1000 opacity-50 -inset-px bg-gradient-to-r from-brand-500 via-blue-500 to-indigo-500 rounded-full blur-sm group-hover:opacity-100 group-hover:-inset-1 group-hover:duration-200 animate-tilt"></div>
-              <div className="relative inline-flex items-center gap-2 px-6 py-2 text-sm font-medium text-white transition-all duration-200 bg-[#030712] rounded-full ring-1 ring-white/10 group-hover:ring-white/20">
-                <span className="flex h-2 w-2 rounded-full bg-brand-400 animate-pulse shadow-[0_0_8px_rgba(36,168,106,1)]" />
-                Türkiye'nin Yeni Nesil Arsa Platformu
-              </div>
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 flex flex-col items-center justify-center text-center mt-20">
+          {/* Badge */}
+          <div className="animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 hover:bg-white/10 transition-colors cursor-pointer group">
+              <Sparkles className="w-4 h-4 text-brand-400 group-hover:text-brand-300 transition-colors" />
+              <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors tracking-wide">
+                Türkiye'nin Ekosistem Lideri Gayrimenkul Platformu
+              </span>
             </div>
           </div>
 
-          {/* Hyper-Modern Headline */}
-          <h1 className="animate-fadeInUp max-w-5xl mx-auto text-5xl sm:text-7xl lg:text-[5.5rem] font-black tracking-tight text-white leading-[1.05] drop-shadow-2xl mb-8">
-            Geleceğinize <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-brand-500 to-emerald-400 filter drop-shadow-[0_0_20px_rgba(36,168,106,0.5)]">
+          {/* Epic Headline */}
+          <h1 className="animate-fade-in-up animation-delay-100 max-w-5xl mx-auto text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter text-white leading-[1.05] mb-8">
+            Geleceğinize{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-br from-brand-300 origin-bottom via-brand-500 to-emerald-700">
                Değer Katın
             </span>
           </h1>
           
-          <p className="animate-fadeInUp animation-delay-200 max-w-2xl mx-auto text-lg sm:text-xl text-gray-400/90 font-light leading-relaxed mb-12">
-            Güvenilir, şeffaf ve dijital onaylı arsa satın alma deneyimi. 
-            Canlı müzayedelerde yerinizi alın, en iyi yatırımı saniyeler içinde gerçekleştirin.
+          <p className="animate-fade-in-up animation-delay-200 max-w-2xl mx-auto text-lg sm:text-xl text-gray-400 font-light leading-relaxed mb-12 tracking-wide">
+            Şeffaf, güvenilir ve tamamen dijital arsa yatırımı. 
+            Canlı müzayedelerde yerinizi alın, saniyeler içinde kazanın.
           </p>
 
-          {/* Glassmorphism Premium Search */}
-          <form onSubmit={handleSearch} className="animate-fadeInUp animation-delay-400 w-full max-w-3xl mx-auto relative z-20">
-            <div className="group relative p-[2px] rounded-3xl bg-gradient-to-b from-white/10 to-white/5 hover:from-brand-500/40 hover:to-blue-500/30 transition-all duration-500 shadow-2xl">
-              <div className="relative flex items-center bg-[#0a0f1a]/80 backdrop-blur-2xl rounded-[22px] p-2 overflow-hidden border border-white/5">
-                <Search className="ml-5 h-6 w-6 text-gray-400 group-hover:text-brand-400 transition-colors" />
+          {/* Glass Search Bar */}
+          <form onSubmit={handleSearch} className="animate-fade-in-up animation-delay-300 w-full max-w-2xl mx-auto relative z-20">
+            <div className="relative p-[1px] rounded-[32px] bg-gradient-to-b from-white/20 to-white/5 hover:from-brand-500/40 hover:to-brand-500/5 transition-all duration-700 shadow-[0_0_40px_rgba(36,168,106,0.15)] group">
+              <div className="relative flex items-center bg-[#0a0f1a]/80 backdrop-blur-3xl rounded-[31px] p-2 pl-6 overflow-hidden">
+                <Search className="h-6 w-6 text-gray-400 group-focus-within:text-brand-400 transition-colors" />
                 <input
                   type="text"
-                  placeholder="Şehir, ilçe, proje veya ilan no arayın..."
+                  placeholder="Şehir, ilçe veya ilan statüsü arayın..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent px-5 py-4 text-white text-lg placeholder-gray-500 outline-none w-full"
+                  className="flex-1 bg-transparent px-5 py-4 text-white text-lg placeholder-gray-500 outline-none w-full font-light tracking-wide"
                 />
                 <button
                   type="submit"
-                  className="relative shrink-0 overflow-hidden rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 px-8 py-4 text-base font-semibold text-white shadow-[0_0_20px_rgba(36,168,106,0.4)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(36,168,106,0.6)] active:scale-95"
+                  className="relative shrink-0 overflow-hidden rounded-[22px] bg-white text-black px-8 py-4 text-base font-bold transition-all duration-300 hover:scale-[0.98] active:scale-95"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     Ara <ArrowRight className="h-4 w-4" />
                   </span>
-                  <div className="absolute inset-0 h-full w-full bg-white/20 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-500 ease-out" />
                 </button>
               </div>
             </div>
 
-            {/* Quick Filters */}
+            {/* Micro Tags */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <span className="text-sm text-gray-500 font-medium mr-2">Popüler Aramalar:</span>
-              {['İstanbul', 'İzmir', 'Antalya', 'Muğla', 'Ankara'].map((city, idx) => (
+              <span className="text-xs tracking-widest text-gray-500 font-semibold uppercase mr-2">Trend:</span>
+              {['İstanbul', 'İzmir', 'Arsa', 'Tarla'].map((tag, idx) => (
                 <button
-                  key={city}
+                  key={tag}
                   type="button"
-                  onClick={() => router.push(`/parcels?city=${city}`)}
-                  className="relative px-4 py-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md text-sm font-medium text-gray-300 transition-all duration-300 hover:bg-white/10 hover:text-white hover:border-brand-500/50 hover:shadow-[0_0_15px_rgba(36,168,106,0.2)]"
-                  style={{ animationDelay: `${idx * 100}ms` }}
+                  onClick={() => router.push(`/parcels?search=${tag}`)}
+                  className="px-4 py-1.5 rounded-full border border-white/5 bg-white/5 backdrop-blur-md text-xs font-medium text-gray-400 transition-all hover:bg-white/10 hover:text-white"
                 >
-                  <MapPin className="inline h-3.5 w-3.5 mr-1.5 -mt-0.5 opacity-70" />
-                  {city}
+                  {tag}
                 </button>
               ))}
             </div>
           </form>
         </div>
-        
-        {/* Bottom Fade */}
-        <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[var(--background)] to-transparent pointer-events-none" />
       </section>
 
-      {/* ─── Premium Stats Bar ─── */}
-      <section className="relative -mt-16 z-20 mx-auto max-w-5xl px-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 rounded-3xl bg-white/70 dark:bg-[#0a0f1a]/80 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] overflow-hidden">
+      {/* ─── VERCEL STYLE BENTO STATS ─── */}
+      <section className="relative z-20 mx-auto max-w-7xl px-6 sm:px-8 mt-[-60px]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { value: `${stats.parcels}+`, label: 'Aktif İlan', icon: Building2, color: 'text-brand-500', bg: 'bg-brand-50 dark:bg-brand-500/10' },
-            { value: `${stats.auctions}`, label: 'Canlı Müzayede', icon: Gavel, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
-            { value: `${stats.cities}`, label: 'Farklı İl', icon: MapPin, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
+            { value: `${stats.parcels}+`, label: 'Aktif Premium İlan', icon: Building2, desc: 'Doğrulanmış ve değerlemesi yapılmış eşsiz parseller.' },
+            { value: `${stats.auctions}`, label: 'Canlı Müzayede', icon: Activity, desc: 'Gerçek zamanlı açık artırmalar ile heyecana ortak olun.' },
+            { value: `${stats.cities}`, label: 'Farklı Lokasyon', icon: MapPin, desc: 'Türkiye nin dört bir yanından stratejik yatırım noktaları.' },
           ].map((stat, i) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.label} className={`group relative flex items-center justify-center gap-5 px-8 py-8 transition-colors hover:bg-white/90 dark:hover:bg-white/5 ${i > 0 ? 'sm:border-l border-gray-100 dark:border-white/10 border-t sm:border-t-0' : ''}`}>
-                <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${stat.bg} ${stat.color} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
-                  <Icon className="h-6 w-6" />
-                </div>
+              <div key={stat.label} className="group relative overflow-hidden rounded-3xl bg-white/5 border border-white/10 p-8 backdrop-blur-xl hover:bg-white/[0.08] transition-all duration-500 flex flex-col justify-between h-[220px]">
+                <div className="absolute top-0 right-0 -m-8 w-32 h-32 bg-brand-500/10 rounded-full blur-2xl group-hover:bg-brand-500/20 transition-all duration-700" />
                 <div>
-                  <p className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{stat.value}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mt-1">{stat.label}</p>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 border border-white/10 text-brand-400">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-400 tracking-wide">{stat.label}</span>
+                  </div>
+                  <h3 className="text-5xl font-black text-white tracking-tighter mb-2">{stat.value}</h3>
                 </div>
+                <p className="text-sm text-gray-500 font-light leading-relaxed">{stat.desc}</p>
               </div>
             );
           })}
         </div>
       </section>
 
-      {/* ─── Featured Parcels ─── */}
-      {featuredParcels.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pt-20 pb-12">
+      {/* ─── LIVE AUCTIONS (Neon Mode) ─── */}
+      {activeAuctions.length > 0 && (
+        <section className="mx-auto max-w-7xl px-6 sm:px-8 py-32 border-b border-white/5">
           <SectionHeader
-            title="Öne Çıkan Arsalar"
-            subtitle="Editör seçimi premium arsa ilanları"
-            href="/parcels?isFeatured=true"
+            title="Sıcak Müzayedeler"
+            subtitle="Şu anda aktif olan ve yakında kapanacak fırsatlar."
+            href="/auctions"
+            liveBadge
           />
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredParcels.map((parcel) => (
-              <ParcelCard key={parcel.id} parcel={parcel} />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {activeAuctions.map((auction) => (
+              <AuctionCard key={auction.id} auction={auction} />
             ))}
           </div>
         </section>
       )}
 
-      {/* ─── Active Auctions ─── */}
-      {activeAuctions.length > 0 && (
-        <section className="bg-gray-50/80">
-          <div className="mx-auto max-w-6xl px-4 py-16">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Açık Artırmalar</h2>
-                  <span className="flex items-center gap-1.5 rounded-full bg-red-50 border border-red-100 px-2.5 py-1 text-xs font-semibold text-red-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                    Canlı
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500">Gerçek zamanlı teklif verin, en iyi fiyatı yakalayın</p>
+      {/* ─── SHOWCASE (Bento Grids Variant) ─── */}
+      {featuredParcels.length > 0 && (
+        <section className="mx-auto max-w-7xl px-6 sm:px-8 py-32">
+          <SectionHeader
+            title="Premium Koleksiyon"
+            subtitle="NetTapu yatırım uzmanları tarafından özenle seçilmiş elit arsalar."
+            href="/parcels?isFeatured=true"
+          />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:gap-8">
+            {featuredParcels.map((parcel) => (
+              <div key={parcel.id} className="relative group rounded-3xl overflow-hidden bg-[#0a0f1a] border border-white/10 hover:border-brand-500/50 transition-all duration-500">
+                <ParcelCard parcel={parcel} />
               </div>
-              <Link href="/auctions" className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors duration-150 cursor-pointer">
-                Tümünü Gör <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {activeAuctions.map((auction) => (
-                <AuctionCard key={auction.id} auction={auction} />
-              ))}
-            </div>
+            ))}
           </div>
         </section>
       )}
 
-      {/* ─── Latest Parcels ─── */}
-      {(() => {
-        const featuredIds = new Set(featuredParcels.map((p) => p.id));
-        const uniqueLatest = latestParcels.filter((p) => !featuredIds.has(p.id));
-        if (uniqueLatest.length === 0) return null;
-        return (
-          <section className="mx-auto max-w-6xl px-4 py-16">
-            <SectionHeader
-              title="Son Eklenen Arsalar"
-              subtitle="En yeni eklenen arsa ilanları"
-              href="/parcels?sortBy=createdAt&sortOrder=DESC"
-            />
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {uniqueLatest.map((parcel) => (
-                <ParcelCard key={parcel.id} parcel={parcel} />
-              ))}
-            </div>
-          </section>
-        );
-      })()}
-
-      {/* ─── Turkey Map ─── */}
-      <section className="bg-gray-50/80">
-        <div className="mx-auto max-w-5xl px-4 py-16">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Türkiye Geneli Arsalar</h2>
-            <p className="mt-2 text-sm text-gray-500">Bir ile tıklayarak o ildeki arsaları görüntüleyin</p>
-          </div>
-          <div className="rounded-2xl border border-gray-200/80 bg-white p-6 sm:p-10 shadow-sm">
-            <TurkeyMap onProvinceClick={(province) => router.push(`/parcels?city=${encodeURIComponent(province)}`)} />
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Interactive Map ─── */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      {/* ─── INTERACTIVE MAP ─── */}
+      <section className="relative mx-auto max-w-7xl px-6 sm:px-8 py-32">
+        <div className="absolute inset-0 bg-brand-500/5 blur-[120px] rounded-full pointer-events-none" />
         <SectionHeader
-          title="Haritada Keşfet"
-          subtitle="Tüm arsaları harita üzerinde görüntüleyin"
+          title="Keşif Haritası"
+          subtitle="Gelişmiş uydu verileri ile parselleri noktasal olarak inceleyin."
           href="/parcels?view=map"
-          linkText="Tam Ekran Harita"
+          linkText="Tam Ekranda Keşfet"
         />
-        <div className="rounded-2xl border border-gray-200/80 overflow-hidden shadow-sm">
-          <ParcelMapLazy
-            parcels={[...featuredParcels, ...latestParcels].filter((p, i, arr) => arr.findIndex((x) => x.id === p.id) === i)}
-            height="400px"
-          />
+        <div className="relative rounded-[2.5rem] p-[2px] bg-gradient-to-b from-white/15 to-white/5 overflow-hidden shadow-2xl">
+          <div className="bg-[#030712] rounded-[2.4rem] overflow-hidden">
+            <ParcelMapLazy
+              parcels={[...featuredParcels, ...latestParcels]}
+              height="600px"
+            />
+          </div>
         </div>
       </section>
 
-      {/* ─── Premium How It Works ─── */}
-      <section className="relative py-24 overflow-hidden bg-white dark:bg-[#030712]">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-500/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+      {/* ─── HOW IT WORKS (Timeline Core) ─── */}
+      <section className="bg-[#0a0f1a] border-y border-white/5 py-32">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 text-center mb-24">
+          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-6">Sistemin <span className="text-brand-400">DNA'sı</span></h2>
+          <p className="text-gray-400 text-lg sm:text-xl font-light max-w-2xl mx-auto">
+            Karmaşık bürokrasiyi tek bir platformda erittik. NetTapu ile yatırım yapmak bir e-ticaret sitesinden alışveriş yapmak kadar kolay.
+          </p>
+        </div>
         
-        <div className="relative mx-auto max-w-6xl px-4">
-          <div className="text-center mb-16">
-            <span className="text-brand-500 font-semibold tracking-wider uppercase text-sm mb-3 block">Kolay ve Güvenli</span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight">Nasıl Çalışır?</h2>
-            <p className="mt-4 text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">Sadece 3 basit adımda hayalinizdeki yatırıma giden güvenli yolculuk.</p>
-          </div>
-          
-          <div className="grid gap-8 sm:grid-cols-3 relative before:absolute before:inset-0 sm:before:top-1/2 sm:before:h-0.5 sm:before:-translate-y-1/2 before:bg-gradient-to-r before:from-transparent before:via-gray-200 dark:before:via-gray-800 before:to-transparent">
+        <div className="mx-auto max-w-6xl px-6 sm:px-8">
+          <div className="grid md:grid-cols-3 gap-8 lg:gap-12 relative">
+            {/* Connecting Line */}
+            <div className="hidden md:block absolute top-[40px] left-12 right-12 h-[2px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            
             {[
-              { step: '01', icon: Search, title: 'Arsa Bulun', desc: 'Gelişmiş harita ve filtreler üzerinden size en uygun lokasyonu ve arsayı anında keşfedin.', color: 'from-blue-500 to-cyan-400', shadow: 'shadow-blue-500/20' },
-              { step: '02', icon: Gavel, title: 'Teklif Verin', desc: 'Doğrulanmış ilanlara hemen teklif verin veya eşzamanlı canlı açık artırma heyecanına ortak olun.', color: 'from-amber-500 to-orange-400', shadow: 'shadow-amber-500/20' },
-              { step: '03', icon: Shield, title: 'Tapunuzu Alın', desc: 'Banka onaylı güvenli cüzdan ve resmi entegrasyonlar sayesinde tapu devir işlemlerinizi hızla tamamlayın.', color: 'from-brand-600 to-brand-400', shadow: 'shadow-brand-500/20' },
+              { step: '01', icon: Search, title: 'Keşfet & Analiz Et', desc: 'AI destekli değerleme algoritmalarımızla en kazançlı bölgeyi saniyeler içinde belirle.' },
+              { step: '02', icon: Gavel, title: 'Akıllı Teklif', desc: 'Canlı müzayedelerde rekabet et veya sistemin önerdiği en iyi fiyatla hemen satın al.' },
+              { step: '03', icon: Shield, title: 'Güvenli Transfer', desc: 'E-Devlet altyapısı ve banka entegrasyonu ile paranız ve tapunuz %100 güvende.' },
             ].map((item, idx) => {
               const Icon = item.icon;
               return (
-                <div key={item.step} className="group relative z-10 rounded-[2rem] bg-white dark:bg-[#0a0f1a] p-8 md:p-10 border border-gray-100 dark:border-white/5 hover:border-brand-500/30 shadow-xl shadow-gray-200/40 dark:shadow-[0_8px_30px_rgb(0,0,0,0.6)] hover:-translate-y-2 transition-all duration-500 cursor-default">
-                  <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-gray-50 to-white dark:from-white/5 dark:to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  
-                  <div className="absolute top-6 right-8 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-gray-100 to-transparent dark:from-white/5 select-none">{item.step}</div>
-                  
-                  <div className={`relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${item.color} shadow-lg ${item.shadow} mb-8 group-hover:scale-110 transition-transform duration-500`}>
-                    <Icon className="h-8 w-8 text-white" />
+                <div key={item.step} className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left group">
+                  <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#030712] border border-white/10 group-hover:border-brand-500/50 group-hover:bg-brand-500/10 transition-all duration-500 shadow-2xl">
+                    <Icon className="h-8 w-8 text-white group-hover:text-brand-400 transition-colors" />
                   </div>
-                  
-                  <h3 className="relative text-xl font-bold text-gray-900 dark:text-white mb-3">{item.title}</h3>
-                  <p className="relative text-gray-500 dark:text-gray-400 leading-relaxed font-light">{item.desc}</p>
+                  <div className="flex items-center gap-4 mb-4">
+                    <span className="text-4xl font-black text-white/5">{item.step}</span>
+                    <h3 className="text-2xl font-bold text-white tracking-tight">{item.title}</h3>
+                  </div>
+                  <p className="text-gray-400 font-light leading-relaxed">{item.desc}</p>
                 </div>
               );
             })}
@@ -318,128 +274,50 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── Trust Badges ─── */}
-      <section className="mx-auto max-w-5xl px-4 py-12">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {/* ─── TRUST & SECURITY ─── */}
+      <section className="mx-auto max-w-7xl px-6 sm:px-8 py-24">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { icon: Lock, label: 'SSL Güvenlik', desc: '256-bit şifreleme', color: 'text-brand-500 bg-brand-50' },
-            { icon: Scale, label: 'Yasal Uyumluluk', desc: 'KVKK ve mevzuat', color: 'text-indigo-500 bg-indigo-50' },
-            { icon: Shield, label: 'Güvenli Ödeme', desc: '3D Secure ile', color: 'text-amber-500 bg-amber-50' },
-            { icon: Headphones, label: '7/24 Destek', desc: 'Canlı müşteri hizmeti', color: 'text-blue-500 bg-blue-50' },
-          ].map((badge) => {
-            const Icon = badge.icon;
-            return (
-              <div key={badge.label} className="flex items-center gap-3 rounded-xl border border-gray-200/80 bg-white px-4 py-4 hover:shadow-sm transition-shadow duration-200">
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${badge.color}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{badge.label}</p>
-                  <p className="text-xs text-gray-500">{badge.desc}</p>
-                </div>
-              </div>
-            );
-          })}
+            { icon: Lock, label: 'Banka Güvencesi' },
+            { icon: Scale, label: 'Hukuki Şeffaflık' },
+            { icon: Shield, label: 'Uçtan Uca Şifreleme' },
+            { icon: Headphones, label: 'VIP Destek' },
+          ].map((b) => (
+            <div key={b.label} className="flex flex-col items-center justify-center gap-4 p-8 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
+              <b.icon className="h-8 w-8 text-gray-500" />
+              <span className="text-sm font-medium text-gray-400">{b.label}</span>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ─── Video ─── */}
-      {siteSettings.intro_video_url && (
-        <section className="bg-gray-50/80">
-          <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">NetTapu Nasıl Çalışır?</h2>
-            <p className="mt-2 text-sm text-gray-500">Platformumuzu tanıtan kısa videomuzu izleyin</p>
-            <button
-              onClick={() => setShowVideo(true)}
-              className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-gray-900 hover:bg-gray-800 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-gray-900/20 transition-all duration-200 cursor-pointer active:scale-[0.98]"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500">
-                <Play className="h-4 w-4 text-white ml-0.5" fill="currentColor" />
-              </div>
-              Tanıtım Videosunu İzle
-            </button>
-          </div>
-        </section>
-      )}
-
-      {showVideo && siteSettings.intro_video_url && (
-        <VideoPopup videoUrl={siteSettings.intro_video_url} onClose={() => setShowVideo(false)} />
-      )}
-
-      {/* ─── Testimonials ─── */}
-      {testimonials.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 py-16">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Müşterilerimiz Ne Diyor?</h2>
-            <p className="mt-2 text-sm text-gray-500">Memnun müşterilerimizden yorumlar</p>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {testimonials.map((t) => (
-              <div key={t.id} className="rounded-2xl border border-gray-200/80 bg-white p-6 hover:shadow-md transition-all duration-200">
-                <div className="flex items-center gap-0.5 mb-4">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="h-4 w-4 text-amber-400" fill="currentColor" />
-                  ))}
-                </div>
-                {t.description && (
-                  <p className="text-sm text-gray-600 leading-relaxed line-clamp-4">&ldquo;{t.description}&rdquo;</p>
-                )}
-                <div className="mt-5 flex items-center gap-3 pt-4 border-t border-gray-100">
-                  {t.imageUrl ? (
-                    <img src={t.imageUrl} alt={t.title} className="h-10 w-10 rounded-full object-cover ring-2 ring-gray-100" />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-600 font-bold text-sm ring-2 ring-brand-100">
-                      {t.title.charAt(0)}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{t.title}</p>
-                    {t.websiteUrl && <p className="text-xs text-gray-400">{t.websiteUrl}</p>}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-8 text-center">
-            <Link href="/references" className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors duration-150 cursor-pointer">
-              Tüm Referanslarımızı Görün <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </section>
-      )}
-
-      {/* ─── Premium CTA ─── */}
-      <section className="relative overflow-hidden py-24 sm:py-32">
-        <div className="absolute inset-0 bg-[#030712]" />
+      {/* ─── EPIC FOOTER CTA ─── */}
+      <section className="relative overflow-hidden py-32 mt-12 bg-[#06080F]">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-12 bg-brand-500/20 blur-[50px] rounded-full pointer-events-none" />
         
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[conic-gradient(from_90deg_at_50%_50%,#00000000_50%,#24a86a33_100%)] rounded-full blur-[80px] animate-[spin_10s_linear_infinite]" />
-          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay" />
-          <div className="absolute inset-0 bg-[#030712]/60 backdrop-blur-[2px]" />
-        </div>
-
-        <div className="relative z-10 mx-auto max-w-5xl px-4 text-center">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight mb-6">
-            Geleceğin Yatırımına{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-brand-500">Bugün Başlayın</span>
+        <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
+          <h2 className="text-5xl sm:text-7xl font-black text-white tracking-tighter mb-8 leading-tight">
+            Yatırımın Yeni <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-brand-500 to-emerald-600">
+               Altın Standardı.
+            </span>
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg sm:text-xl text-gray-400 font-light leading-relaxed mb-10">
-            Binlerce doğrulanmış arsa ve güvenilir müzayedeler sizi bekliyor. Hemen ücretsiz üye olun, fırsatları kaçırmayın.
+          <p className="mx-auto max-w-2xl text-xl text-gray-400 font-light mb-12">
+            NetTapu ile dijital emlak devrimine katılın. Ücretsiz hesabınızı oluşturun, premium fırsatların kapısını aralayın.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/parcels"
-              className="group relative flex w-full sm:w-auto items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-500 px-10 py-5 text-base font-bold text-white shadow-[0_0_30px_rgba(36,168,106,0.5)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_50px_rgba(36,168,106,0.7)] active:scale-95 overflow-hidden"
-            >
-              <div className="absolute inset-0 h-full w-full bg-white/20 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-500 ease-out" />
-              <span className="relative z-10 flex items-center gap-2">Arsaları Keşfet <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" /></span>
-            </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <Link
               href="/register"
-              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-10 py-5 text-base font-bold text-white backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:border-white/30 cursor-pointer"
+              className="w-full sm:w-auto rounded-full bg-white text-black px-12 py-5 text-lg font-bold transition-all duration-300 hover:scale-[0.98] active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.15)] hover:shadow-[0_0_60px_rgba(255,255,255,0.25)] flex items-center justify-center gap-2"
             >
-              Hemen Üye Ol
+              Hemen Başla <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
+              href="/parcels"
+              className="w-full sm:w-auto rounded-full border border-white/10 bg-white/5 backdrop-blur-md px-12 py-5 text-lg font-medium text-white transition-all duration-300 hover:bg-white/10"
+            >
+              Vitrine Göz At
             </Link>
           </div>
         </div>
@@ -448,73 +326,73 @@ export default function HomePage() {
   );
 }
 
-/* ─── Section Header Component ─── */
-function SectionHeader({
-  title,
-  subtitle,
-  href,
-  linkText = 'Tümünü Gör',
-}: {
-  title: string;
-  subtitle?: string;
-  href?: string;
-  linkText?: string;
-}) {
+/* ─── INTERNAL COMPONENTS ─── */
+function SectionHeader({ title, subtitle, href, linkText = 'Tüm Koleksiyonu İncele', liveBadge }: any) {
   return (
-    <div className="flex items-end justify-between mb-8">
+    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{title}</h2>
-        {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
+        <div className="flex items-center gap-4 mb-2">
+          <h2 className="text-4xl font-black text-white tracking-tighter">{title}</h2>
+          {liveBadge && (
+            <span className="flex items-center gap-2 rounded-full bg-red-500/10 border border-red-500/20 px-3 py-1.5 text-xs font-bold text-red-500 tracking-wider uppercase">
+              <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+              Canlı Akış
+            </span>
+          )}
+        </div>
+        {subtitle && <p className="text-lg text-gray-400 font-light max-w-xl">{subtitle}</p>}
       </div>
       {href && (
         <Link
           href={href}
-          className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors duration-150 cursor-pointer"
+          className="group flex items-center gap-2 text-sm font-semibold text-brand-400 hover:text-white transition-colors"
         >
-          {linkText} <ArrowRight className="h-4 w-4" />
+          {linkText} 
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/10 group-hover:bg-brand-500 group-hover:text-white transition-all">
+            <ArrowRight className="h-4 w-4" />
+          </span>
         </Link>
       )}
     </div>
   );
 }
 
-/* ─── Auction Card ─── */
 function AuctionCard({ auction }: { auction: Auction }) {
-  const statusMap: Record<string, { color: string; bg: string; label: string; icon: typeof Zap }> = {
-    live: { color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100', label: 'Canlı', icon: Zap },
-    ending: { color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100', label: 'Bitiyor', icon: Timer },
-    scheduled: { color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100', label: 'Yaklaşan', icon: Timer },
-  };
-  const st = statusMap[auction.status] || { color: 'text-gray-600', bg: 'bg-gray-50 border-gray-100', label: auction.status, icon: Gavel };
-  const Icon = st.icon;
-
+  const isLive = auction.status === 'live';
+  
   return (
     <Link
       href={`/auctions/${auction.id}`}
-      className="group block rounded-2xl border border-gray-200/80 bg-white p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+      className="group relative block rounded-3xl bg-white/5 border border-white/10 p-6 hover:bg-white/[0.08] hover:border-brand-500/50 transition-all duration-500"
     >
-      <div className="flex items-center gap-2 mb-4">
-        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${st.bg} ${st.color}`}>
-          <Icon className="h-3 w-3" />
-          {st.label}
+      <div className="flex items-center gap-3 mb-6">
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${isLive ? 'bg-red-500/10 text-red-400' : 'bg-brand-500/10 text-brand-400'}`}>
+          <Zap className="h-3 w-3" />
+          {isLive ? 'Sıcak İhale' : 'Yaklaşan İhale'}
         </span>
       </div>
-      <h3 className="font-semibold text-gray-900 line-clamp-2 group-hover:text-brand-600 transition-colors duration-150">
-        {auction.title || 'Açık Artırma'}
+      <h3 className="text-xl font-bold text-white line-clamp-2 mb-8 group-hover:text-brand-300 transition-colors">
+        {auction.title || 'Premium Arsa Arazisi'}
       </h3>
-      <div className="mt-5 space-y-2.5">
-        <div className="flex justify-between items-baseline">
-          <span className="text-sm text-gray-500">Güncel Fiyat</span>
-          <span className="text-xl font-bold text-brand-600 tracking-tight">{formatPrice(auction.currentPrice)}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Başlangıç</span>
-          <span className="text-gray-600 font-medium">{formatPrice(auction.startingPrice)}</span>
+      
+      <div className="bg-[#030712] rounded-2xl p-5 border border-white/5 mb-6">
+        <div className="flex justify-between items-end">
+          <span className="text-sm text-gray-500 font-medium tracking-wide">Güncel Teklif</span>
+          <span className="text-3xl font-black text-white tracking-tighter">
+            {formatPrice(auction.currentPrice)}
+          </span>
         </div>
       </div>
-      <div className="mt-5 flex items-center gap-4 text-xs text-gray-400 pt-4 border-t border-gray-100">
-        <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{auction.participantCount} katılımcı</span>
-        <span className="flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" />{auction.bidCount} teklif</span>
+
+      <div className="flex items-center justify-between text-sm text-gray-400 font-medium">
+        <span className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-gray-500" />
+          {auction.participantCount} Yatırımcı
+        </span>
+        <span className="flex items-center gap-2">
+          <Activity className="h-4 w-4 text-gray-500" />
+          {auction.bidCount} Tur
+        </span>
       </div>
     </Link>
   );

@@ -36,11 +36,12 @@ export const BorderRadius = {
   md: 16,
   lg: 20,
   xl: 24,
+  '2xl': 28,
   full: 9999,
 };
 
 /**
- * Shadow presets — soft, not heavy
+ * Shadow presets — soft for light, neon glow for dark
  */
 export const Shadows = {
   sm: {
@@ -63,5 +64,27 @@ export const Shadows = {
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 4,
+  },
+  // Premium glow shadows for dark mode
+  glowSm: {
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  glowMd: {
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+  glowLg: {
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 8,
   },
 };
