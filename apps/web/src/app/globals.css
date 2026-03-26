@@ -35,6 +35,10 @@
     --color-border-dark: 30 41 59;
   }
 
+  *, *::before, *::after {
+    border-color: rgb(226 232 240 / 1); /* slate-200 — prevents black borders */
+  }
+
   body {
     font-family: var(--font-body);
     @apply text-slate-600 bg-slate-50;
