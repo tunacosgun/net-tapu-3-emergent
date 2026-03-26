@@ -36,7 +36,8 @@
   }
 
   *, *::before, *::after {
-    border-color: rgb(226 232 240 / 1); /* slate-200 — prevents black borders */
+    --tw-border-opacity: 1;
+    border-color: rgb(226 232 240 / var(--tw-border-opacity));
   }
 
   body {
