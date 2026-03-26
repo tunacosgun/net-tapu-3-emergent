@@ -795,6 +795,43 @@ export default function AuctionDetailPage() {
 
       {/* Time extension animation */}
       {timeExtensionAnimation && <TimeExtensionOverlay addedMinutes={timeExtensionAnimation.addedMinutes} onComplete={clearTimeExtensionAnimation} />}
+
+      {/* ── Photo Gallery (bottom, toggleable) ── */}
+      {showGallery && parcelImages.length > 0 && (
+        <div id="auction-gallery" className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--card)] p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-[var(--foreground)] flex items-center gap-2">
+              <svg className="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+              Arsa Fotoğrafları ({parcelImages.length})
+            </h3>
+            <button onClick={() => setShowGallery(false)} className="text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors flex items-center gap-1">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              Kapat
+            </button>
+          </div>
+          <div className="relative rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-3">
+            <img src={parcelImages[galleryIndex]?.watermarkedUrl || parcelImages[galleryIndex]?.originalUrl} alt={parcel?.title || ''} className="w-full h-[400px] lg:h-[500px] object-cover" />
+            {parcelImages.length > 1 && (
+              <>
+                <button onClick={() => setGalleryIndex((i) => (i - 1 + parcelImages.length) % parcelImages.length)} className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                </button>
+                <button onClick={() => setGalleryIndex((i) => (i + 1) % parcelImages.length)} className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                </button>
+              </>
+            )}
+            <div className="absolute top-3 left-3 rounded-full bg-black/60 px-3 py-1 text-xs text-white font-medium">{galleryIndex + 1}/{parcelImages.length}</div>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {parcelImages.map((img, i) => (
+              <button key={img.id} onClick={() => setGalleryIndex(i)} className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${i === galleryIndex ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                <img src={img.thumbnailUrl || img.watermarkedUrl || img.originalUrl} alt="" className="h-16 w-24 object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -824,51 +861,6 @@ function TimeExtensionOverlay({ addedMinutes, onComplete }: { addedMinutes: numb
           <p className="text-sm text-[var(--muted-foreground)]">İhale süresi yönetici tarafından uzatıldı</p>
         </div>
       </div>
-
-      {/* ── Photo Gallery (bottom, toggleable) ── */}
-      {showGallery && parcelImages.length > 0 && (
-        <div id="auction-gallery" className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--card)] p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-[var(--foreground)] flex items-center gap-2">
-              <svg className="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
-              Arsa Fotoğrafları ({parcelImages.length})
-            </h3>
-            <button onClick={() => setShowGallery(false)} className="text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors flex items-center gap-1">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-              Kapat
-            </button>
-          </div>
-          {/* Main image */}
-          <div className="relative rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-3">
-            <img
-              src={parcelImages[galleryIndex]?.watermarkedUrl || parcelImages[galleryIndex]?.originalUrl}
-              alt={parcel?.title || ''}
-              className="w-full h-[400px] lg:h-[500px] object-cover"
-            />
-            {parcelImages.length > 1 && (
-              <>
-                <button onClick={() => setGalleryIndex((i) => (i - 1 + parcelImages.length) % parcelImages.length)} className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-                </button>
-                <button onClick={() => setGalleryIndex((i) => (i + 1) % parcelImages.length)} className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-                </button>
-              </>
-            )}
-            <div className="absolute top-3 left-3 rounded-full bg-black/60 px-3 py-1 text-xs text-white font-medium">
-              {galleryIndex + 1}/{parcelImages.length}
-            </div>
-          </div>
-          {/* Thumbnails */}
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {parcelImages.map((img, i) => (
-              <button key={img.id} onClick={() => setGalleryIndex(i)} className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${i === galleryIndex ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-transparent opacity-60 hover:opacity-100'}`}>
-                <img src={img.thumbnailUrl || img.watermarkedUrl || img.originalUrl} alt="" className="h-16 w-24 object-cover" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
