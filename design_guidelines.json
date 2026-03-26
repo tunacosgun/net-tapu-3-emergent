@@ -1,0 +1,113 @@
+{
+  "project_name": "Net Tapu Platform",
+  "theme": "light",
+  "archetype": "1 (Organic & Earthy) with a Professional Swiss influence",
+  "design_philosophy": "A highly professional, clean, and trustworthy real estate auction platform resembling sahibinden.com. Strictly avoiding harsh black borders, replacing them with soft shadows, structural whitespace, and subtle slate dividers. The emerald green brand color drives all primary actions to instill trust and growth.",
+  "colors": {
+    "primary": {
+      "DEFAULT": "#059669",
+      "hover": "#047857",
+      "light": "#d1fae5"
+    },
+    "background": {
+      "app": "#f8fafc",
+      "surface": "#ffffff"
+    },
+    "text": {
+      "heading": "#0f172a",
+      "body": "#475569",
+      "muted": "#94a3b8"
+    },
+    "border": {
+      "subtle": "#f1f5f9",
+      "default": "#e2e8f0"
+    },
+    "status": {
+      "success": "#10b981",
+      "warning": "#f59e0b",
+      "danger": "#ef4444"
+    }
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Manrope, sans-serif",
+      "body": "IBM Plex Sans, sans-serif"
+    },
+    "scales": {
+      "h1": "text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight text-slate-900",
+      "h3": "text-xl sm:text-2xl font-semibold text-slate-900",
+      "body": "text-base text-slate-600 leading-relaxed",
+      "small": "text-sm text-slate-500",
+      "label": "text-xs font-semibold tracking-wider uppercase text-slate-500"
+    }
+  },
+  "surfaces_and_borders": {
+    "cards": "bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300",
+    "header": "sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100 shadow-sm",
+    "dividers": "divide-y divide-slate-100",
+    "inputs": "bg-white border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+  },
+  "layout_strategies": {
+    "spacing": "Generous spacing. Use p-6 to p-8 for standard cards, p-12 for hero sections.",
+    "listing_grid": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6",
+    "detail_page": {
+      "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8",
+      "grid": "grid grid-cols-1 lg:grid-cols-12 gap-8",
+      "gallery_span": "lg:col-span-8",
+      "info_span": "lg:col-span-4"
+    }
+  },
+  "components": {
+    "button": {
+      "primary": "bg-emerald-600 text-white rounded-lg px-6 py-2.5 font-medium hover:bg-emerald-700 shadow-sm hover:shadow transition-all",
+      "secondary": "bg-white text-slate-700 border border-slate-200 rounded-lg px-6 py-2.5 font-medium hover:bg-slate-50 hover:border-slate-300 transition-all"
+    },
+    "table": {
+      "wrapper": "bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden",
+      "row": "border-b border-slate-50 hover:bg-slate-50/50 transition-colors",
+      "header": "bg-slate-50/80 text-slate-600 font-semibold text-sm py-3 px-4",
+      "cell": "py-3 px-4 text-sm text-slate-700"
+    }
+  },
+  "media": {
+    "images": [
+      {
+        "category": "land_listings",
+        "url": "https://images.pexels.com/photos/6273463/pexels-photo-6273463.jpeg",
+        "description": "Cultivated land rows under blue sky"
+      },
+      {
+        "category": "land_listings",
+        "url": "https://images.pexels.com/photos/36482126/pexels-photo-36482126.jpeg",
+        "description": "Freshly plowed field"
+      },
+      {
+        "category": "property_listings",
+        "url": "https://images.pexels.com/photos/7031595/pexels-photo-7031595.jpeg",
+        "description": "Contemporary house exterior"
+      },
+      {
+        "category": "property_listings",
+        "url": "https://images.pexels.com/photos/5563473/pexels-photo-5563473.jpeg",
+        "description": "Stylish modern house"
+      },
+      {
+        "category": "auctions",
+        "url": "https://images.pexels.com/photos/5668473/pexels-photo-5668473.jpeg",
+        "description": "Wooden gavel symbolizing auctions and legal authority"
+      }
+    ]
+  },
+  "testing": {
+    "instructions": "All interactive and key informational elements MUST include a data-testid attribute. Use kebab-case, role-based naming (e.g., data-testid='submit-bid-button')."
+  },
+  "instructions_to_main_agent": [
+    "Strictly avoid any border-black or ring-black classes. Replace all harsh lines with border-slate-100 or soft shadow-sm.",
+    "Use Manrope for all Headings and IBM Plex Sans for body text.",
+    "Keep the parcel detail page layout identical in structure (Left side images, Right side table) but upgrade the UI to use the 'surfaces_and_borders' guidelines.",
+    "Ensure the header is sticky with a glassmorphism effect (backdrop-blur-xl bg-white/80).",
+    "Use emerald-600 for primary buttons and accents, keeping the existing brand identity intact.",
+    "Use Phosphor Icons (@phosphor-icons/react) for a professional and clean icon set."
+  ]
+}
