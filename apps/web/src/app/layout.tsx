@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { IBM_Plex_Sans, Inter } from 'next/font/google';
 import { AuthProvider } from '@/providers/auth-provider';
 import { SiteSettingsProvider } from '@/providers/site-settings-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -12,10 +12,22 @@ import { OrganizationJsonLd, WebSiteJsonLd, RealEstateAgentJsonLd } from '@/comp
 import { GoogleOneTap } from '@/components/google-one-tap';
 import { ScrollToTop } from '@/components/ui/scroll-to-top';
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
+import { Toaster } from 'sonner';
 import './globals.css';
 
-const inter = Inter({
+// Professional Typography System
+const ibmPlexSans = IBM_Plex_Sans({
   subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600'],
+  variable: '--font-ibm-plex',
+  display: 'swap',
+});
+
+// Using Inter as heading font (similar to Cabinet Grotesk)
+const interDisplay = Inter({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['300', '500', '800'],
+  variable: '--font-cabinet',
   display: 'swap',
 });
 
@@ -81,13 +93,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="tr" className={inter.className}>
+    <html lang="tr" className={`${ibmPlexSans.variable} ${interDisplay.variable}`}>
       <head>
         <OrganizationJsonLd />
         <WebSiteJsonLd />
         <RealEstateAgentJsonLd />
       </head>
-      <body className="min-h-screen bg-[var(--background)] text-[var(--foreground)] antialiased">
+      <body className="min-h-screen bg-[#F8FAFC] text-slate-900 antialiased font-sans">
         <ErrorBoundary>
           <AuthProvider>
             <SiteSettingsProvider>
@@ -100,6 +112,7 @@ export default function RootLayout({
               </div>
               <MobileBottomNav />
               <ApiErrorToastContainer />
+              <Toaster position="top-right" richColors closeButton />
               <ScrollToTop />
               <GoogleOneTap />
             </SiteSettingsProvider>

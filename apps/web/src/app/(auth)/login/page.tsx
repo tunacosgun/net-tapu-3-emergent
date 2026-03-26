@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { motion } from 'framer-motion';
 import { useLogin } from '@/providers/auth-provider';
 import { useAuthStore } from '@/stores/auth-store';
 import { loginSchema, type LoginFormData } from '@/lib/validators';
@@ -13,6 +14,7 @@ import { useRateLimit } from '@/hooks/use-rate-limit';
 import { Button, Alert, LoadingState } from '@/components/ui';
 import type { ApiError } from '@/types';
 import { AxiosError } from 'axios';
+import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, Sparkles, Zap } from 'lucide-react';
 
 export default function LoginPage() {
   return (
@@ -35,6 +37,7 @@ function GoogleIcon() {
 
 function LoginContent() {
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const { cooldown, isLimited, checkRateLimit } = useRateLimit();
 
   const {
@@ -88,99 +91,231 @@ function LoginContent() {
   }
 
   return (
-    <div className="w-full">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-green-50 mb-4">
-          <span className="text-2xl font-black text-green-600 tracking-tighter">NT</span>
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900">Hesabınıza Giriş Yapın</h1>
-        <p className="mt-2 text-sm text-gray-500">
-          E-posta ve şifrenizle devam edin
-        </p>
+    <div className="relative min-h-screen overflow-hidden bg-slate-950">
+      
+      {/* Animated Gradient Mesh Background */}
+      <div className="absolute inset-0">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/30 rounded-full blur-[128px] animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-[128px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[128px] animate-pulse" style={{ animationDuration: '12s', animationDelay: '4s' }} />
       </div>
 
-      {/* Google Login */}
-      <button
-        type="button"
-        onClick={handleGoogleLogin}
-        className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-4 py-3.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
-      >
-        <GoogleIcon />
-        Google ile devam et
-      </button>
+      {/* Grid overlay */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-40" />
 
-      {/* Divider */}
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-200" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase tracking-wider">
-          <span className="bg-white px-4 text-gray-400 font-medium">veya e-posta ile</span>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        {(serverError || oauthError) && (
-          <Alert>
-            {serverError ||
-              (oauthError === 'google_auth_failed'
-                ? 'Google ile giriş başarısız oldu. Lütfen tekrar deneyin.'
-                : 'Giriş başarısız.')}
-          </Alert>
-        )}
-
-        <FormField
-          label="E-posta"
-          type="email"
-          autoComplete="email"
-          placeholder="ornek@email.com"
-          error={errors.email?.message}
-          {...register('email')}
-        />
-
-        <FormField
-          label="Şifre"
-          type="password"
-          autoComplete="current-password"
-          placeholder="••••••••"
-          error={errors.password?.message}
-          {...register('password')}
-        />
-
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-            <input type="checkbox" className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-            Beni hatırla
-          </label>
-          <Link
-            href="/forgot-password"
-            className="text-sm text-green-600 hover:text-green-700 font-semibold transition-colors"
-          >
-            Şifremi unuttum
-          </Link>
-        </div>
-
-        <Button
-          type="submit"
-          disabled={isSubmitting || isLimited}
-          className="w-full !py-3.5 !rounded-xl !text-base !font-bold shadow-lg shadow-green-600/20 hover:shadow-green-600/30 transition-all duration-200"
+      {/* Content */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-md"
         >
-          {isLimited
-            ? `${cooldown}s bekleyin`
-            : isSubmitting
-              ? 'Giriş yapılıyor...'
-              : 'Giriş Yap'}
-        </Button>
-      </form>
+          
+          {/* Logo & Brand */}
+          <div className="text-center mb-8">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 mb-6 shadow-2xl shadow-emerald-500/50 relative"
+            >
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-400 blur-xl opacity-60 animate-pulse" />
+              <span className="relative text-3xl font-black text-white">NT</span>
+            </motion.div>
+            <h1 className="text-4xl font-heading font-extrabold text-white mb-2 tracking-tight">
+              Tekrar Hoş Geldiniz
+            </h1>
+            <p className="text-lg text-slate-400">
+              Hesabınıza giriş yapın
+            </p>
+          </div>
 
-      {/* Footer */}
-      <p className="mt-8 text-center text-sm text-gray-500">
-        Hesabınız yok mu?{' '}
-        <Link href="/register" className="text-green-600 hover:text-green-700 font-bold transition-colors">
-          Üye Ol
-        </Link>
-      </p>
+          {/* Glass Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="relative"
+          >
+            {/* Glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-purple-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity" />
+            
+            {/* Card */}
+            <div className="relative bg-slate-900/80 backdrop-blur-2xl border border-slate-700/50 rounded-2xl p-8 shadow-2xl">
+              
+              {/* OAuth Error */}
+              {oauthError && (
+                <Alert variant="error" className="mb-6 bg-red-500/10 border-red-500/50 text-red-400">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="ml-2">
+                    {oauthError === 'access_denied' ? 'Giriş iptal edildi.' : 'Sosyal giriş başarısız.'}
+                  </span>
+                </Alert>
+              )}
+
+              {/* Server Error */}
+              {serverError && (
+                <Alert variant="error" className="mb-6 bg-red-500/10 border-red-500/50 text-red-400">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="ml-2">{serverError}</span>
+                </Alert>
+              )}
+
+              {/* Rate Limit Warning */}
+              {isLimited && (
+                <Alert variant="warning" className="mb-6 bg-amber-500/10 border-amber-500/50 text-amber-400">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="ml-2">
+                    Çok fazla deneme. {cooldown} saniye bekleyin.
+                  </span>
+                </Alert>
+              )}
+
+              {/* Google Login */}
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="group relative w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white font-semibold hover:bg-white/20 transition-all duration-200 overflow-hidden mb-6"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                <GoogleIcon />
+                <span className="relative">Google ile Giriş</span>
+              </button>
+
+              {/* Divider */}
+              <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-700" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-slate-900 text-slate-400 font-medium">veya</span>
+                </div>
+              </div>
+
+              {/* Login Form */}
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                
+                {/* Email */}
+                <div>
+                  <label htmlFor="email" className="block text-sm font-semibold text-slate-300 mb-2">
+                    E-posta
+                  </label>
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                    <input
+                      {...register('email')}
+                      type="email"
+                      id="email"
+                      placeholder="ornek@email.com"
+                      className={`w-full pl-12 pr-4 py-3 bg-slate-800/50 border rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all ${
+                        errors.email ? 'border-red-500/50' : 'border-slate-700'
+                      }`}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label htmlFor="password" className="block text-sm font-semibold text-slate-300 mb-2">
+                    Şifre
+                  </label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                    <input
+                      {...register('password')}
+                      type={showPassword ? 'text' : 'password'}
+                      id="password"
+                      placeholder="••••••••"
+                      className={`w-full pl-12 pr-12 py-3 bg-slate-800/50 border rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all ${
+                        errors.password ? 'border-red-500/50' : 'border-slate-700'
+                      }`}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Forgot Password */}
+                <div className="text-right">
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                  >
+                    Şifremi Unuttum
+                  </Link>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting || isLimited}
+                  className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 p-[2px] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
+                  <div className="relative flex items-center justify-center gap-2 bg-slate-900 rounded-[10px] px-6 py-3 font-bold text-white group-hover:bg-transparent transition-colors">
+                    {isSubmitting ? (
+                      <>
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        Giriş Yapılıyor...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-5 w-5" />
+                        Giriş Yap
+                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
+                  </div>
+                </button>
+              </form>
+
+              {/* Register Link */}
+              <div className="mt-8 text-center">
+                <p className="text-slate-400">
+                  Hesabınız yok mu?{' '}
+                  <Link
+                    href="/register"
+                    className="font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                  >
+                    Ücretsiz Kayıt Olun
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Footer */}
+          <div className="mt-8 text-center text-sm text-slate-500">
+            <Link href="/legal" className="hover:text-slate-400 transition-colors">
+              Gizlilik
+            </Link>
+            <span className="mx-2">•</span>
+            <Link href="/legal" className="hover:text-slate-400 transition-colors">
+              Koşullar
+            </Link>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
