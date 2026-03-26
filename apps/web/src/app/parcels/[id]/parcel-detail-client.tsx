@@ -457,16 +457,16 @@ export default function ParcelDetailClient() {
     : (parcel.price && parcel.areaM2 ? Math.round(parseFloat(parcel.price) / parseFloat(parcel.areaM2)) : null);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-4 print:px-0 print:py-0">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 print:px-0 print:py-0" data-testid="parcel-detail-page">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-xs text-[var(--muted-foreground)] print:hidden mb-4">
-        <Link href="/" className="hover:text-brand-500">Ana Sayfa</Link>
-        <span>&gt;</span>
-        <Link href="/parcels" className="hover:text-brand-500">Arsalar</Link>
-        <span>&gt;</span>
-        <Link href={`/parcels?city=${parcel.city}`} className="hover:text-brand-500">{parcel.city}</Link>
-        <span>&gt;</span>
-        <span className="text-[var(--foreground)] font-medium truncate max-w-[200px]">{parcel.title}</span>
+      <nav className="flex items-center gap-2 text-sm text-slate-500 print:hidden mb-6" data-testid="breadcrumb">
+        <Link href="/" className="hover:text-emerald-600 transition-colors">Ana Sayfa</Link>
+        <span className="text-slate-300">/</span>
+        <Link href="/parcels" className="hover:text-emerald-600 transition-colors">Arsalar</Link>
+        <span className="text-slate-300">/</span>
+        <Link href={`/parcels?city=${parcel.city}`} className="hover:text-emerald-600 transition-colors">{parcel.city}</Link>
+        <span className="text-slate-300">/</span>
+        <span className="text-slate-700 font-medium truncate max-w-[200px]">{parcel.title}</span>
       </nav>
 
       {/* Lightbox — semi-transparent overlay like sahibinden */}
@@ -484,51 +484,53 @@ export default function ParcelDetailClient() {
       )}
 
       {/* ─── Title ─── */}
-      <h1 className="text-xl font-bold sm:text-2xl leading-tight uppercase">{parcel.title}</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 leading-tight" data-testid="parcel-title">{parcel.title}</h1>
 
       {/* ─── sahibinden-style layout: Image LEFT, Details RIGHT ─── */}
-      <div className="mt-4 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid gap-8 lg:grid-cols-2">
         {/* LEFT — Image gallery */}
         <div>
           {images.length > 0 ? (
             <div>
               <div
-                className="relative cursor-pointer overflow-hidden rounded-lg border border-[var(--border)] bg-gray-100"
-                style={{ height: '380px' }}
+                className="relative cursor-pointer overflow-hidden rounded-xl bg-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.04)]"
+                style={{ height: '420px' }}
                 onClick={() => { setSelectedImage(wmImages[selectedIdx] || resolveImageUrl(images[selectedIdx])); }}
+                data-testid="main-image"
               >
                 <img
                   src={wmImages[selectedIdx] || resolveImageUrl(images[selectedIdx])}
                   alt={parcel.title}
                   className="h-full w-full object-cover"
                 />
-                <Badge variant={status.variant} className="absolute top-3 left-3 text-xs px-2.5 py-1 shadow">{status.label}</Badge>
-                <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/60 px-3 py-1.5 text-white text-xs backdrop-blur-sm cursor-pointer">
-                  <SearchIcon className="h-3.5 w-3.5" />
+                <Badge variant={status.variant} className="absolute top-4 left-4 text-xs px-3 py-1.5 shadow-sm">{status.label}</Badge>
+                <div className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-lg bg-slate-900/70 px-4 py-2 text-white text-sm font-medium backdrop-blur-sm">
+                  <SearchIcon className="h-4 w-4" />
                   Büyük Fotoğraf
                 </div>
               </div>
 
               {images.length > 1 && (
-                <div className="mt-2 flex gap-1.5 overflow-x-auto">
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
                   {images.map((img, idx) => (
                     <button
                       key={img.id}
                       onClick={() => setSelectedIdx(idx)}
-                      className={`shrink-0 h-16 w-20 rounded overflow-hidden border-2 transition-all ${selectedIdx === idx ? 'border-brand-500' : 'border-[var(--border)] opacity-70 hover:opacity-100'}`}
+                      className={`shrink-0 h-20 w-24 rounded-lg overflow-hidden transition-all duration-200 ${selectedIdx === idx ? 'ring-2 ring-emerald-500 ring-offset-2' : 'opacity-60 hover:opacity-100'}`}
+                      data-testid={`thumbnail-${idx}`}
                     >
                       <img src={wmImages[idx] || resolveImageUrl(img)} alt="" className="h-full w-full object-cover" />
                     </button>
                   ))}
                 </div>
               )}
-              <p className="mt-1 text-center text-xs text-[var(--muted-foreground)]">{selectedIdx + 1}/{images.length} Fotoğraf</p>
+              <p className="mt-2 text-center text-sm text-slate-400">{selectedIdx + 1}/{images.length} Fotoğraf</p>
             </div>
           ) : (
-            <div className="flex items-center justify-center rounded-lg border border-[var(--border)] bg-gray-50" style={{ height: '380px' }}>
+            <div className="flex items-center justify-center rounded-xl bg-slate-50" style={{ height: '420px' }}>
               <div className="text-center">
-                <ImageIcon className="mx-auto h-12 w-12 text-gray-300" />
-                <p className="mt-2 text-sm text-[var(--muted-foreground)]">Henüz fotoğraf eklenmemiş</p>
+                <ImageIcon className="mx-auto h-16 w-16 text-slate-200" />
+                <p className="mt-3 text-sm text-slate-400">Henüz fotoğraf eklenmemiş</p>
               </div>
             </div>
           )}
@@ -536,40 +538,43 @@ export default function ParcelDetailClient() {
 
         {/* RIGHT — Price + Details table (sahibinden style) */}
         <div>
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-6">
             <div>
-              <p className="text-2xl font-bold text-brand-600">{formatPrice(parcel.price)}</p>
+              <p className="text-3xl font-bold font-heading text-emerald-600 tracking-tight" data-testid="parcel-price">{formatPrice(parcel.price)}</p>
               {pricePerM2 && (
-                <p className="text-sm text-[var(--muted-foreground)]">m² fiyatı: {formatPrice(String(pricePerM2))} / m²</p>
+                <p className="text-sm text-slate-500 mt-1">m² fiyatı: <span className="font-semibold text-slate-700">{formatPrice(String(pricePerM2))} / m²</span></p>
               )}
             </div>
             <div className="flex items-center gap-2 print:hidden">
               {isAuthenticated && (
                 <button onClick={toggleFavorite} disabled={favToggling} title="Favorilerime Ekle"
-                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-150 cursor-pointer ${isFavorited ? 'border-rose-200 bg-rose-50 text-rose-500' : 'border-[var(--border)] text-[var(--muted-foreground)] hover:text-rose-500 hover:border-rose-200'}`}
+                  className={`flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg transition-all duration-200 ${isFavorited ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-600'}`}
+                  data-testid="favorite-btn"
                 >
-                  <Heart className="h-3.5 w-3.5" fill={isFavorited ? 'currentColor' : 'none'} />
+                  <Heart className="h-4 w-4" fill={isFavorited ? 'currentColor' : 'none'} />
                   {isFavorited ? 'Favorilerde' : 'Favorilere Ekle'}
                 </button>
               )}
               <button onClick={handlePDF} disabled={pdfLoading} title="Yazdır"
-                className="flex items-center gap-1 text-xs px-3 py-1.5 rounded border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                data-testid="print-btn"
               >
                 {pdfLoading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Printer className="h-3.5 w-3.5" />
+                  <Printer className="h-4 w-4" />
                 )}
                 Yazdır
               </button>
             </div>
           </div>
 
-          <p className="text-sm font-medium text-brand-600 mb-4">
+          <p className="text-base font-medium text-emerald-600 mb-6 flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
             {parcel.city} / {parcel.district}{parcel.neighborhood ? ` / ${parcel.neighborhood}` : ''}
           </p>
 
-          <div className="border border-[var(--border)] rounded-lg overflow-hidden">
+          <div className="rounded-xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)] overflow-hidden" data-testid="details-table">
             <table className="w-full text-sm">
               <tbody>
                 <DetailRow label="İlan No" value={parcel.listingId || '-'} highlight />
@@ -588,15 +593,15 @@ export default function ParcelDetailClient() {
           </div>
 
           {((parcel.favoriteCount ?? 0) > 0 || liveViewerCount > 0) && (
-            <div className="mt-3 flex gap-2 text-xs print:hidden">
+            <div className="mt-4 flex gap-2 text-sm print:hidden">
               {(parcel.favoriteCount ?? 0) > 0 && (
-                <span className="flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-rose-600 font-medium">
-                  <Heart className="h-3 w-3" fill="currentColor" />
+                <span className="flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1.5 text-rose-600 font-medium">
+                  <Heart className="h-3.5 w-3.5" fill="currentColor" />
                   {parcel.favoriteCount} favori
                 </span>
               )}
               {liveViewerCount > 0 && (
-                <span className="flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-blue-600 font-medium">
+                <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-blue-600 font-medium">
                   <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" /></span>
                   {liveViewerCount} kişi bakıyor
                 </span>
@@ -606,39 +611,41 @@ export default function ParcelDetailClient() {
 
           {/* ─── TKGM & E-Kent Kutusu ─── */}
           {(parcel.ada || parcel.city) && (
-            <div className="mt-3 rounded-lg border border-[var(--border)] bg-gray-50 p-3 print:hidden">
+            <div className="mt-4 rounded-xl bg-slate-50 p-4 print:hidden">
               {parcel.ada && parcel.parsel && (
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="font-semibold text-gray-700">Ada: {parcel.ada} / Parsel: {parcel.parsel}</span>
+                  <span className="font-semibold text-slate-700">Ada: {parcel.ada} / Parsel: {parcel.parsel}</span>
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(`Ada: ${parcel.ada}, Parsel: ${parcel.parsel}`);
                     }}
-                    className="rounded bg-white border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500 hover:bg-gray-100 transition-colors"
+                    className="rounded-lg bg-white px-3 py-1 text-xs text-slate-500 hover:bg-slate-100 transition-colors shadow-sm"
                     title="Kopyala"
                   >
                     Kopyala
                   </button>
                 </div>
               )}
-              <div className="mt-2 flex flex-wrap gap-3">
+              <div className="mt-3 flex flex-wrap gap-3">
                 <a href={tkgmBaseUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-xs font-medium text-brand-600 hover:bg-brand-50 transition-all duration-150 cursor-pointer"
+                  className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50 transition-all duration-200 shadow-sm"
+                  data-testid="tkgm-link"
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  <ExternalLink className="h-4 w-4" />
                   TKGM Parsel Sorgu
                 </a>
                 {parcel.city && (
                   <a href={`https://kentrehberi.${parcel.city.toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ç/g,'c').replace(/ğ/g,'g')}.bel.tr`} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-all duration-150 cursor-pointer"
+                    className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-sm"
+                    data-testid="ekent-link"
                   >
-                    <ExternalLink className="h-3.5 w-3.5" />
+                    <ExternalLink className="h-4 w-4" />
                     E-Kent / Kent Rehberi
                   </a>
                 )}
               </div>
               {parcel.ada && parcel.parsel && (
-                <p className="mt-1.5 text-[10px] text-gray-400">TKGM sitesinde İdari sekmesinden il/ilçe/mahalle seçip yukarıdaki ada ve parsel numaralarını girin.</p>
+                <p className="mt-2 text-xs text-slate-400">TKGM sitesinde İdari sekmesinden il/ilçe/mahalle seçip yukarıdaki ada ve parsel numaralarını girin.</p>
               )}
             </div>
           )}
@@ -646,23 +653,23 @@ export default function ParcelDetailClient() {
       </div>
 
       {/* ─── Below: Description + Contact + Share ─── */}
-      <div className="mt-8 grid gap-8 lg:grid-cols-3">
+      <div className="mt-10 grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           {parcel.description && (
-            <div className="rounded-xl border border-[var(--border)] p-6">
-              <h2 className="text-lg font-bold mb-3">Açıklama</h2>
-              <p className="text-sm leading-relaxed text-[var(--muted-foreground)] whitespace-pre-wrap">{parcel.description}</p>
+            <div className="rounded-xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)] p-6" data-testid="description-section">
+              <h2 className="text-lg font-bold font-heading text-slate-900 mb-4">Açıklama</h2>
+              <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-wrap">{parcel.description}</p>
             </div>
           )}
 
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-3 flex-wrap">
             {parcel.isAuctionEligible && (
-              <span className="flex items-center gap-1.5 rounded-full bg-brand-50 border border-brand-200 px-4 py-2 text-sm font-medium text-brand-700">
+              <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700">
                 Açık Artırmaya Uygun
               </span>
             )}
             {parcel.isFeatured && (
-              <span className="flex items-center gap-1.5 rounded-full bg-yellow-50 border border-yellow-200 px-4 py-2 text-sm font-medium text-yellow-700">
+              <span className="flex items-center gap-1.5 rounded-full bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700">
                 Öne Çıkan İlan
               </span>
             )}
@@ -685,18 +692,22 @@ export default function ParcelDetailClient() {
 
         {/* Right — Contact sidebar */}
         <div className="print:hidden">
-          <div className="sticky top-20 space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5 shadow-lg">
-            <div className="flex items-center justify-center">
+          <div className="sticky top-28 space-y-4 rounded-xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)] p-6" data-testid="contact-sidebar">
+            <div className="flex items-center justify-center pb-4 border-b border-slate-100">
               {siteSettings.site_logo ? (
-                <img src={siteSettings.site_logo} alt={siteName} className="h-8 w-auto opacity-80" />
+                <img src={siteSettings.site_logo} alt={siteName} className="h-8 w-auto" />
               ) : (
-                <img src="/images/nettapu-logo.svg" alt={siteName} className="h-8 w-auto opacity-80" />
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white text-xs font-bold">NT</div>
+                  <span className="font-bold text-slate-900">NetTapu</span>
+                </div>
               )}
             </div>
 
             <button
               onClick={() => setShowCallMe(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 transition-colors shadow-sm"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors shadow-emerald"
+              data-testid="call-me-btn"
             >
               <Phone className="h-4 w-4" />
               Sizi Arayalım
@@ -704,7 +715,8 @@ export default function ParcelDetailClient() {
 
             <button
               onClick={() => setShowAppointment(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-100 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-50 px-4 py-3.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+              data-testid="appointment-btn"
             >
               <Calendar className="h-4 w-4" />
               Online Randevu Al
@@ -713,7 +725,8 @@ export default function ParcelDetailClient() {
             {parcel.status === 'active' && (
               <button
                 onClick={() => isAuthenticated ? setShowOffer(true) : alert('Teklif vermek için giriş yapmanız gerekiyor.')}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600 transition-colors shadow-sm"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3.5 text-sm font-semibold text-white hover:bg-amber-600 transition-colors shadow-sm"
+                data-testid="offer-btn"
               >
                 <Tag className="h-4 w-4" />
                 Teklif Ver
@@ -721,7 +734,8 @@ export default function ParcelDetailClient() {
             )}
 
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1fb855] transition-colors shadow-sm"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3.5 text-sm font-semibold text-white hover:bg-[#1fb855] transition-colors shadow-sm"
+              data-testid="whatsapp-btn"
             >
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
               WhatsApp ile İletişim
@@ -729,7 +743,8 @@ export default function ParcelDetailClient() {
 
             {siteSettings.contact_phone && (
               <a href={`tel:${siteSettings.contact_phone}`}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+                data-testid="phone-btn"
               >
                 <Phone className="h-4 w-4" />
                 {siteSettings.contact_phone}
@@ -738,11 +753,12 @@ export default function ParcelDetailClient() {
 
             {parcel.status === 'active' && (
               <>
-                <div className="h-px bg-[var(--border)]" />
+                <div className="h-px bg-slate-100" />
                 <button onClick={async () => { try { await apiClient.post(`/parcels/${parcel.id}/price-alert`, {}); alert('Fiyat düşüş bildirimi aktif edildi!'); } catch { alert('Giriş yapmanız gerekiyor.'); } }}
-                  className="flex w-full items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium hover:bg-[var(--muted)] transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                  data-testid="price-alert-btn"
                 >
-                  <Bell className="h-3.5 w-3.5 text-amber-500" />
+                  <Bell className="h-4 w-4 text-amber-500" />
                   Fiyat Düşünce Haber Ver
                 </button>
               </>
@@ -939,9 +955,9 @@ function LightboxOverlay({
 /* ─── Detail Row component ─── */
 function DetailRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <tr className={highlight ? 'bg-[var(--muted)]' : ''}>
-      <td className="border-b border-[var(--border)] px-3 py-2 font-medium text-[var(--muted-foreground)] w-[40%]">{label}</td>
-      <td className="border-b border-[var(--border)] px-3 py-2 font-semibold">{value}</td>
+    <tr className={`transition-colors ${highlight ? 'bg-slate-50' : 'hover:bg-slate-50/50'}`}>
+      <td className="border-b border-slate-100 px-4 py-3 font-medium text-slate-500 w-[40%]">{label}</td>
+      <td className="border-b border-slate-100 px-4 py-3 font-semibold text-slate-900">{value}</td>
     </tr>
   );
 }

@@ -12,7 +12,7 @@ import { useRateLimit } from '@/hooks/use-rate-limit';
 import { LoadingState } from '@/components/ui';
 import type { ApiError } from '@/types';
 import { AxiosError } from 'axios';
-import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, CheckCircle2, Shield, Zap, TrendingUp } from 'lucide-react';
+import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, CheckCircle2, Shield, Zap } from 'lucide-react';
 
 export default function LoginPagePro() {
   return (
@@ -74,249 +74,221 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      {/* Animated Background Pattern */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-0 -left-4 w-72 h-72 bg-emerald-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-        <div className="absolute top-0 -right-4 w-72 h-72 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-cyan-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen flex" data-testid="login-page">
+      {/* Left Side - Login Form */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-12 bg-white">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          {/* Logo & Title */}
+          <div className="text-center mb-10">
+            <Link href="/" className="inline-flex items-center gap-3 mb-8" data-testid="login-logo">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-600 text-white text-base font-bold shadow-emerald">
+                NT
+              </div>
+              <div className="flex flex-col leading-tight text-left">
+                <span className="text-xl font-bold font-heading text-slate-900 tracking-tight">NetTapu</span>
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Arsa Platformu</span>
+              </div>
+            </Link>
+            <h1 className="text-3xl font-bold font-heading text-slate-900 mb-2">Hoş Geldiniz</h1>
+            <p className="text-slate-500">Hesabınıza giriş yapın</p>
+          </div>
+
+          {/* Social Login */}
+          <button
+            onClick={handleGoogleLogin}
+            type="button"
+            className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white border border-slate-200 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 shadow-sm"
+            data-testid="google-login-btn"
+          >
+            <GoogleIcon />
+            <span>Google ile Giriş Yap</span>
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-8">
+            <div className="flex-1 h-px bg-slate-200"></div>
+            <span className="text-sm text-slate-400 font-medium">veya</span>
+            <div className="flex-1 h-px bg-slate-200"></div>
+          </div>
+
+          {/* Error Alert */}
+          {serverError && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-red-50 rounded-xl flex items-start gap-3"
+              data-testid="login-error"
+            >
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{serverError}</p>
+            </motion.div>
+          )}
+
+          {/* Rate Limit Warning */}
+          {isLimited && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-amber-50 rounded-xl flex items-start gap-3"
+            >
+              <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-700">
+                Çok fazla deneme yaptınız. Lütfen {cooldown} saniye bekleyin.
+              </p>
+            </motion.div>
+          )}
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" data-testid="login-form">
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">
+                E-posta Adresi
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <input
+                  {...register('email')}
+                  id="email"
+                  type="email"
+                  placeholder="ornek@email.com"
+                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all duration-200"
+                  data-testid="email-input"
+                />
+              </div>
+              {errors.email && (
+                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="block text-sm font-semibold text-slate-700">
+                  Şifre
+                </label>
+                <Link href="/forgot-password" className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
+                  Şifremi Unuttum
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <input
+                  {...register('password')}
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all duration-200"
+                  data-testid="password-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting || isLimited}
+              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-emerald hover:shadow-emerald-lg transition-all duration-200"
+              data-testid="login-submit-btn"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Giriş Yapılıyor...</span>
+                </>
+              ) : (
+                <>
+                  <span>Giriş Yap</span>
+                  <ArrowRight className="h-5 w-5" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Sign Up Link */}
+          <p className="mt-8 text-center text-slate-500">
+            Hesabınız yok mu?{' '}
+            <Link href="/register" className="font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
+              Hemen Kaydolun
+            </Link>
+          </p>
+        </motion.div>
       </div>
 
-      {/* Main Container */}
-      <div className="relative z-10 flex min-h-screen">
-        {/* Left Side - Login Form */}
-        <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-full max-w-md"
-          >
-            {/* Logo & Title */}
-            <div className="text-center mb-10">
-              <Link href="/" className="inline-flex items-center gap-3 mb-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl blur opacity-50"></div>
-                  <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-lg font-bold shadow-lg shadow-emerald-500/30">
-                    NT
+      {/* Right Side - Hero Section */}
+      <div className="hidden lg:flex flex-1 items-center justify-center bg-slate-900 p-12 relative overflow-hidden">
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.015)_1px,transparent_1px)] bg-[size:60px_60px]"></div>
+        
+        {/* Glowing orbs */}
+        <div className="absolute top-20 right-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl"></div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="relative z-10 max-w-xl text-center"
+        >
+          <h2 className="text-4xl lg:text-5xl font-bold font-heading text-white mb-6 leading-tight">
+            Türkiye'nin En Güvenilir{' '}
+            <span className="text-emerald-400">
+              Arsa Platformu
+            </span>
+          </h2>
+          <p className="text-lg text-slate-400 mb-12 leading-relaxed">
+            Binlerce doğrulanmış arsa ilanı, canlı açık artırmalar ve güvenli ödeme sistemiyle hayalinizdeki arsaya kolayca sahip olun.
+          </p>
+
+          {/* Features */}
+          <div className="grid grid-cols-1 gap-4 text-left">
+            {[
+              { icon: Shield, title: 'Güvenli Alışveriş', desc: '3D Secure ve SSL ile korunan ödemeler', color: 'emerald' },
+              { icon: Zap, title: 'Canlı Açık Artırma', desc: 'Gerçek zamanlı teklif sistemi', color: 'emerald' },
+              { icon: CheckCircle2, title: 'Doğrulanmış İlanlar', desc: 'Tapu kontrolü yapılmış arsalar', color: 'emerald' },
+            ].map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex items-start gap-4 p-4 rounded-xl bg-white/5 backdrop-blur-sm"
+                >
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                    <Icon className="h-5 w-5 text-emerald-400" />
                   </div>
-                </div>
-                <div className="flex flex-col leading-tight text-left">
-                  <span className="text-2xl font-bold font-heading text-slate-900 tracking-tight">NetTapu</span>
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Arsa Platformu</span>
-                </div>
-              </Link>
-              <h1 className="text-3xl font-bold font-heading text-slate-900 mb-2">Hoş Geldiniz</h1>
-              <p className="text-slate-600">Hesabınıza giriş yapın</p>
-            </div>
-
-            {/* Social Login */}
-            <button
-              onClick={handleGoogleLogin}
-              type="button"
-              className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white border-2 border-slate-200 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow-md group"
-            >
-              <GoogleIcon />
-              <span>Google ile Giriş Yap</span>
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center gap-4 my-8">
-              <div className="flex-1 h-px bg-slate-200"></div>
-              <span className="text-sm text-slate-500 font-medium">veya</span>
-              <div className="flex-1 h-px bg-slate-200"></div>
-            </div>
-
-            {/* Error Alert */}
-            {serverError && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"
-              >
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800">{serverError}</p>
-              </motion.div>
-            )}
-
-            {/* Rate Limit Warning */}
-            {isLimited && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3"
-              >
-                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-800">
-                  Çok fazla deneme yaptınız. Lütfen {cooldown} saniye bekleyin.
-                </p>
-              </motion.div>
-            )}
-
-            {/* Login Form */}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">
-                  E-posta Adresi
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                  <input
-                    {...register('email')}
-                    id="email"
-                    type="email"
-                    placeholder="ornek@email.com"
-                    className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-                  />
-                </div>
-                {errors.email && (
-                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="password" className="block text-sm font-semibold text-slate-700">
-                    Şifre
-                  </label>
-                  <Link href="/forgot-password" className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
-                    Şifremi Unuttum
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                  <input
-                    {...register('password')}
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    className="w-full pl-12 pr-12 py-3.5 bg-white border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting || isLimited}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Giriş Yapılıyor...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Giriş Yap</span>
-                    <ArrowRight className="h-5 w-5" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Sign Up Link */}
-            <p className="mt-8 text-center text-slate-600">
-              Hesabınız yok mu?{' '}
-              <Link href="/register" className="font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
-                Hemen Kaydolun
-              </Link>
-            </p>
-          </motion.div>
-        </div>
-
-        {/* Right Side - Hero Section */}
-        <div className="hidden lg:flex flex-1 items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-12 relative overflow-hidden">
-          {/* Decorative Grid */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.02)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
-          
-          {/* Glowing Orbs */}
-          <div className="absolute top-20 right-20 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 left-20 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl"></div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative z-10 max-w-xl text-center"
-          >
-            <h2 className="text-4xl lg:text-5xl font-bold font-heading text-white mb-6 leading-tight">
-              Türkiye'nin En Güvenilir{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
-                Arsa Platformu
-              </span>
-            </h2>
-            <p className="text-lg text-slate-300 mb-12 leading-relaxed">
-              Binlerce doğrulanmış arsa ilanı, canlı açık artırmalar ve güvenli ödeme sistemiyle hayalinizdeki arsaya kolayca sahip olun.
-            </p>
-
-            {/* Features */}
-            <div className="grid grid-cols-1 gap-6 text-left">
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
-                className="flex items-start gap-4 p-5 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10"
-              >
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                  <Shield className="h-6 w-6 text-emerald-400" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-1">Güvenli Alışveriş</h3>
-                  <p className="text-sm text-slate-400">3D Secure ve SSL ile korunan ödemeler</p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
-                className="flex items-start gap-4 p-5 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10"
-              >
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-teal-400" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-1">Canlı Açık Artırma</h3>
-                  <p className="text-sm text-slate-400">Gerçek zamanlı teklif sistemi</p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 }}
-                className="flex items-start gap-4 p-5 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10"
-              >
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
-                  <CheckCircle2 className="h-6 w-6 text-cyan-400" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-1">Doğrulanmış İlanlar</h3>
-                  <p className="text-sm text-slate-400">Tapu kontrolü yapılmış arsalar</p>
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-white mb-0.5">{feature.title}</h3>
+                    <p className="text-sm text-slate-400">{feature.desc}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
       </div>
     </div>
   );

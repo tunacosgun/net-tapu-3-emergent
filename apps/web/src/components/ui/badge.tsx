@@ -1,18 +1,18 @@
 import { type ReactNode } from 'react';
 
 const variantClasses = {
-  default: 'bg-gray-100 text-gray-700',
-  success: 'bg-green-100 text-green-700',
-  warning: 'bg-yellow-100 text-yellow-700',
-  danger: 'bg-red-100 text-red-700',
-  info: 'bg-blue-100 text-blue-700',
+  default: 'bg-slate-100 text-slate-700',
+  success: 'bg-emerald-50 text-emerald-700',
+  warning: 'bg-amber-50 text-amber-700',
+  danger: 'bg-red-50 text-red-700',
+  info: 'bg-blue-50 text-blue-700',
   // Parcel status variants
-  active: 'bg-green-100 text-green-700',
-  sold: 'bg-red-100 text-red-700',
-  deposit_taken: 'bg-yellow-100 text-yellow-700',
-  draft: 'bg-gray-100 text-gray-500',
-  withdrawn: 'bg-gray-100 text-gray-400',
-  reserved: 'bg-purple-100 text-purple-700',
+  active: 'bg-emerald-50 text-emerald-700',
+  sold: 'bg-red-50 text-red-700',
+  deposit_taken: 'bg-amber-50 text-amber-700',
+  draft: 'bg-slate-100 text-slate-500',
+  withdrawn: 'bg-slate-100 text-slate-400',
+  reserved: 'bg-purple-50 text-purple-700',
 } as const;
 
 interface BadgeProps {
@@ -24,7 +24,7 @@ interface BadgeProps {
 export function Badge({ variant = 'default', className, children }: BadgeProps) {
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-xs font-medium ${variantClasses[variant] ?? variantClasses.default} ${className ?? ''}`}
+      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${variantClasses[variant] ?? variantClasses.default} ${className ?? ''}`}
     >
       {children}
     </span>
@@ -55,16 +55,16 @@ export function parcelStatusConfig(status: string): { variant: keyof typeof vari
 export function parcelStatusColor(status: string): string {
   switch (status) {
     case 'active':
-      return '#22c55e'; // green
+      return '#059669'; // emerald
     case 'sold':
       return '#ef4444'; // red
     case 'deposit_taken':
-      return '#eab308'; // yellow
+      return '#f59e0b'; // amber
     case 'reserved':
       return '#a855f7'; // purple
     case 'draft':
     case 'withdrawn':
     default:
-      return '#9ca3af'; // gray
+      return '#94a3b8'; // slate
   }
 }

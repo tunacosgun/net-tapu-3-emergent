@@ -1,12 +1,4 @@
-@import '@fontsource/outfit/300.css';
-@import '@fontsource/outfit/400.css';
-@import '@fontsource/outfit/500.css';
-@import '@fontsource/outfit/600.css';
-@import '@fontsource/outfit/700.css';
-@import '@fontsource/manrope/400.css';
-@import '@fontsource/manrope/500.css';
-@import '@fontsource/manrope/600.css';
-@import '@fontsource/manrope/700.css';
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -14,62 +6,117 @@
 
 @layer base {
   :root {
-    --font-heading: 'Outfit', sans-serif;
-    --font-body: 'Manrope', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    /* Professional Design System - Net Tapu */
+    --font-heading: 'Manrope', system-ui, sans-serif;
+    --font-body: 'IBM Plex Sans', system-ui, sans-serif;
     
-    /* Design system colors */
-    --color-primary: 15 23 42;
-    --color-primary-foreground: 255 255 255;
-    --color-secondary: 30 41 59;
-    --color-accent: 197 160 89;
-    --color-accent-foreground: 0 0 0;
+    /* Colors */
+    --color-primary: 5 150 105;
+    --color-primary-hover: 4 120 87;
+    --color-primary-light: 209 250 229;
+    
+    --color-background: 248 250 252;
+    --color-surface: 255 255 255;
+    
+    --color-text-heading: 15 23 42;
+    --color-text-body: 71 85 105;
+    --color-text-muted: 148 163 184;
+    
+    --color-border-subtle: 241 245 249;
+    --color-border-default: 226 232 240;
+    
     --color-success: 16 185 129;
     --color-warning: 245 158 11;
-    --color-destructive: 239 68 68;
-    --color-muted: 241 245 249;
-    --color-muted-foreground: 100 116 139;
-    --color-background-light: 250 250 250;
-    --color-background-dark: 11 15 25;
-    --color-border: 226 232 240;
-    --color-border-dark: 30 41 59;
+    --color-danger: 239 68 68;
   }
 
-  *, *::before, *::after {
-    --tw-border-opacity: 1;
-    border-color: rgb(226 232 240 / var(--tw-border-opacity));
+  * {
+    border-color: rgb(241 245 249);
   }
 
   body {
     font-family: var(--font-body);
-    @apply text-slate-600 bg-slate-50;
+    @apply text-slate-600 bg-slate-50 antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
-    @apply text-slate-900;
+    @apply text-slate-900 tracking-tight;
   }
 
-  /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
   }
 
-  /* Custom scrollbar */
+  /* Professional scrollbar */
   ::-webkit-scrollbar {
-    width: 10px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-slate-100;
+    @apply bg-slate-50;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 rounded-full;
+    @apply bg-slate-200 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-400;
+    @apply bg-slate-300;
+  }
+}
+
+@layer components {
+  /* Professional Card Style */
+  .card-pro {
+    @apply bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-slate-100;
+    @apply hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300;
+  }
+
+  /* Professional Button */
+  .btn-primary {
+    @apply bg-emerald-600 text-white rounded-lg px-6 py-2.5 font-medium;
+    @apply hover:bg-emerald-700 shadow-sm hover:shadow transition-all duration-200;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-slate-700 border border-slate-200 rounded-lg px-6 py-2.5 font-medium;
+    @apply hover:bg-slate-50 hover:border-slate-300 transition-all duration-200;
+  }
+
+  /* Professional Input */
+  .input-pro {
+    @apply bg-white border border-slate-200 rounded-lg px-4 py-3 text-slate-900;
+    @apply placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20;
+    @apply focus:border-emerald-500 transition-all duration-200;
+  }
+
+  /* Professional Table */
+  .table-pro {
+    @apply bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden;
+  }
+
+  .table-pro th {
+    @apply bg-slate-50/80 text-slate-600 font-semibold text-sm py-3 px-4 text-left;
+  }
+
+  .table-pro td {
+    @apply py-3 px-4 text-sm text-slate-700 border-t border-slate-50;
+  }
+
+  .table-pro tr:hover td {
+    @apply bg-slate-50/50;
+  }
+
+  /* Professional Header */
+  .header-pro {
+    @apply sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100 shadow-sm;
+  }
+
+  /* Overline text style */
+  .overline {
+    @apply text-xs font-bold tracking-[0.2em] uppercase text-emerald-600;
   }
 }
 
@@ -84,7 +131,7 @@
 
   /* Glass morphism */
   .glass {
-    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+    @apply bg-white/80 backdrop-blur-xl border border-slate-100;
   }
 
   .glass-dark {
@@ -101,6 +148,25 @@
     animation: bid-flash 0.5s ease-in-out;
   }
 
+  @keyframes blob {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
   /* Text shadows for glowing effects */
   .text-glow {
     text-shadow: 0 0 20px currentColor;
@@ -108,5 +174,22 @@
 
   .text-glow-strong {
     text-shadow: 0 0 30px currentColor, 0 0 60px currentColor;
+  }
+
+  /* Professional shadow utilities */
+  .shadow-soft {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-soft-lg {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  }
+
+  .shadow-emerald {
+    box-shadow: 0 4px 14px 0 rgba(5, 150, 105, 0.25);
+  }
+
+  .shadow-emerald-lg {
+    box-shadow: 0 10px 40px 0 rgba(5, 150, 105, 0.3);
   }
 }
