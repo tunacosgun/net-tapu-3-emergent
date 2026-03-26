@@ -4,7 +4,7 @@ import { AuthProvider } from '@/providers/auth-provider';
 import { SiteSettingsProvider } from '@/providers/site-settings-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { ApiErrorToastContainer } from '@/components/api-error-toast';
-import { Header } from '@/components/layout/header';
+import { HeaderPro } from '@/components/layout/header-pro';
 import { Footer } from '@/components/layout/footer';
 import { FullBanGate } from '@/components/full-ban-gate';
 import { fetchSiteSettingsServer } from '@/lib/server-api';
@@ -104,7 +104,7 @@ export default function RootLayout({
           <AuthProvider>
             <SiteSettingsProvider>
               <div className="flex min-h-screen flex-col">
-                <Header />
+                <HeaderPro />
                 <div className="flex-1">
                   <FullBanGate>{children}</FullBanGate>
                 </div>
