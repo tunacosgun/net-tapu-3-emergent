@@ -34,9 +34,17 @@ export function HeaderPro() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Hide header on auth and admin pages
+  const isAuthPage = pathname?.startsWith('/login') || pathname?.startsWith('/register') || pathname?.startsWith('/forgot-password');
+  const isAdminPage = pathname?.startsWith('/admin');
+  if (isAuthPage || isAdminPage) return null;
+
   const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('superadmin');
 
   return (
+    <>
+    {/* Spacer for fixed header */}
+    <div className="h-[116px]" />
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
@@ -326,5 +334,6 @@ export function HeaderPro() {
         )}
       </AnimatePresence>
     </header>
+    </>
   );
 }
