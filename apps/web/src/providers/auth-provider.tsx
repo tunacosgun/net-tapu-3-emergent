@@ -89,6 +89,25 @@ export function useLogin() {
         password,
       });
       setTokens(data.accessToken, data.refreshToken);
+
+      // Persist session in httpOnly cookies for middleware
+      const base64 = data.accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(base64));
+      const role = payload.roles?.includes('superadmin')
+        ? 'superadmin'
+        : payload.roles?.includes('admin')
+          ? 'admin'
+          : 'user';
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          role,
+        }),
+      });
+
       return data;
     },
     [setTokens],
@@ -112,6 +131,18 @@ export function useRegister() {
         payload,
       );
       setTokens(data.accessToken, data.refreshToken);
+
+      // Persist session in httpOnly cookies for middleware
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          role: 'user',
+        }),
+      });
+
       return data;
     },
     [setTokens],
