@@ -77,6 +77,7 @@ export default function AuctionDetailPage() {
   const [parcel, setParcel] = useState<(Parcel & { images?: ParcelImage[] }) | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [showGallery, setShowGallery] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Anonymous participant label & color mapping
@@ -365,43 +366,35 @@ export default function AuctionDetailPage() {
       {/* ── Parcel Hero Section ── */}
       {parcel && (
         <div className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--card)]">
-          {/* Image gallery */}
+          {/* Compact parcel thumbnail + action buttons */}
           {parcelImages.length > 0 && (
-            <div className="relative h-[300px] lg:h-[400px] bg-gray-100 dark:bg-gray-800">
+            <div className="relative h-[120px] bg-gray-100 dark:bg-gray-800 flex items-center">
               <img
-                src={parcelImages[galleryIndex]?.watermarkedUrl || parcelImages[galleryIndex]?.originalUrl}
+                src={coverImage?.watermarkedUrl || coverImage?.originalUrl}
                 alt={parcel.title}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover opacity-40"
               />
-              {/* Gallery nav */}
-              {parcelImages.length > 1 && (
-                <>
-                  <button onClick={() => setGalleryIndex((i) => (i - 1 + parcelImages.length) % parcelImages.length)} className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-                  </button>
-                  <button onClick={() => setGalleryIndex((i) => (i + 1) % parcelImages.length)} className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-                  </button>
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {parcelImages.map((_, i) => (
-                      <button key={i} onClick={() => setGalleryIndex(i)} className={`h-2 rounded-full transition-all ${i === galleryIndex ? 'w-6 bg-white' : 'w-2 bg-white/50'}`} />
-                    ))}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
+              <div className="absolute inset-0 flex items-center justify-between px-5">
+                <div className="flex items-center gap-3">
+                  <img src={coverImage?.thumbnailUrl || coverImage?.watermarkedUrl || coverImage?.originalUrl} alt="" className="h-16 w-24 rounded-lg object-cover border-2 border-white/30" />
+                  <div>
+                    <p className="text-white font-semibold text-sm">{parcel.title?.slice(0, 40)}{(parcel.title?.length || 0) > 40 ? '...' : ''}</p>
+                    <p className="text-white/70 text-xs mt-0.5">{parcel.city} / {parcel.district}</p>
                   </div>
-                </>
-              )}
-              {/* Photo count badge */}
-              <div className="absolute top-3 left-3 rounded-full bg-black/60 px-3 py-1 text-xs text-white font-medium flex items-center gap-1.5">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
-                {galleryIndex + 1}/{parcelImages.length}
-              </div>
-              {/* Action buttons */}
-              <div className="absolute top-3 right-3 flex gap-2">
-                <button onClick={toggleFavorite} className={`h-10 w-10 rounded-full flex items-center justify-center transition-colors ${isFavorite ? 'bg-red-500 text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}>
-                  <svg className="h-5 w-5" fill={isFavorite ? 'currentColor' : 'none'} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
-                </button>
-                <button onClick={handleShare} className="h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>
-                </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { setShowGallery(true); setTimeout(() => document.getElementById('auction-gallery')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 backdrop-blur-sm px-3 py-2 text-xs font-medium text-white hover:bg-white/30 transition-colors">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                    Fotoğraflar ({parcelImages.length})
+                  </button>
+                  <button onClick={toggleFavorite} className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors ${isFavorite ? 'bg-red-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'}`}>
+                    <svg className="h-4 w-4" fill={isFavorite ? 'currentColor' : 'none'} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+                  </button>
+                  <button onClick={handleShare} className="h-9 w-9 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-colors">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -831,6 +824,51 @@ function TimeExtensionOverlay({ addedMinutes, onComplete }: { addedMinutes: numb
           <p className="text-sm text-[var(--muted-foreground)]">İhale süresi yönetici tarafından uzatıldı</p>
         </div>
       </div>
+
+      {/* ── Photo Gallery (bottom, toggleable) ── */}
+      {showGallery && parcelImages.length > 0 && (
+        <div id="auction-gallery" className="rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--card)] p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-[var(--foreground)] flex items-center gap-2">
+              <svg className="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+              Arsa Fotoğrafları ({parcelImages.length})
+            </h3>
+            <button onClick={() => setShowGallery(false)} className="text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors flex items-center gap-1">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              Kapat
+            </button>
+          </div>
+          {/* Main image */}
+          <div className="relative rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-3">
+            <img
+              src={parcelImages[galleryIndex]?.watermarkedUrl || parcelImages[galleryIndex]?.originalUrl}
+              alt={parcel?.title || ''}
+              className="w-full h-[400px] lg:h-[500px] object-cover"
+            />
+            {parcelImages.length > 1 && (
+              <>
+                <button onClick={() => setGalleryIndex((i) => (i - 1 + parcelImages.length) % parcelImages.length)} className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                </button>
+                <button onClick={() => setGalleryIndex((i) => (i + 1) % parcelImages.length)} className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                </button>
+              </>
+            )}
+            <div className="absolute top-3 left-3 rounded-full bg-black/60 px-3 py-1 text-xs text-white font-medium">
+              {galleryIndex + 1}/{parcelImages.length}
+            </div>
+          </div>
+          {/* Thumbnails */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {parcelImages.map((img, i) => (
+              <button key={img.id} onClick={() => setGalleryIndex(i)} className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${i === galleryIndex ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                <img src={img.thumbnailUrl || img.watermarkedUrl || img.originalUrl} alt="" className="h-16 w-24 object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
