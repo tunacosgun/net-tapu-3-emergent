@@ -12,3 +12,7 @@ load-tests/results/
 .next
 apps/web/.next
 apps/web/.next.zip
+-e 
+# Environment files
+*.env
+*.env.*
